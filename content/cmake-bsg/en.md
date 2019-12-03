@@ -3,7 +3,7 @@ title: "CMake: A build system generator for pretty much anything"
 tags: ["tooling", "building", "linux", "cmake"]
 ---
 
-<img class="cover" src="cv_build_screenshot.svg">
+![cover](cv_build_screenshot.svg)
 
 <i>Note: this article is really a "learn cmake the hard way". If you just want a very quick tutorial on writing cmake scripts to build your simple C project, there are many. Here is a 2-line version:
 

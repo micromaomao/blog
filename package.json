@@ -1,0 +1,27 @@
+{
+  "name": "blog-generator",
+  "version": "0.0.1",
+  "private": true,
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/micromaomao/blog.git"
+  },
+  "author": "maowtm <m@maowtm.org>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/micromaomao/blog/issues"
+  },
+  "homepage": "https://github.com/micromaomao/blog#readme",
+  "dependencies": {
+    "colors": "^1.4.0",
+    "js-yaml": "^3.13.1",
+    "marked": "^0.7.0",
+    "node-sass": "^4.13.0",
+    "pug": "^2.0.4"
+  }
+}

@@ -1,0 +1,63 @@
+@use "base"
+
+@mixin h($fontsize, $sharpm, $sharps)
+  font-family: 'Times New Roman', Times, serif
+  font-size: $fontsize
+  margin: 1.5em 0 0.5em 0
+  &::before
+    content: $sharps
+    opacity: 0.5
+    text-align: right
+    display: inline-block
+    width: 0px
+    margin-left: -$sharpm
+    margin-right: $sharpm
+
+h1
+  @include h(28px, 22px, "# ")
+h2
+  @include h(22px, 30px, "## ")
+
+$color-link: #088da5
+p, ul, li
+  a
+    outline: none
+    -webkit-tap-highlight-color: transparent
+    color: $color-link
+    text-decoration: none
+    transition: background-color 100ms
+    background-color: rgba($color-link, 0)
+    display: inline-block
+    padding: 0.25em 0.5em
+    margin: -0.25em -0.5em
+    &:active
+      background-color: rgba($color-link, 0.1)
+
+img.coverimg
+  min-width: 50%
+  max-width: 100%
+  margin: 0 auto
+  display: block
+
+.tags
+  font-size: 16px
+  margin-top: -0.7em
+  a.tag
+    background-color: #eee
+    color: #666
+    text-decoration: none
+    transition: background-color 100ms
+    outline: none
+    -webkit-tap-highlight-color: transparent
+    &:hover
+      background-color: #d9d9d9
+    &:active
+      background-color: #e0e0e0
+    display: inline-block
+    margin: 0.1em 0.1em
+    padding: 0.1em 0.5em
+    border-radius: 4px
+
+.footer
+  color: #999
+  font-size: 14px

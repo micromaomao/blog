@@ -4,6 +4,8 @@ const path = require("path");
 const marked = require('marked');
 const jsyaml = require('js-yaml');
 const child_process = require('child_process');
+const pug = require('pug');
+const sass = require('sass');
 
 process.chdir(__dirname);
 
@@ -38,7 +40,7 @@ async function main () {
     throw new Error(`Error readdiring content/: ${e.message}`);
   }
   console.log(`       (${dir_entires.length} articles to build)`.gray);
-  let progress_total_work = dir_entires.length*2 + 1;
+  let progress_total_work = dir_entires.length*2 + 3;
   let progress_current_work_done = 0;
   function print_status(status_text) {
     console.log(`[${Math.round(progress_current_work_done++ / progress_total_work * 100).toString().padStart(3, " ")}%] ${status_text}`.cyan);
@@ -49,6 +51,41 @@ async function main () {
   function print_warn(t) {
     console.log(" Warn: " + t.yellow);
   }
+
+  function get_template(fp) {
+    let file_path = path.resolve(__dirname, fp);
+    print_status(`Compile template: ${file_path}`);
+    let file_content;
+    try {
+      file_content = fs.readFileSync(file_path, {encoding: 'utf8'});
+    } catch (e) {
+      throw new Error(`Error reading ${file_path}: ${e.message}`);
+    }
+    let fn;
+    try {
+      fn = pug.compile(file_content, {pretty: true});
+    } catch (e) {
+      throw new Error(`Error compiling ${file_path}: ${e.message}`);
+    }
+    let sass_path = path.resolve(__dirname, fp.replace(/\.pug$/, ".sass"));
+    print_status(`Compile sass: ${sass_path}`);
+    let css;
+    try {
+      css = sass.renderSync({
+        file: sass_path,
+        outputStyle: 'expanded',
+        includePaths: [path.resolve(__dirname, fp, "..")],
+      }).css;
+    } catch (e) {
+      throw new Error(`Error compiling ${sass_path}: ${e.message}`);
+    }
+    return function (obj) {
+      Object.assign(obj, {css});
+      return fn(obj);
+    };
+  }
+
+  const article_template = get_template("template/article.pug");
 
   let articles = [];
   let orig_renderer = new marked.Renderer({
@@ -72,7 +109,9 @@ async function main () {
       }
       article.languages = [];
       article.assets = new Map();
+      article.codename = codename;
       let dist_dict_path = path.resolve(output_dir, codename);
+      article.output_path = dist_dict_path;
       tryMkdirp(dist_dict_path);
       function transform_local_asset_href(href) {
         if (/^[a-zA-Z]+:\/\//.test(href)) {
@@ -133,7 +172,7 @@ async function main () {
             }
           }
           markdown = lines.slice(front_matter_end_line + 1).join('\n');
-          front_matter = lines.slice(1, front_matter_end_line - 1).join('\n');
+          front_matter = lines.slice(1, front_matter_end_line).join('\n');
         }
         if (front_matter === null) {
           throw new Error(`${mdpath}: expected front matter`);
@@ -146,7 +185,21 @@ async function main () {
         if (!front_matter.hasOwnProperty("title")) {
           throw new Error(`${mdpath}: front matter must include a title`);
         }
-        let lang_obj = {id: l, cover_image: null, title: front_matter.title};
+        if (!front_matter.hasOwnProperty("time")) {
+          throw new Error(`${mdpath}: front matter must include a time`);
+        }
+        let time = new Date(front_matter.time);
+        if (Number.isNaN(time.getTime())) {
+          throw new Error(`${mdpath}: front matter: time is invalid`);
+        }
+        let tags = [];
+        if (front_matter.hasOwnProperty("tags")) {
+          tags = front_matter.tags;
+          if (!Array.isArray(tags) || typeof tags[0] != "string") {
+            throw new Error(`${mdpath}: front matter: invalid tags array`);
+          }
+        }
+        let lang_obj = {id: l, cover_image: null, title: front_matter.title, time, tags, markdown};
         print_verbose(`Processing ${l}`);
         let md_renderer = new marked.Renderer({
           headerIds: true
@@ -192,12 +245,6 @@ async function main () {
         }
       }
 
-      for (let l of article.languages) {
-        let output_html_path = path.resolve(dist_dict_path, `${l.id}.html`);
-        print_status(`emit ${output_html_path}`);
-        fs.writeFileSync(output_html_path, l.html);
-      }
-
       return article;
     }
   }
@@ -205,6 +252,24 @@ async function main () {
   for (let ent of dir_entires) {
     let cdir_path = path.resolve(__dirname, "content", ent);
     articles.push(await ScannedArticle.scan_dir(cdir_path, ent));
+  }
+
+  for (let article of articles) {
+    tryMkdirp(article.output_path);
+    for (let l of article.languages) {
+      let lang_html_path = path.resolve(article.output_path, `${l.id}.html`);
+      print_status(`emit ${lang_html_path}`);
+      let emit_content = article_template({
+        lang_obj: l,
+        article,
+        now: Date.now(),
+      })
+      try {
+        fs.writeFileSync(lang_html_path, emit_content);
+      } catch (e) {
+        throw new Error(`Error writing to ${lang_html_path}: ${e.message}`);
+      }
+    }
   }
 
   print_status("emit index.html"); // TODO

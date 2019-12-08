@@ -1,4 +1,4 @@
-@use "base"
+@use "base" as *
 
 @mixin h($fontsize, $sharpm, $sharps)
   font-family: 'Times New Roman', Times, serif
@@ -18,9 +18,7 @@ h1
 h2
   @include h(22px, 30px, "## ")
 
-$color-link: #088da5
-p, ul, li
-  a
+p a, ul a, li a, body > a.home
     outline: none
     -webkit-tap-highlight-color: transparent
     color: $color-link
@@ -40,24 +38,8 @@ img.coverimg
   display: block
 
 .tags
-  font-size: 16px
   margin-top: -0.7em
-  a.tag
-    background-color: #eee
-    color: #666
-    text-decoration: none
-    transition: background-color 100ms
-    outline: none
-    -webkit-tap-highlight-color: transparent
-    &:hover
-      background-color: #d9d9d9
-    &:active
-      background-color: #e0e0e0
-    display: inline-block
-    margin: 0.1em 0.1em
-    padding: 0.1em 0.5em
-    border-radius: 4px
 
 .footer
-  color: #999
+  color: $color-gray-text
   font-size: 14px

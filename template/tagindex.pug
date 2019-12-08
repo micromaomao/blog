@@ -1,0 +1,14 @@
+include utils.pug
+doctype html
+html(lang="en")
+  head
+    title= tag.name
+    meta(name="keywords",content=tag.name)
+    meta(name="viewport",content="width=device-width, initial-scale=1.0")
+    style(type="text/css")!= "\n" + css
+  body
+    a.returntoindex(href="../index.html") 🠐 see everything
+    h1= tag.name
+    -let pick_language = article => article.languages.find(x => x.id == "en") || article.languages[0];
+    -let ordered_articles = tag.articles.slice().sort((a, b) => Math.sign(pick_language(b).time - pick_language(a).time));
+    +list_articles(ordered_articles, pick_language, true)

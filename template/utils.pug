@@ -1,0 +1,16 @@
+mixin list_articles(articles, pick_language_fn, in_tagdir)
+  ul.articles
+    each article, index in ordered_articles
+      -let l = pick_language_fn(article);
+      -if (index > 0)
+        hr
+      li.article
+        -if (l.cover_image !== null)
+          img.cover(src=`${in_tagdir ? "../" : ""}${encodeURIComponent(article.codename)}/${l.cover_image}`)
+        a.title(href=`${in_tagdir ? "../" : ""}${encodeURIComponent(article.codename)}/${l.id}.html`)= l.title
+        .tags
+          each t, i in l.tags
+            -if (i != 0)
+              | #{" "}
+            a.tag(href=`${in_tagdir ? "" : "tagindex/"}${encodeURIComponent(t)}.html`)= t
+        .time= l.time.toDateString()

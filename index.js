@@ -40,7 +40,7 @@ async function main () {
     throw new Error(`Error readdiring content/: ${e.message}`);
   }
   console.log(`       (${dir_entires.length} articles to build)`.gray);
-  let progress_total_work = dir_entires.length*2 + 3;
+  let progress_total_work = dir_entires.length*2 + 8;
   let progress_current_work_done = 0;
   function print_status(status_text) {
     console.log(`[${Math.round(progress_current_work_done++ / progress_total_work * 100).toString().padStart(3, " ")}%] ${status_text}`.cyan);
@@ -55,15 +55,9 @@ async function main () {
   function get_template(fp) {
     let file_path = path.resolve(__dirname, fp);
     print_status(`Compile template: ${file_path}`);
-    let file_content;
-    try {
-      file_content = fs.readFileSync(file_path, {encoding: 'utf8'});
-    } catch (e) {
-      throw new Error(`Error reading ${file_path}: ${e.message}`);
-    }
     let fn;
     try {
-      fn = pug.compile(file_content, {pretty: true});
+      fn = pug.compileFile(file_path, {pretty: true});
     } catch (e) {
       throw new Error(`Error compiling ${file_path}: ${e.message}`);
     }
@@ -86,6 +80,8 @@ async function main () {
   }
 
   const article_template = get_template("template/article.pug");
+  const tagindex_template = get_template("template/tagindex.pug");
+  const index_template = get_template("template/index.pug");
 
   let articles = [];
   let orig_renderer = new marked.Renderer({
@@ -245,7 +241,35 @@ async function main () {
         }
       }
 
+      await Tag.process_article(article);
       return article;
+    }
+  }
+
+  let tags = new Map();
+  class Tag {
+    static async process_article(article) {
+      let article_tags = new Set(article.languages.map(l => l.tags).flat());
+      for (let tag of article_tags.values()) {
+        let t;
+        if (typeof (t = tags.get(tag)) != "undefined") {
+          await t.addArticle(article);
+        } else {
+          t = new Tag(tag);
+          await t.addArticle(article);
+          tags.set(tag, t);
+          progress_total_work += 1;
+        }
+      }
+    }
+
+    constructor(name) {
+      this.name = name;
+      this.articles = [];
+    }
+
+    async addArticle(article) {
+      this.articles.push(article);
     }
   }
 
@@ -272,7 +296,22 @@ async function main () {
     }
   }
 
-  print_status("emit index.html"); // TODO
+  let tagindex_dir = path.resolve(output_dir, "tagindex");
+  tryMkdirp(tagindex_dir);
+  for (let t of tags.values()) {
+    let outhtmlfile = path.resolve(tagindex_dir, `${t.name}.html`);
+    print_status("emit " + outhtmlfile);
+    let html = tagindex_template({tag: t});
+    try {
+      fs.writeFileSync(outhtmlfile, html)
+    } catch (e) {
+      throw new Error(`Can't write ${outhtmlfile}: ${e}`);
+    }
+  }
+
+  let index_file_path = path.resolve(output_dir, "index.html");
+  print_status("emit " + index_file_path);
+  fs.writeFileSync(index_file_path, index_template({articles}));
 }
 
 const start_time = Date.now();

@@ -1,3 +1,6 @@
+$color-link: #088da5
+$color-gray-text: #999
+
 body
   background-color: #fafafa
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif
@@ -25,3 +28,21 @@ pre
   padding: 0.5em 1em
   margin: 1em 0
   overflow-x: auto
+
+.tags
+  font-size: 16px
+  a.tag
+    background-color: #eee
+    color: #666
+    text-decoration: none
+    transition: background-color 100ms
+    outline: none
+    -webkit-tap-highlight-color: transparent
+    &:hover
+      background-color: #d9d9d9
+    &:active
+      background-color: #e0e0e0
+    display: inline-block
+    margin: 0.1em 0.1em
+    padding: 0.1em 0.5em
+    border-radius: 4px

@@ -150,4 +150,4 @@ Let's face it, cmake is not the best scripting language. It works, but it&hellip
 
 But it does have the advantage of being available nearly everywhere - you can expect people to have cmake installed on their Linux machine, and just tell then to `cmake . && make`.
 
-Maybe someone could make yet another build system that is both easy to use and flexible? (I'm also waiting for a replacement for $\TeX$)
+Maybe someone could make yet another build system that is both easy to use and flexible? (I'm also waiting for a replacement for <tex>\TeX</tex> for typesetting documents).

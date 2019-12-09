@@ -8,6 +8,7 @@ html(lang=lang_obj.id)
     -if (lang_obj.cover_image)
       meta(property="og:image",content=lang_obj.cover_image)
     style(type="text/css")!= "\n" + css
+    link(rel="stylesheet", href="https://unpkg.com/highlight.js@9.16.2/styles/idea.css")
   body
     -if (lang_obj.cover_image)
       img(src=lang_obj.cover_image, alt="cover image", class="coverimg")

@@ -6,6 +6,9 @@ const jsyaml = require('js-yaml');
 const child_process = require('child_process');
 const pug = require('pug');
 const sass = require('sass');
+const cheerio = require('cheerio');
+const mathjax = require("mathjax-node");
+const hljs = require('highlight.js');
 
 process.chdir(__dirname);
 
@@ -212,9 +215,66 @@ async function main () {
           }
           return orig_renderer.image(h, title, text);
         }
+
+        async function process_html(html) {
+          let mathjax_style_included = false;
+
+          let $ = cheerio.load(html);
+
+          let texNodes = [];
+          $("tex").each((i, e) => {
+            texNodes.push($(e));
+          });
+
+          for (let e of texNodes) {
+            let texCode = e.text();
+            try {
+              let mjResult = await mathjax.typeset({
+                format: "inline-TeX",
+                html: true,
+                css: true,
+                speakText: true,
+                math: texCode
+              });
+              if (mjResult.errors) {
+                throw new Error(mjResult.errors.join('\n'));
+              }
+              let ee = $('<span class="tex"></span>');
+              ee.html(mjResult.html);
+              e.after(ee);
+              e.remove();
+              if (!mathjax_style_included) {
+                let st = $('<style></style>');
+                st.text(mjResult.css);
+                ee.before(st);
+                mathjax_style_included = true;
+              }
+            } catch (e) {
+              throw new Error(`TeX rendering error: ${e}`);
+            }
+          }
+
+          return $("body").html();
+        }
+
         let html;
         try {
-          html = marked(markdown, {headerIds: true, renderer: md_renderer});
+          html = await new Promise((resolve, reject) => {
+            marked(markdown, {headerIds: true, renderer: md_renderer, highlight: (code, lang, cb) => {
+              if (lang === "") {
+                cb(null, code);
+              } else {
+                cb(null, hljs.highlight(lang, code).value);
+              }
+            }}, (err, output) => {
+              if (err) {
+                reject(new Error(`Error highlighting: ${err.message}`));
+              } else {
+                resolve(output);
+              }
+            });
+          });
+          html = await process_html(html);
         } catch (e) {
           throw new Error(`Error rendering ${mdpath}: ${e.message}`);
         }

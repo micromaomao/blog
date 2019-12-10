@@ -3,11 +3,14 @@ doctype html
 html(lang="en")
   head
     meta(charset="utf-8")
-    title Mao's blog
+    title Mao's technical notes
     meta(name="viewport",content="width=device-width, initial-scale=1.0")
     style(type="text/css")!= "\n" + css
   body
-    h1 Mao's blog
+    a.blogtitle
+      | Mao's technical notes
+      | <br>
+      span.note (index)
     -let pick_language = article => article.languages.find(x => x.id == "en") || article.languages[0];
     -let ordered_articles = articles.slice().sort((a, b) => Math.sign(pick_language(b).time - pick_language(a).time));
     +list_articles(ordered_articles, pick_language, false)

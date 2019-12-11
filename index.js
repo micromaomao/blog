@@ -43,7 +43,7 @@ async function main () {
     throw new Error(`Error readdiring content/: ${e.message}`);
   }
   console.log(`       (${dir_entires.length} articles to build)`.gray);
-  let progress_total_work = dir_entires.length*2 + 8;
+  let progress_total_work = dir_entires.length*2 + 9;
   let progress_current_work_done = 0;
   function print_status(status_text) {
     console.log(`[${Math.round(progress_current_work_done++ / progress_total_work * 100).toString().padStart(3, " ")}%] ${status_text}`.cyan);
@@ -372,6 +372,14 @@ async function main () {
   let index_file_path = path.resolve(output_dir, "index.html");
   print_status("emit " + index_file_path);
   fs.writeFileSync(index_file_path, index_template({articles}));
+
+  let titlesvg_outpath = path.resolve(output_dir, "title.svg");
+  print_status("svgo " + titlesvg_outpath);
+  try {
+    child_process.execSync(`svgo -i ${path.resolve(__dirname, "design_files/title.svg")} -o ${titlesvg_outpath}`);
+  } catch (e) {
+    throw new Error(`Error running svgo: ${e.message}`);
+  }
 }
 
 const start_time = Date.now();

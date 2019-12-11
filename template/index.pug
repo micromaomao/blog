@@ -8,7 +8,7 @@ html(lang="en")
     style(type="text/css")!= "\n" + css
   body
     a.blogtitle
-      | Mao's technical notes
+      | <img src="title.svg" alt="Mao's technical notes">
       | <br>
       span.note (index)
     -let pick_language = article => article.languages.find(x => x.id == "en") || article.languages[0];

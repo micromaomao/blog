@@ -11,7 +11,7 @@ html(lang=lang_obj.id)
     link(rel="stylesheet", href="https://unpkg.com/highlight.js@9.16.2/styles/idea.css")
   body
     a.blogtitle(href="../index.html")
-      | Mao's technical notes
+      | <img src="../title.svg" alt="Mao's technical notes">
     -if (lang_obj.cover_image)
       img(src=lang_obj.cover_image, alt="cover image", class="coverimg")
     h1= lang_obj.title

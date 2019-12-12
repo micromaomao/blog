@@ -387,5 +387,6 @@ const start_time = Date.now();
 main().then(() => {
   console.log(` ==>  Built everything (${Math.round((Date.now() - start_time) / 1000)}s).`.green.bold);
 }, e => {
-  process.stderr.write(`Fatal: ${e.message}\n`.bold.red)
+  process.stderr.write(`Fatal: ${e.message}\n`.bold.red);
+  process.exit(1);
 });

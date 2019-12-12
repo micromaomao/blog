@@ -14,7 +14,8 @@ jobs:
       with:
         node-version: 12.x
     - name: Install npm dependencies
-      run: npm ci
+      run: |
+        npm i -g svgo && npm ci
       env:
         CI: true
     - name: Generate website

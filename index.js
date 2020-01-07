@@ -221,6 +221,12 @@ async function main () {
 
           let $ = cheerio.load(html);
 
+          $("body > p").each((i, e) => {
+            if (e.childNodes.length === 1 && e.childNodes[0].tagName === "img") {
+              $(e).addClass("single-img-p");
+            }
+          });
+
           let texNodes = [];
           $("tex").each((i, e) => {
             texNodes.push($(e));

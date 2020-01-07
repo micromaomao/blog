@@ -254,6 +254,40 @@ async function main () {
             }
           }
 
+          let footnotes = [];
+          $("footnote").each((i, e) => {
+            let node = $(e);
+            let footnote_html = node.html();
+            let nb = footnotes.length + 1;
+            let sup = $("<sup />");
+            let sup_a = $("<a />");
+            sup_a.attr("href", `#ref-${nb}`);
+            sup_a.text(`[${nb}]`);
+            sup.attr("id", `revref-${nb}`);
+            sup.append(sup_a);
+            node.after(sup);
+            node.remove();
+            let fnele = $("<div />");
+            let sp = $("<span />");
+            let a = $("<a />");
+            a.text(nb.toString());
+            a.attr("href", `#revref-${nb}`);
+            sp.attr("id", `ref-${nb}`);
+            sp.addClass("footnote-revref");
+            sp.append(a);
+            fnele.append(sp, ": ", footnote_html);
+            footnotes.push(fnele);
+          });
+          if (footnotes.length > 0) {
+            let footnote_sec = $("<ul />");
+            for (let fn_ele of footnotes) {
+              let li = $("<li />");
+              li.append(fn_ele);
+              footnote_sec.append(li);
+            }
+            $("body").append(`<h2>Footnote${footnotes.length > 1 ? "s" : ""}</h2>`, footnote_sec);
+          }
+
           return $("body").html();
         }
 

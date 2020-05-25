@@ -27,7 +27,7 @@ html(lang=lang_obj.id)
     p.footer
       | Published
       |
-      span.time= "on " + lang_obj.time.toDateString()
+      span.time(title=lang_obj.time.toUTCString())= "on " + lang_obj.time.toDateString()
       | .<br>
       |
       | Authored by <a href="https://maowtm.org">maowtm (Tingmao Wang)</a> &lt;m@maowtm.org&gt;.<br>

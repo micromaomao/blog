@@ -1,16 +1,21 @@
 ---
 title: "Merkle All The Way Down: the inner-workings of certificate transparency"
-tags: ["security", "web security", "cryptography", "RFC"]
+tags: ["security", "web security", "cryptography", "TLS", "RFC", "PKI"]
 time: "2020-05-25T16:56:31.799Z"
 ---
 
 ![cover](live_cert_screenshot.png)
 
-// Brief intro to the PKI infrastructure
+The morden web *relies* on public-key cryptography. It allows us to somewhat secure our communication with a server that we had never talked to before, which is not possible with symmetric encryption alone. However, public-key crypto on its own doesn't defend us against *Man-in-the-Middle* (MitM) attacks, where an active attacker is able to modify our connection and replace, for example, the server's public key sent to us with their own public key. If we are tricked into thinking that the public key we received (from them) is the server's public key, the attacker will be able to decrypt messages (symmetric keys) we sent to the server without us noticing.
+
+And as it turns out, this is a really difficult problem. To rephrase, we want to be sure that whoever controls the domain entered by the user owns the public key that we received. We seems to have settled on a solution where a third-party *Certificate Authority* (CA) verifies the identity of the server for us beforehand by signing a certificate for the server containing its public key, and everyone would simply know beforehand the public keys of the CAs to be able to verify the signatures. This is one of the core ideas of the *Public key infrastructure* (PKI), which is a broad name for the system and protocols to do with certificates.
+
+As you can probably see already, the integrety of CAs are really *really* important in such a system. If a MitM attacker can get a CA to sign their fraudulent certificate, they can effectively "convince" browsers that their connection to the server is secure when it is actually not.<footnote>There are, however, other ways a browser may find out that something is wrong. Other then Certificate Transparency as discussed in this article, there is also [HTTP Certificate Pinning](https://developer.mozilla.org/en-US/docs/Web/HTTP/Public_Key_Pinning) and [CAA DNS records](https://en.wikipedia.org/wiki/DNS_Certification_Authority_Authorization), although those measures don't work as well as Certificate Transparency.</footnote> This means that if merely **one** of the [~140 CAs Firefox directly trust](https://ccadb-public.secure.force.com/mozilla/IncludedCACertificateReport) for identifying web servers gets compromised or otherwise mishebave, the security of the web can be significant challenged (same goes for the CAs in Chrome's store).<footnote>In reality, because root-CAs can delegate their signing ability to other parties by signing intermediate CAs, the number of entities with signing ability is much higher then 140. In fact, government of countless nations (including the US and China) and a number of big tech companies are also CAs. And the risk is not just on paper: [countless incidents](https://www.google.com/search?client=firefox-b-d&q=certificate+authority+incidents) have happened on CAs which have at some point been trusted by browsers, and this had led to real attacks against users of websites including Google.</footnote>
 
 ## The problem
 
-// CAs can't be trusted. \
+However, all hope is not lost. Remember that once we found out a certificate, we essentially have proof that the CA that signs it actually signed the certificate.
+
 // Certificate ensures that once we saw a cert we can be certain the CA signed it. \
 // => We must be able to know that CA signed some cert even if it is not presented to us.
 
@@ -94,4 +99,5 @@ time: "2020-05-25T16:56:31.799Z"
 // Summary of current adoption and call to action \
 // 1. Ask browser to implement CT checking and \
 // 2. &hellip;make `Expect-CT` the default. \
-// 3. Run your own gossiping servers.
+// 3. Run your own gossiping servers. \
+// https://no-sct.badssl.com/

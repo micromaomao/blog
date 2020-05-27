@@ -43,7 +43,7 @@ async function main () {
     throw new Error(`Error readdiring content/: ${e.message}`);
   }
   console.log(`       (${dir_entires.length} articles to build)`.gray);
-  let progress_total_work = dir_entires.length*2 + 9;
+  let progress_total_work = dir_entires.length*2 + 10;
   let progress_current_work_done = 0;
   function print_status(status_text) {
     console.log(`[${Math.round(progress_current_work_done++ / progress_total_work * 100).toString().padStart(3, " ")}%] ${status_text}`.cyan);
@@ -85,6 +85,7 @@ async function main () {
   const article_template = get_template("template/article.pug");
   const tagindex_template = get_template("template/tagindex.pug");
   const index_template = get_template("template/index.pug");
+  const cc_ext_template = get_template("template/request_cc_extension.pug");
 
   let articles = [];
   let orig_renderer = new marked.Renderer({
@@ -412,6 +413,10 @@ async function main () {
   let index_file_path = path.resolve(output_dir, "index.html");
   print_status("emit " + index_file_path);
   fs.writeFileSync(index_file_path, index_template({articles}));
+
+  let cc_ext_file_path = path.resolve(output_dir, "request_cc_extension.html");
+  print_status("emit " + cc_ext_file_path);
+  fs.writeFileSync(cc_ext_file_path, cc_ext_template({}));
 
   let titlesvg_outpath = path.resolve(output_dir, "title.svg");
   print_status("svgo " + titlesvg_outpath);

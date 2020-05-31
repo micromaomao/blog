@@ -4,6 +4,12 @@
 	padding-left: 1em;
 }
 
+.info {
+  border-left: #3a59c7 solid 2px;
+  background-color: #e7eaf7;
+	padding-left: 1em;
+}
+
 footnote {
 	background-color: rgba(0, 0, 0, 0.151);
 	font-size: 80%;

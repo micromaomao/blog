@@ -6,6 +6,15 @@ time: "2020-05-25T16:56:31.799Z"
 
 ![cover](live_cert_screenshot.png)
 
+<div class="info">
+
+To understand this article, you need to have some understanding of how public key cryptography is used to encrypt data and produce digital signatures.
+
+The "Description" section of [this Wikipedia article](https://en.wikipedia.org/w/index.php?title=Public-key_cryptography&oldid=958099718#Description) might be a good place to start
+
+</div>
+
+
 The morden web *relies* on public-key cryptography. It allows us to somewhat secure our communication with a server that we had never talked to before, which is not possible with symmetric encryption alone. However, public-key crypto on its own doesn't defend us against *Man-in-the-Middle* (MitM) attacks, where an active attacker is able to modify our connection and replace, for example, the server's public key sent to us with their own public key. If we are tricked into thinking that the public key we received (from them) is the server's public key, the attacker will be able to decrypt messages (symmetric keys) we sent to the server without us noticing.
 
 And as it turns out, this is a really difficult problem. To rephrase, we want to be sure that whoever controls the domain entered by the user owns the public key that we received.<footnote>On a more meta level, our problem is that we want be able to relate short, human-memorable names (domain names) with server identity. Because these domain names doesn't have any mathematical property we can expolit (like a public key), this is generally not possible to do securely without either trusting a third-party to establish the relation for us (e.g. DNS servers mapping domains to IP addresses, and CAs mapping domains to public key(s)), or using some kind of peer-to-peer network that relies on some consensus protocol that guards against rewrite attack, such as a blockchain + proof of work. Check out the "*Ethereum Name Service*" for a real-life example of such approach.</footnote> We seems to have settled on a solution where a third-party *Certificate Authority* (CA) verifies the identity of the server for us beforehand by signing a certificate for the server containing its public key, and everyone would simply know beforehand the public keys of the CAs to be able to verify the signatures. This is one of the core ideas of the *Public key infrastructure* (PKI), which is a broad name for the system and protocols to do with certificates.
@@ -40,11 +49,39 @@ And if we alternatively let the browser always download all new certificates as 
 
 	For example, NSA can sign `facebook.com` and ask the log to act as if this certificate is not in the log when Facebook requests the log content, but act as if it exists in the log to everyone else. This makes the browsers happy but still would fail to make Facebook aware that their users are being attacked.
 
+One could argue that the public might find out if the log is involved in such misbehavior, but remember: the attacks don't need to be "to everyone". The log can limit the misbehavior to only target a tiny amount of users, and we have the same discoverability issue we had before with CAs. Moreover, there is no quick way to find out that the log is misbehaving. If the log only changes one certificate somewhere in the huge log, two persons would need to exchange their entire store of downloaded log data to be able to compare whether the log behavies the same to both of them.
+
 As we shall see later, these 3 problems essentially corresponds to three core idea/concepts in the Certificate Transparancy system. But for now though, let's explore a bit more.
 
-### Blockchain!!!
+### Cryptography 101: Hash functions
 
-If you had learned about blockchains, or had fiddled with git commit log a bit, you probably would already be thinking that this feels like a use case for some kind of blockchain.
+<img alt="Image of a big book with &quot;100 GB data&quot; written on it, and an arrow pointing right, then a small, blue tag" src="hash-function-book-to-tag.png" style="max-width: 700px; display: block; margin: 0 auto;">
+
+For those who aren't familiar with [hash functions](https://en.wikipedia.org/wiki/Hash_function), a *hash function*, like MD5 or SHA\*, is basically a function that takes any amount of data and produce a fixed-length output which depends on the data provided. For a secure hash function <tex>H</tex>, the probability that two random, different string of data <tex>x_1</tex> and <tex>x_2</tex> hashing to the same output (i.e. <tex>H(x_1) = H(x_2)</tex>) should be really low, and it should be really hard to find such pairs.<footnote>Obviously it is not possible to have a function that takes a long input and produces a short output that is completely collision-free because of the pigeonhole principle. I'm just saying that given the output of the function is big enough (e.g. 32 bytes), encountering two different inputs which produce the same output should be really unlikely (like, probability less then <tex>2^{-128}</tex>.)</footnote><footnote>
+This property is called *collision resistance*. A secure hash function <tex>H</tex> has more properties: for example, <tex>H</tex> is hard to invert, i.e. for a given output <tex>y</tex>, it should be really hard to find <tex>x</tex> such that <tex>y = H(x)</tex>. Note that this property, which is called *first preimage resistance*, is implied by collision resistance, otherwise we would have a way to prefectly compress arbitrarily long data into a fixed-size byte string and have a high probability of decompressing correctly.<footnote>
+The setup would be: for any string <tex>x</tex>, <tex>\text{compress}(x) = H(x)</tex>, and for all <tex>h</tex> which is a string of compressed data, find any string <tex>x'</tex> that satisfies <tex>H(x') = h</tex>, and define <tex>\text{decompress}(h)</tex> to be such <tex>x'</tex>. Now let's say we want to compress some data <tex>x</tex>, and we get <tex>c = H(x)</tex> after compression. Since <tex>H</tex> is collision resistant but we can find <tex>x'</tex> such that <tex>H(x') = c</tex> easily, it must be that, in the majority of cases, <tex>x' = x</tex>, otherwise we have just found a collision easily. This means that the compression algorithm we proposed will work in the vast majority of cases. Because such an algorithm is not possible, collision resistant implies first preimage resistance.</footnote></footnote>
+
+Because of this property, hash functions are useful when we want to make some short piece of data depend on some larger piece of data in a way that is not rig-able. Let's say that I have some piece of data <tex>x</tex> that you don't currently have, and I previously told you <tex>h</tex> such that <tex>h = H(x)</tex>. If I now tell you that the data I previously had is <tex>x'</tex>, you can verify if I secretly changed the data or not. If <tex>H(x') \ne h</tex>, then I'm obviously lying, and if <tex>H(x') = h</tex>, then it is highly likely that I haven't changed my data. Also, if somebody tells you that the hash they received from me is <tex>h'</tex> and you realize that <tex>h \ne h'</tex>, then I'm telling you and them different pieces of data.
+
+### Ok, what if we use a blockchain?
+
+![a visualisation of a block chain](block-chain.png)
+
+If you had knew a little about how blockchain works, or had fiddled with git commit log a bit, you probably would already recognises that such a structure might be relevant.
+
+The basic idea of a "blockchain" is to use a hash function to make every block depend on the blocks before it. When applied to this scenario, it will be like:
+
+1. The entire log would be made out of <em>"blocks" </em> containing certificate data.
+2. There is a way to obtain a *hash* of each block based on the data it contains.
+3. In addition to the certificate data, each block (other than the first) also contains the hash of the previous block in its data.
+
+So, for example, if our hash function is <tex>H</tex>, and we have 3 blocks with certificate <tex>a_1</tex>, <tex>a_2</tex> and <tex>a_3</tex>, by using <tex>a || b</tex> to denote "<tex>a</tex> then followed by <tex>b</tex>"<footnote>I did not choose this convention, cryptography people and mathematician did.</footnote>, our block hashes would be:
+
+* <tex>h_1 = H(a_1 || 0)</tex>
+* <tex>h_2 = H(a_2 || h_1) = H(a_2 || H(a_1 || 0))</tex>
+* <tex>h_3 = H(a_3 || h_2) = H(a_3 || H(a_2 || H(a_1 || 0)))</tex>
+
+So what does doing so help with our CT log? Well, let's say, through some magic, everyone correctly knows that the hash of the current last block in the log is <tex>h</tex>. This means that they now have a short piece of data that represents a "snapshot" of the entire log. If they then go ahead to download the last <tex>n</tex> blocks from the log, they can confirm that the blocks they download matches this "snapshot", which they know is <tex>h</tex>, by calculating the hash of those <tex>n</tex> blocks and confirming that the last block hashes to <tex>n</tex>, and that for each block other then the first, it's "parent's hash" field contains the hash of the previous block.
 
 // The hash of the last block "captures" the state of the entire log, so if client can trust that, they can verify other states with the hash. \
 // Still no easy way to determine if a cert is in the blockchain. \

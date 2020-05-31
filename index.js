@@ -241,7 +241,9 @@ async function main () {
                 html: true,
                 css: true,
                 speakText: true,
-                math: texCode
+                math: texCode,
+                linebreaks: false,
+                ex: 20
               });
               if (mjResult.errors) {
                 throw new Error(mjResult.errors.join('\n'));
@@ -262,10 +264,15 @@ async function main () {
           }
 
           let footnotes = [];
-          $("footnote").each((i, e) => {
+          let next_footnote_id = 1;
+          function iter_proc(i, e) {
             let node = $(e);
+            if (!node[0].parentNode) {
+              return;
+            }
+            let nb = next_footnote_id++;
+            node.children("footnote").each(iter_proc);
             let footnote_html = node.html();
-            let nb = footnotes.length + 1;
             let sup = $("<sup />");
             let sup_a = $("<a />");
             sup_a.attr("href", `#ref-${nb}`);
@@ -283,13 +290,15 @@ async function main () {
             sp.addClass("footnote-revref");
             sp.append(a);
             fnele.append(sp, ": ", footnote_html);
-            footnotes.push(fnele);
-          });
+            footnotes.push({nb, fnele});
+          }
+          $("footnote").each(iter_proc);
+          footnotes.sort((a, b) => Math.sign(a.nb - b.nb));
           if (footnotes.length > 0) {
             let footnote_sec = $("<ul />");
-            for (let fn_ele of footnotes) {
+            for (let {fnele} of footnotes) {
               let li = $("<li />");
-              li.append(fn_ele);
+              li.append(fnele);
               footnote_sec.append(li);
             }
             $("body").append(`<h2>Footnote${footnotes.length > 1 ? "s" : ""}</h2>`, footnote_sec);

@@ -207,20 +207,23 @@ async function main () {
         md_renderer.link = function(href, title, text) {
           return orig_renderer.link(transform_local_asset_href(href), title, text);
         }
-        md_renderer.image = function(href, title, text) {
-          let h = transform_local_asset_href(href);
-          if (text === "cover") {
-            print_verbose(`Cover image is ${h}`);
-            lang_obj.cover_image = h;
-            return "";
-          }
-          return orig_renderer.image(h, title, text);
-        }
 
         async function process_html(html) {
           let mathjax_style_included = false;
 
           let $ = cheerio.load(html);
+
+          $("img").each((_, e) => {
+            let node = $(e);
+            let h = transform_local_asset_href(node.attr("src"));
+            if (node.attr("alt") === "cover") {
+              print_verbose(`Cover image is ${h}`);
+              lang_obj.cover_image = h;
+              node.remove();
+              return;
+            }
+            node.attr("src", h);
+          });
 
           $("body > p").each((i, e) => {
             if (e.childNodes.length === 1 && e.childNodes[0].tagName === "img") {
@@ -265,7 +268,7 @@ async function main () {
 
           let footnotes = [];
           let next_footnote_id = 1;
-          function iter_proc(i, e) {
+          function iter_proc(_, e) {
             let node = $(e);
             if (!node[0].parentNode) {
               return;
@@ -303,6 +306,14 @@ async function main () {
             }
             $("body").append(`<h2>Footnote${footnotes.length > 1 ? "s" : ""}</h2>`, footnote_sec);
           }
+
+          $("span").each((_, e) => {
+            let node = $(e);
+            if (node.attr("class").startsWith("make-")) {
+              let tagname = node.attr("class").substr(5);
+              e.tagName = tagname;
+            }
+          });
 
           return $("body").html();
         }

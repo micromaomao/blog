@@ -266,15 +266,24 @@ async function main () {
             }
           }
 
+          $("span").each((_, e) => {
+            let node = $(e);
+            if (node.attr("class").startsWith("make-")) {
+              let tagname = node.attr("class").substr(5);
+              e.tagName = tagname;
+              node.removeClass("make-" + tagname);
+            }
+          });
+
           let footnotes = [];
           let next_footnote_id = 1;
           function iter_proc(_, e) {
-            let node = $(e);
-            if (!node[0].parentNode) {
+            if (!e.parentNode) {
               return;
             }
+            let node = $(e);
             let nb = next_footnote_id++;
-            node.children("footnote").each(iter_proc);
+            node.find("footnote").each(iter_proc);
             let footnote_html = node.html();
             let sup = $("<sup />");
             let sup_a = $("<a />");
@@ -295,7 +304,7 @@ async function main () {
             fnele.append(sp, ": ", footnote_html);
             footnotes.push({nb, fnele});
           }
-          $("footnote").each(iter_proc);
+          $("footnote:not(footnote footnote)").each(iter_proc);
           footnotes.sort((a, b) => Math.sign(a.nb - b.nb));
           if (footnotes.length > 0) {
             let footnote_sec = $("<ul />");
@@ -306,14 +315,6 @@ async function main () {
             }
             $("body").append(`<h2>Footnote${footnotes.length > 1 ? "s" : ""}</h2>`, footnote_sec);
           }
-
-          $("span").each((_, e) => {
-            let node = $(e);
-            if (node.attr("class").startsWith("make-")) {
-              let tagname = node.attr("class").substr(5);
-              e.tagName = tagname;
-            }
-          });
 
           return $("body").html();
         }

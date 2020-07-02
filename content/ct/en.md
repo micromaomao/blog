@@ -8,9 +8,9 @@ time: "2020-05-25T16:56:31.799Z"
 
 <div class="info">
 
-To understand this article, you need to have some understanding of how public key cryptography is used to encrypt data and produce digital signatures.
+To understand this article, you need to have some understanding of how public key cryptography is used to encrypt data and produce digital signatures. The "Description" section of [this Wikipedia article](https://en.wikipedia.org/w/index.php?title=Public-key_cryptography&oldid=958099718#Description) might be a good place to start.
 
-The "Description" section of [this Wikipedia article](https://en.wikipedia.org/w/index.php?title=Public-key_cryptography&oldid=958099718#Description) might be a good place to start
+In addition, you also need to know what a [Hash function](https://en.wikipedia.org/wiki/Hash_function) does.
 
 </div>
 
@@ -31,7 +31,7 @@ Can we make that happen?
 
 ## A log?
 
-Let's imagine the simplest possible approach to this problem: we let (for example) Mozilla run a huge server accessible by everyone, and it stores a big list of certificates. The list is supposed to be append-only, meaning that certificates can only be added to the back of the list but not taken out or modified. We then ask every CA to submit the certificate whenever they signs a new one. Site owners can iterate through and monitor the list for certificates with their domain, and browsers would ask the list whether a certificate is in there everytime it receives a certificate signed by a publicly-trusted CA, and reject (or report) if it isn't.
+Let's imagine the simplest possible approach to this problem: we let (for example) Mozilla run a huge server accessible by everyone, and it stores a big list of certificates. The list is supposed to be append-only, meaning that certificates can only be added to the back of the list but not taken out or modified. We then ask every CA to submit the certificate whenever they signs a new one. Site owners can iterate through and monitor the list for certificates with their domain, and whenever a browser receives a public-CA-signed certificate, it could either ask the log whether the certificate is in there, or keep a local, up-to-date copy of the entire log and check whether the certificate is in the log directly, and reject (or report) if it isn't.
 
 Now, aside from the obvious reliability issue with counting on a single, centeralised server, there are 3 other massive problems with this approach:
 
@@ -43,65 +43,159 @@ Now, aside from the obvious reliability issue with counting on a single, centera
 
 	For example, the log could include the NSA-signed `facebook.com` as normal, but quickly after NSA has finished the attack, remove the certificate from the list and forget about it, before Facebook has a chance to catch up with the log.
 
-And if we alternatively let the browser always download all new certificates as they appear in the log, and thus basically keep a local version of the entire log, forgetting that users don't have infinite disk space,  this still wouldn't solve every problem because:
+3. The log server can fork the log and selectively present one or the other versions to different clients (i.e. "hiding" a certificate from some group of clients).
 
-3. The log server can fork the log and selectively present one or the other versions to different clients.
+	For example, NSA can sign `facebook.com` and ask the log to act as if this certificate is not in the log to most of the people, but act as if it exists in the log to some minority being attacked.
 
-	For example, NSA can sign `facebook.com` and ask the log to act as if this certificate is not in the log when Facebook requests the log content, but act as if it exists in the log to everyone else. This makes the browsers happy but still would fail to make Facebook aware that their users are being attacked.
+One could argue that the public might find out if the log is involved in such misbehavior, but remember: the attacks don't need to be "to everyone". The log can limit the misbehavior to only target a tiny amount of users, and we have the same discoverability issue we had before with CAs. Moreover, if the log is involved in shady practices described above, there is no quick way to find out and hold the log accountable, unlike a rough CA signing fraudulent certificates.
 
-One could argue that the public might find out if the log is involved in such misbehavior, but remember: the attacks don't need to be "to everyone". The log can limit the misbehavior to only target a tiny amount of users, and we have the same discoverability issue we had before with CAs. Moreover, there is no quick way to find out that the log is misbehaving. If the log only changes one certificate somewhere in the huge log, two persons would need to exchange their entire store of downloaded log data to be able to compare whether the log behavies the same to both of them. In other words, there is no easy and quick way for Facebook to realize that they are being treated specially by the log unless they confirm with a third party all certificates of `facebook.com` that has appeared in the log.
+For example, there is no easy and quick way for Facebook (or any user browser) to realize that the log is "hiding" some certificate from (or "injecting" certificates for) them, unless they confirm with a third party all certificates that they have ever received from the log. And even if they did found out, they have no way to prove that the log really did that (you can't prove that someone *didn't* say something).
 
-Unless of course, if they exchanged a hash&hellip;
+### Hashing
 
-### Cryptography 101: Hash functions
+Well, let's think about the "confirm with a third party" approach. If all clients keep a local, up-to-date copy of the entire log, then sure they can send their entire record of the log between each other to "verify" that they are seeing the same thing, but that's incredibly inefficient. Instead, they could use a *hash function* to hash all the certificates together, effectively capturing a "snapshot" of the log. Then, all the clients can share this short hash between them, broadcast it publicly to let anyone use it to verify, etc. This also give us a way to establish accountability of the log: if we require the log to always sign this "snapshot" (by calculating this hash itself and publishing the signature), whenever we found something wrong, we would basically have two signatures from the log corresponding to two conflicting lists, which we can show to the world along with the full data of the two lists for everyone to verify.
 
-<div style="display: flex; justify-content: space-around; align-items: center; max-width: 900px; overflow: hidden; margin: 0 auto;">
-<div style="color: #444; width: 250px; height: 200px; overflow: hidden; text-align: justify; word-wrap: break-word; word-break: break-all; font-size: 75%; line-height: 1.3; flex-grow: 0; flex-shrink: 0;">Lorem ipsum dolor sit amet, consectetur adipiscing elit. In fermentum ante sed ligula fermentum, quis consectetur purus bibendum. Suspendisse mattis vitae dolor nec mattis. Sed consectetur dui in mauris congue, at pulvinar eros rutrum. Duis ac ipsum tellus. Maecenas massa nulla, aliquam eu nisi ut, molestie pharetra nibh. Pellentesque vitae urna commodo, ultricies nulla eget, condimentum magna. Donec ultrices lectus non massa hendrerit imperdiet. Proin quis nisi eu risus interdum commodo. Nunc eget tortor ultrices, fermentum nisl quis, tempor massa. Curabitur aliquam, nibh sed semper elementum, leo orci semper diam, sed sollicitudin felis leo non metus. Donec placerat a purus sit amet tincidunt. Proin orci mauris, sagittis et malesuada sed, dignissim nec enim. Mauris congue vehicula erat, eu efficitur quam tincidunt ut.</div>
-<div style="padding: 1rem;"><tex>\large\xrightarrow{\text{SHA1}}</tex></div>
-<div style="word-break: break-all; word-wrap: break-word;"><tex>\text{7b240e445da21c0c92821a2b47770c1081e6e330}</tex></div>
-</div>
+However, simply hashing everything together still isn't an efficient strategy. First of all, doing this over the entire log is a lot of computational work that potentially has to be done whenever the log updates. Secondly, this requires everyone to always have an up-to-date, full copy of the log in order to verify anything. For example, if you currently have the list <tex>a_1, a_2, a_3</tex> which hashes to <tex>h_{..3}</tex>, and the server tells you another certificate <tex>a_4</tex> has been added, you can calculate the new hash <tex>h_{..4}</tex> and verify this with others, but this is only possible if you actually still know the data of <tex>a_1</tex>, <tex>a_2</tex> and <tex>a_3</tex> at the time of this verification&mdash;you can't just "forget" about them. Similarly, you won't be able to confirm that a certificate you just received somewhere is in this list, if you just know and trust the hash, without downloading all the other certificates and calculating out the hash to confirm.
 
-For those who aren't familiar with [hash functions](https://en.wikipedia.org/wiki/Hash_function), a *hash function*, like MD5 or SHA\*, is basically a function that takes any amount of data and produce a fixed-length output which depends on the data provided. For a secure hash function <tex>H</tex>, the probability that two random, different string of data <tex>x_1</tex> and <tex>x_2</tex> hashing to the same output (i.e. <tex>H(x_1) = H(x_2)</tex>) should be really low, and it should be really hard to find such pairs.<footnote>
-<span class="make-ol"><span class="make-li">Obviously it is not possible to have a function that takes a long input and produces a short output that is completely collision-free because of the pigeonhole principle. I'm just saying that given the output of the function is big enough (e.g. 32 bytes), encountering two different inputs which produce the same output should be really unlikely (like [<tex>2^{-256}</tex>](https://www.youtube.com/watch?v=S9JGmA5_unY).)</span>
-<span class="make-li">This property is called *collision resistance*. A secure hash function <tex>H</tex> has more properties: for example, <tex>H</tex> is hard to invert, i.e. for a given output <tex>y</tex>, it should be really hard to find <tex>x</tex> such that <tex>y = H(x)</tex>. Note that this property, which is called *first preimage resistance*, is implied by collision resistance, otherwise we would have a way to prefectly compress arbitrarily long data into a fixed-size byte string and have a high probability of decompressing correctly.<footnote>
-The setup would be: for any string <tex>x</tex>, <tex>\text{compress}(x) = H(x)</tex>, and for all <tex>h</tex> which is a string of compressed data, find any string <tex>x'</tex> that satisfies <tex>H(x') = h</tex>, and define <tex>\text{decompress}(h)</tex> to be such <tex>x'</tex>. Now let's say we want to compress some data <tex>x</tex>, and we get <tex>c = H(x)</tex> after compression. Since <tex>H</tex> is collision resistant but we can find <tex>x'</tex> such that <tex>H(x') = c</tex> easily, it must be that, in the majority of cases, <tex>x' = x</tex>, otherwise we have just found a collision easily. This means that the compression algorithm we proposed will work in the vast majority of cases. Because such an algorithm is not possible, collision resistant implies first preimage resistance.</footnote></span></span></footnote>
-
-Because of this property, hash functions are useful when we want to make some short piece of data depend on some larger piece of data in a way that is not rig-able. Let's say that I have some piece of data <tex>x</tex> that you don't currently have, and I previously told you <tex>h</tex> such that <tex>h = H(x)</tex>. If I now tell you that the data I previously had is <tex>x'</tex>, you can verify if I secretly changed the data or not. If <tex>H(x') \ne h</tex>, then I'm obviously lying, and if <tex>H(x') = h</tex>, then it is highly likely that I haven't changed my data. Also, if somebody tells you that the hash they received from me is <tex>h'</tex> and you realize that <tex>h \ne h'</tex>, then either I'm telling you and them different pieces of data, or they are lying.
-
-This means that there is an easy way to confirm that two people have the same data: exchange their hash. Facebook and other parties could hash every certificate they ever received from the log in a determined way and exchange their hash to confirm that they are being told exactly the same thing by the log, but doing that over the entire log data whenever the log updates is really slow. Before getting into how this problem is really solved in the Certificate Transparency (CT) system, let's first talk about a classical way of solving this problem that you probably had heard of:
-
-### Almost works: blockchain
-
-![a visualisation of a block chain](block-chain.png)
-
-The basic idea of a "blockchain" is to use a hash function to make every block depend on the blocks before it. When applied to this scenario, it will be like:
-
-1. The entire log would be made out of <em>"blocks" </em> containing certificate data.
-2. There is a way to obtain a *hash* of each block based on the data it contains.
-3. In addition to the certificate data, each block (other than the first) also contains the hash of the previous block in its data.
-
-So, for example, if our hash function is <tex>H</tex>, and we have 3 blocks with certificate <tex>a_1</tex>, <tex>a_2</tex> and <tex>a_3</tex>, by using <tex>a || b</tex> to denote "<tex>a</tex> then followed by <tex>b</tex>"<footnote>I did not choose this convention, cryptography people and mathematician did.</footnote>, our block hashes would be:
-
-* <tex>h_1 = H(a_1 || 0)</tex><footnote>
-	<ol><li>I actually meant <tex>H(a_1 || 0^n)</tex>, where <tex>n</tex> is the length of the hash output.</li>
-	<li>It's generally a good idea to have a simple, "canonical" representation when designing data structures that needs to be hashed/signed to avoid introducing security problems due to ambiguity. For example, if we instead say that <tex>h_1 = H(a_1)</tex> rather then <tex>h_1 = H(a_1 || 0^{n})</tex>, then <tex>h_1</tex> is both the hash of the first block containing <tex>a_1</tex>, and also the hash of a block containing certificate <tex>a_1[:-n]</tex> and "previous block hash" <tex>a_1[-n:]</tex>, where <tex>a_1[-n:]</tex> is the last <tex>n</tex> bytes of <tex>a_1</tex> and <tex>a_1[:-n]</tex> is the rest.</li></ol>
-	</footnote>
-* <tex>h_2 = H(a_2 || h_1) = H(a_2 || H(a_1 || 0))</tex>
-* <tex>h_3 = H(a_3 || h_2) = H(a_3 || H(a_2 || H(a_1 || 0)))</tex>
-
-What this means is that, in some sense, the hash of the last block <tex>h_3</tex> "captures" the state of the entire log (<tex>a_1\ldots a_3</tex>). Therefore, if everyone correctly knows this short hash, everyone traversing the log will be able to verify that the log is not presenting different data to them vs everyone else.<footnote>And they can do so as they are in the process of traversing from the last block backward, by verifying that, for every block they received with index <tex>i</tex>, <tex>h_i</tex> appears in the "hash of last block" section of the <tex>(i + 1)</tex>th block, and that <tex>h_i = H(a_i || h_{i - 1})</tex>.</footnote> And if the log then releases a new block containing certificate <tex>a_4</tex>, everyone can immediately calculate out the new hash of the latest block <tex>h_4 = H(a_4 || h_3)</tex>, and confirm among themselves that the log is not doing shady stuff.
-
-There's just one problem: this blockchain only works for clients who want to keep following the log and always keep their database of certificates (or at least, block hashes) up-to-date. Imagine yourself a browser: you're probably not going to allocate a 10 GB database to store all the block hashes you have seen, but what you can do is store only the hash of the last block. After-all, this value "captures" the state of the entire log, and you can verify this value with other clients, so it seems important. But how do you verify that some certificate you encounter in the wild is included in the log? In other words, how do you verify that the only hash you have&mdash;the latest block hash&mdash;"captures" some data?
+What if there is actually a way to hash all the certificates together such that, just by knowing the hash, you can quickly confirm that some certificate is included in the log, and also, whenever the log updates, one can quickly calculate a new hash for the list with more certificates appended to it, based on the old hash?
 
 ### Merkle tree!
 
-I must admit that I had wasted a bit of your time talking about blockchain, because it's not at all how things really work in CT. However, the fundamental idea is the same: use a small hash to represent the state of the entire log that is easy to share and store. The idea that you can use a hash of hashes of hashes of&hellip; to "caputre" a lot of data is also relevant.
+<div class="info">
+<b>Notation</b>: <tex>a||b</tex> represent "concatenate <tex>a</tex> and <tex>b</tex>".
+</div>
 
-<img alt="Visualisation of the blockchain we're about to talk about" src="./tex-graphs/blockchain.svg" style="min-width: 100%">
+Let's recap the problem a bit: we have a list of certificates and we want to make sure two clients are "seeing" the same list. The easiest approach is to have clients hash the entire list whenever they want to "cross-verify", but this is too slow, and also requires that clients download the entire list even if they only cared about a little bit of it. However, there is one important idea you might have realized: we can "combine" hashes.
 
-Let's say that currently you and I both know that the blockchain has length <tex>k</tex> and the latest block hash is <tex>h_k</tex>. To demostrate that the certificate <tex>a_k</tex> is contained within the last block (and hence contained within the blockchain), I just need to tell you the value of <tex>h_{k-1}</tex> and let you verify that <tex>H(a_k || h_{k - 1}) = h_k</tex>. Note that, if you don't care about anything else that comes before, you don't have to do any verification of <tex>h_{k-1}</tex>, so this proof that <tex>h_k</tex> "captures" <tex>a_k</tex> is quick to verify. However, what if you want to do the same thing, but with a certificate that's somewhat buried within the chain? To verify that, for some <tex>p</tex> within <tex>0\ldots k-1</tex>, <tex>a_{k-p}</tex> is a part of the blockchain with last block hash <tex>h_k</tex>, I would have to tell you <tex>a_{k-p+1}\ldots a_k</tex> and <tex>h_{k-p-1}</tex> so that you could verify that <tex>h_i = H(a_i || h_{i - 1})</tex> for <tex>k-p \le i \le k</tex> and eventually "derive" the <tex>h_k</tex>, which you trust before. This requires downloading <tex>p</tex> block data and <tex>p</tex> hashes, which is just not practical for a browser, especially considering that we currently produces hundreds of new certificates each second.<footnote>See it yourself by running my [`ctclient` example](https://github.com/micromaomao/ctclient#examples--demos).</footnote>
+Say for example that you have the following list where each <tex>a_i</tex> is a certificate:
 
-Since we, as the browser, don't really care about the content of the blocks <tex>k-p+1</tex> to <tex>k</tex>, it would be nice if we can, somehow, let the server do most of the hashing and give us some hashes
+<style>
+.an-list-contain {
+	display: flex;
+	align-items: baseline;
+}
+.an-list-contain > :first-child {
+	margin-left: auto;
+}
+.an-list-contain > :last-child {
+	margin-right: auto;
+}
+.an-list-block {
+	margin: 0 8px;
+	border: solid 1px #000;
+	padding: 8px 8px 12px 8px;
+	width: 2.5rem;
+	height: 2.5rem;
+	display: flex;
+	flex-direction: row;
+	justify-content: center;
+	align-items: center;
+}
+.an-list-wrap {
+	margin: 0 4px;
+	background-color: rgba(0,0,0,0.04);
+	border: dashed 1px #777;
+	padding: 4px 2px;
+	display: grid;
+	grid-template-rows: auto auto;
+	grid-template-columns: auto auto;
+	grid-template-areas:
+		"d d"
+		"a b";
+}
+.an-list-wdesc {
+	grid-area: d;
+	padding: 0 0 2px 0;
+}
+</style>
+<div class="an-list-contain">
+	<div class="an-list-block"><tex>a_0</tex></div>
+	<div class="an-list-block"><tex>a_1</tex></div>
+	<div class="an-list-block"><tex>a_2</tex></div>
+	<div class="an-list-block"><tex>a_3</tex></div>
+	<div class="an-list-block"><tex>a_4</tex></div>
+	<div class="an-list-block"><tex>a_5</tex></div>
+	<div class="an-list-block"><tex>a_6</tex></div>
+	<div class="an-list-block"><tex>a_7</tex></div>
+</div>
+
+By knowing <tex>H(a_0||\ldots||a_7)</tex>, we have "captured" the state of the entire list. However, if we alternatively know <tex>H(h_{0..3} || h_{4..7})</tex> where <tex>h_{0..3} = H(a_0||\ldots||a_3)</tex> and likewise for <tex>h_{4..7}</tex>, we have the same "verifying power" about the list&mdash;we just need to do 3 hashes, instead of 1, to verify the whole list. We can continue this division pattern to make this a "binary tree", so that our final hash is <tex>h = H(
+	H(
+		H(
+			H(a_0)||H(a_1)
+		)||H(
+			H(a_2)||H(a_3)
+		)
+	) || H(
+		H(
+			H(a_4)||H(a_5)
+		)||H(
+			H(a_6)||H(a_7)
+		)
+	)
+)</tex>. This can be represented with the following diagram:
+
+<div class="an-list-contain" style="">
+	<div class="an-list-wrap">
+		<div class="an-list-wdesc"><tex>h = h_{0..7}</tex></div>
+		<div class="an-list-wrap">
+			<div class="an-list-wdesc"><tex>h_{0..3}</tex></div>
+			<div class="an-list-wrap">
+				<div class="an-list-wdesc"><tex>h_{0..1}</tex></div>
+				<div class="an-list-block"><tex>H(a_0)</tex></div>
+				<div class="an-list-block"><tex>H(a_1)</tex></div>
+			</div>
+			<div class="an-list-wrap">
+				<div class="an-list-wdesc"><tex>h_{2..3}</tex></div>
+				<div class="an-list-block"><tex>H(a_2)</tex></div>
+				<div class="an-list-block"><tex>H(a_3)</tex></div>
+			</div>
+		</div>
+		<div class="an-list-wrap">
+			<div class="an-list-wdesc"><tex>h_{4..7}</tex></div>
+			<div class="an-list-wrap">
+				<div class="an-list-wdesc"><tex>h_{4..5}</tex></div>
+				<div class="an-list-block"><tex>H(a_4)</tex></div>
+				<div class="an-list-block"><tex>H(a_5)</tex></div>
+			</div>
+			<div class="an-list-wrap">
+				<div class="an-list-wdesc"><tex>h_{6..7}</tex></div>
+				<div class="an-list-block"><tex>H(a_6)</tex></div>
+				<div class="an-list-block"><tex>H(a_7)</tex></div>
+			</div>
+		</div>
+	</div>
+</div>
+
+So why is this useful? Well, let's consider the case where we only have 7 certificates instead of 8. With the same division pattern, our hash would look like this:
+
+<div class="an-list-contain" style="">
+	<div class="an-list-wrap">
+		<div class="an-list-wdesc"><tex>h = h_{0..6}</tex></div>
+		<div class="an-list-wrap">
+			<div class="an-list-wdesc"><tex>h_{0..3}</tex></div>
+			<div class="an-list-wrap">
+				<div class="an-list-wdesc"><tex>h_{0..1}</tex></div>
+				<div class="an-list-block"><tex>H(a_0)</tex></div>
+				<div class="an-list-block"><tex>H(a_1)</tex></div>
+			</div>
+			<div class="an-list-wrap">
+				<div class="an-list-wdesc"><tex>h_{2..3}</tex></div>
+				<div class="an-list-block"><tex>H(a_2)</tex></div>
+				<div class="an-list-block"><tex>H(a_3)</tex></div>
+			</div>
+		</div>
+		<div class="an-list-wrap">
+			<div class="an-list-wdesc"><tex>h_{4..6}</tex></div>
+			<div class="an-list-wrap">
+				<div class="an-list-wdesc"><tex>h_{4..5}</tex></div>
+				<div class="an-list-block"><tex>H(a_4)</tex></div>
+				<div class="an-list-block"><tex>H(a_5)</tex></div>
+			</div>
+			<div class="an-list-block"><tex>H(a_6)</tex></div>
+		</div>
+	</div>
+</div>
 
 // Introduce the concept of merkle tree \
 // Certificate hash as leaf hash \

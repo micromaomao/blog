@@ -55,19 +55,19 @@ For example, there is no easy and quick way for Facebook (or any user browser) t
 
 Well, let's think about the "confirm with a third party" approach. If all clients keep a local, up-to-date copy of the entire log, then sure they can send their entire record of the log between each other to "verify" that they are seeing the same thing, but that's incredibly inefficient. Instead, they could use a *hash function* to hash all the certificates together, effectively capturing a "snapshot" of the log. Then, all the clients can share this short hash between them, broadcast it publicly to let anyone use it to verify, etc. This also give us a way to establish accountability of the log: if we require the log to always sign this "snapshot" (by calculating this hash itself and publishing the signature), whenever we found something wrong, we would basically have two signatures from the log corresponding to two conflicting lists, which we can show to the world along with the full data of the two lists for everyone to verify.
 
-However, simply hashing everything together still isn't an efficient strategy. First of all, doing this over the entire log is a lot of computational work that potentially has to be done whenever the log updates. Secondly, this requires everyone to always have an up-to-date, full copy of the log in order to verify anything. For example, if you currently have the list <tex>a_1, a_2, a_3</tex> which hashes to <tex>h_{..3}</tex>, and the server tells you another certificate <tex>a_4</tex> has been added, you can calculate the new hash <tex>h_{..4}</tex> and verify this with others, but this is only possible if you actually still know the data of <tex>a_1</tex>, <tex>a_2</tex> and <tex>a_3</tex> at the time of this verification&mdash;you can't just "forget" about them. Similarly, you won't be able to confirm that a certificate you just received somewhere is in this list, if you just know and trust the hash, without downloading all the other certificates and calculating out the hash to confirm.
+However, simply hashing everything together still isn't an efficient strategy. First of all, doing this over the entire log is a lot of computational work that potentially has to be done every time the log updates. Secondly, this requires everyone to always have an up-to-date, full copy of the log in order to verify anything. For example, if you currently have the list <tex>a_1, a_2, a_3</tex> which hashes to <tex>h_{..3}</tex>, and the server tells you another certificate <tex>a_4</tex> has been added, you can calculate the new hash <tex>h_{..4}</tex> and verify this with others, but this is only possible if you actually still know the data of <tex>a_1</tex>, <tex>a_2</tex> and <tex>a_3</tex> at the time of this verification&mdash;you can't just "forget" about them. Similarly, you won't be able to confirm that a certificate you just received somewhere is in this list, if you just know the hash, without downloading all the other certificates and calculating out the hash to confirm.
 
-What if there is actually a way to hash all the certificates together such that, just by knowing the hash, you can quickly confirm that some certificate is included in the log, and also, whenever the log updates, one can quickly calculate a new hash for the list with more certificates appended to it, based on the old hash?
+What if there is actually a way to hash all the certificates together such that, just by knowing the hash, you can quickly confirm that some certificate is included in the log, and also, whenever the log updates, one can quickly calculate a new hash for the list with more certificates appended to it, based on the old hash? If we can do that, then browsers don't even need to download anything in the log other than the hash to verify that the log is behaving correctly and to verify the existance of a particular certificate in the log.
 
 ### Merkle tree!
 
 <div class="info">
-<b>Notation</b>: <tex>a||b</tex> represent "concatenate <tex>a</tex> and <tex>b</tex>".
+<b>Notation</b>: <tex>a||b</tex> represent "concatenate <tex>a</tex> and <tex>b</tex>". Our hash function is denoted by <tex>H</tex>.
 </div>
 
-Let's recap the problem a bit: we have a list of certificates and we want to make sure two clients are "seeing" the same list. The easiest approach is to have clients hash the entire list whenever they want to "cross-verify", but this is too slow, and also requires that clients download the entire list even if they only cared about a little bit of it. However, there is one important idea you might have realized: we can "combine" hashes.
+Let's focus on the first part of the problem&mdash;can we construct a special "hash" such that it is easy for a client to check that some certificate is in the list corresponding to the hash?
 
-Say for example that you have the following list where each <tex>a_i</tex> is a certificate:
+Say for example that we have the following log, where each <tex>a_i</tex> is a certificate:
 
 <style>
 .an-list-contain {
@@ -119,25 +119,50 @@ Say for example that you have the following list where each <tex>a_i</tex> is a 
 	<div class="an-list-block"><tex>a_7</tex></div>
 </div>
 
-By knowing <tex>H(a_0||\ldots||a_7)</tex>, we have "captured" the state of the entire list. However, if we alternatively know <tex>H(h_{0..3} || h_{4..7})</tex> where <tex>h_{0..3} = H(a_0||\ldots||a_3)</tex> and likewise for <tex>h_{4..7}</tex>, we have the same "verifying power" about the list&mdash;we just need to do 3 hashes, instead of 1, to verify the whole list. We can continue this division pattern to make this a "binary tree", so that our final hash is <tex>h = H(
-	H(
-		H(
-			H(a_0)||H(a_1)
-		)||H(
-			H(a_2)||H(a_3)
-		)
-	) || H(
-		H(
-			H(a_4)||H(a_5)
-		)||H(
-			H(a_6)||H(a_7)
-		)
-	)
-)</tex>. This can be represented with the following diagram:
+Now, as a client, all you currently have is the hash of the log. How can you verify that a certificate you received, <tex>a_k</tex>, is in the log? If the hash is a simple concatenation of <tex>a_0\ldots{}a_7</tex>, then you would need to get every <tex>a_n</tex>, find <tex>a_k</tex> in the list that you got, and hash the list to get the expected hash and compare with the hash you had earlier. But, what if instead of concatenating every <tex>a_n</tex> together to get the hash, we split the list into two, hash the first half and second half separately, then "combine" the hash by hashing the concatenation of the two "sub-hash"? like this:
+
+<style>
+.half-split-hash-demo {
+	display: grid;
+	width: auto;
+	margin: 0 auto;
+	grid-template-rows: auto auto;
+	grid-template-columns: auto auto auto auto auto;
+	justify-content: stretch;
+	justify-items: center;
+	max-width: 550px;
+}
+.bdown {
+	border-bottom: solid 1px #888;
+}
+.desc-row {
+	font-size: 80%;
+	line-height: 1.2;
+}
+.desc-row .tex {
+	font-size: 110%;
+}
+</style>
+<div class="half-split-hash-demo">
+	<div><tex>h_\text{all} = H(</tex></div>
+	<div class="bdown"><tex>H(a_0 || a_1 || a_2 || a_3)</tex></div>
+	<div><tex>||</tex></div>
+	<div class="bdown"><tex>H(a_4 || a_5 || a_6 || a_7)</tex></div>
+	<div><tex>)</tex></div>
+	<div class="desc-row">&nbsp;</div>
+	<div class="desc-row"><tex>p_1</tex>: Hash of first half</div>
+	<div class="desc-row">&nbsp;</div>
+	<div class="desc-row"><tex>p_2</tex>: Hash of second half</div>
+	<div class="desc-row">&nbsp;</div>
+</div>
+
+If we then want to confirm that <tex>a_3</tex> is in the list corresponding to <tex>h_\text{all}</tex>, we just need to get <tex>a_0\ldots{}a_2</tex>, hash with <tex>a_3</tex> to get <tex>p_1</tex>, then combine the hash with <tex>p_2</tex> (which we can ask the server to give us) to get <tex>h_\text{all}</tex>, and check that the hash is as expected. We can then conclude that <tex>h_\text{all}</tex> "includes" <tex>a_3</tex> since it depends on <tex>a_3</tex> in our calculation.
+
+Note that by spliting the tree in half, we don't need to know anything about the "irrelevant" half, other than a short hash of it, anymore. Intuitively, we can continue this "splitting" pattern to make a binary tree, with the hashes of individual certificates alone being the leaf, and every node is a "combined" hash of its two leaves:
 
 <div class="an-list-contain" style="">
 	<div class="an-list-wrap">
-		<div class="an-list-wdesc"><tex>h = h_{0..7}</tex></div>
+		<div class="an-list-wdesc"><tex>h_\text{all} = h_{0..7}</tex></div>
 		<div class="an-list-wrap">
 			<div class="an-list-wdesc"><tex>h_{0..3}</tex></div>
 			<div class="an-list-wrap">
@@ -167,7 +192,14 @@ By knowing <tex>H(a_0||\ldots||a_7)</tex>, we have "captured" the state of the e
 	</div>
 </div>
 
-So why is this useful? Well, let's consider the case where we only have 7 certificates instead of 8. With the same division pattern, our hash would look like this:
+Now, if we want to confirm that <tex>a_3</tex> is in the list corresponding to <tex>h_\text{all}</tex>, we only need to:
+
+1. Get <tex>H(a_2)</tex>, <tex>h_{0..1}</tex>, and <tex>h_{4..7}</tex> from the server.
+2. Confirm that <tex>h_\text{all} = H(H(h_{0..1}||H(H(a_2)||H(\color{red}{a_3})))||h_{4..7})</tex>.
+
+Note that we don't even need to know any other <tex>a_n</tex>&mdash;we just need the hash of <tex>a_2</tex> and two other "intermediate" hash. Once we get all the necessary intermediate hashes from the server, we can sort of "bubble up" the binary tree to arrive at our final <tex>h_\text{all}</tex>, and because we used <tex>a_3</tex> to finally derive <tex>h_\text{all}</tex>, the list corresponding to <tex>h_\text{all}</tex> must contains <tex>a_3</tex>. It is not hard to see that, to confirm the existance of one certificate in a log of size <tex>n</tex>, we only need <tex>O(\log n)</tex> hashes if we do it this way. Because, in this case, we don't really care what the other certificates are, we can simply ask the server to give us these hashes without any further verification.
+
+// So why is this useful? Well, let's consider the case where we only have 7 certificates instead of 8. With the same division pattern, our hash would look like this:
 
 <div class="an-list-contain" style="">
 	<div class="an-list-wrap">

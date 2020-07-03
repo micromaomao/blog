@@ -59,7 +59,7 @@ However, simply hashing everything together still isn't an efficient strategy. F
 
 What if there is actually a way to hash all the certificates together such that, just by knowing the hash, you can quickly confirm that some certificate is included in the log, and also, whenever the log updates, one can quickly calculate a new hash for the list with more certificates appended to it, based on the old hash? If we can do that, then browsers don't even need to download anything in the log other than the hash to verify that the log is behaving correctly and to verify the existance of a particular certificate in the log.
 
-### Merkle tree!
+### Merkle tree \& *inclusion proof*
 
 <div class="info">
 <b>Notation</b>: <tex>a||b</tex> represent "concatenate <tex>a</tex> and <tex>b</tex>". Our hash function is denoted by <tex>H</tex>.
@@ -109,7 +109,6 @@ Say for example that we have the following log, where each <tex>a_i</tex> is a c
 }
 </style>
 <div class="an-list-contain">
-	<div class="an-list-block"><tex>a_0</tex></div>
 	<div class="an-list-block"><tex>a_1</tex></div>
 	<div class="an-list-block"><tex>a_2</tex></div>
 	<div class="an-list-block"><tex>a_3</tex></div>
@@ -117,9 +116,10 @@ Say for example that we have the following log, where each <tex>a_i</tex> is a c
 	<div class="an-list-block"><tex>a_5</tex></div>
 	<div class="an-list-block"><tex>a_6</tex></div>
 	<div class="an-list-block"><tex>a_7</tex></div>
+	<div class="an-list-block"><tex>a_8</tex></div>
 </div>
 
-Now, as a client, all you currently have is the hash of the log. How can you verify that a certificate you received, <tex>a_k</tex>, is in the log? If the hash is a simple concatenation of <tex>a_0\ldots{}a_7</tex>, then you would need to get every <tex>a_n</tex>, find <tex>a_k</tex> in the list that you got, and hash the list to get the expected hash and compare with the hash you had earlier. But, what if instead of concatenating every <tex>a_n</tex> together to get the hash, we split the list into two, hash the first half and second half separately, then "combine" the hash by hashing the concatenation of the two "sub-hash"? like this:
+Now, as a client, all you currently have is the hash of the log. How can you verify that a certificate you received, <tex>a_k</tex>, is in the log? If the hash is a simple concatenation of <tex>a_1\ldots{}a_8</tex>, then you would need to get every <tex>a_n</tex>, find <tex>a_k</tex> in the list that you got, and hash the list to get the expected hash and compare with the hash you had earlier. Even though you do not care about any other certificates in the list, you still have to hash them since the hash is a concatenation. But, what if instead of concatenating every <tex>a_n</tex> together to get the hash, we split the list into two, hash the first half and second half separately, then "combine" the hash by hashing the concatenation of the two "sub-hash"?
 
 <style>
 .half-split-hash-demo {
@@ -145,9 +145,9 @@ Now, as a client, all you currently have is the hash of the log. How can you ver
 </style>
 <div class="half-split-hash-demo">
 	<div><tex>h_\text{all} = H(</tex></div>
-	<div class="bdown"><tex>H(a_0 || a_1 || a_2 || a_3)</tex></div>
+	<div class="bdown"><tex>H(a_1 || a_2 || a_3 || a_4)</tex></div>
 	<div><tex>||</tex></div>
-	<div class="bdown"><tex>H(a_4 || a_5 || a_6 || a_7)</tex></div>
+	<div class="bdown"><tex>H(a_5 || a_6 || a_7 || a_8)</tex></div>
 	<div><tex>)</tex></div>
 	<div class="desc-row">&nbsp;</div>
 	<div class="desc-row"><tex>p_1</tex>: Hash of first half</div>
@@ -156,48 +156,108 @@ Now, as a client, all you currently have is the hash of the log. How can you ver
 	<div class="desc-row">&nbsp;</div>
 </div>
 
-If we then want to confirm that <tex>a_3</tex> is in the list corresponding to <tex>h_\text{all}</tex>, we just need to get <tex>a_0\ldots{}a_2</tex>, hash with <tex>a_3</tex> to get <tex>p_1</tex>, then combine the hash with <tex>p_2</tex> (which we can ask the server to give us) to get <tex>h_\text{all}</tex>, and check that the hash is as expected. We can then conclude that <tex>h_\text{all}</tex> "includes" <tex>a_3</tex> since it depends on <tex>a_3</tex> in our calculation.
+If we then want to confirm the existance of some certificate <tex>a_k</tex> in the list, we can then first ask the server to tell us <tex>k</tex>. We don't really care what <tex>k</tex> is, as long as it is the correct index of the certificate in the list. Let's say <tex>k = 3</tex>. To confirm that <tex>a_k</tex> is in the list corresponding to <tex>h_\text{all}</tex>, we just need to get <tex>a_1</tex>, <tex>a_2</tex> and <tex>a_4</tex>, hash with <tex>a_k</tex> to get our value of <tex>p_1</tex>, then combine the hash with <tex>p_2</tex> (which we can ask the server to give us) to get <tex>h_\text{all}</tex>, and check that the hash is as expected. We can then conclude that <tex>h_\text{all}</tex> "includes" <tex>a_k</tex> since it depends on <tex>a_k</tex>, which is the certificate we want to confirm, in our calculation.
 
 Note that by spliting the tree in half, we don't need to know anything about the "irrelevant" half, other than a short hash of it, anymore. Intuitively, we can continue this "splitting" pattern to make a binary tree, with the hashes of individual certificates alone being the leaf, and every node is a "combined" hash of its two leaves:
 
 <div class="an-list-contain" style="">
 	<div class="an-list-wrap">
-		<div class="an-list-wdesc"><tex>h_\text{all} = h_{0..7}</tex></div>
+		<div class="an-list-wdesc"><tex>h_\text{all} = h_{1..8}</tex></div>
 		<div class="an-list-wrap">
-			<div class="an-list-wdesc"><tex>h_{0..3}</tex></div>
+			<div class="an-list-wdesc"><tex>h_{1..4}</tex></div>
 			<div class="an-list-wrap">
-				<div class="an-list-wdesc"><tex>h_{0..1}</tex></div>
-				<div class="an-list-block"><tex>H(a_0)</tex></div>
+				<div class="an-list-wdesc"><tex>h_{1..2}</tex></div>
 				<div class="an-list-block"><tex>H(a_1)</tex></div>
+				<div class="an-list-block"><tex>H(a_2)</tex></div>
 			</div>
 			<div class="an-list-wrap">
-				<div class="an-list-wdesc"><tex>h_{2..3}</tex></div>
-				<div class="an-list-block"><tex>H(a_2)</tex></div>
+				<div class="an-list-wdesc"><tex>h_{3..4}</tex></div>
 				<div class="an-list-block"><tex>H(a_3)</tex></div>
+				<div class="an-list-block"><tex>H(a_4)</tex></div>
 			</div>
 		</div>
 		<div class="an-list-wrap">
-			<div class="an-list-wdesc"><tex>h_{4..7}</tex></div>
+			<div class="an-list-wdesc"><tex>h_{5..8}</tex></div>
 			<div class="an-list-wrap">
-				<div class="an-list-wdesc"><tex>h_{4..5}</tex></div>
-				<div class="an-list-block"><tex>H(a_4)</tex></div>
+				<div class="an-list-wdesc"><tex>h_{5..6}</tex></div>
 				<div class="an-list-block"><tex>H(a_5)</tex></div>
+				<div class="an-list-block"><tex>H(a_6)</tex></div>
 			</div>
 			<div class="an-list-wrap">
-				<div class="an-list-wdesc"><tex>h_{6..7}</tex></div>
-				<div class="an-list-block"><tex>H(a_6)</tex></div>
+				<div class="an-list-wdesc"><tex>h_{7..8}</tex></div>
 				<div class="an-list-block"><tex>H(a_7)</tex></div>
+				<div class="an-list-block"><tex>H(a_8)</tex></div>
 			</div>
 		</div>
 	</div>
 </div>
 
-Now, if we want to confirm that <tex>a_3</tex> is in the list corresponding to <tex>h_\text{all}</tex>, we only need to:
+Now, if we want to confirm that <tex>a_k</tex> is in the list corresponding to <tex>h_\text{all}</tex>, we only need to:
 
-1. Get <tex>H(a_2)</tex>, <tex>h_{0..1}</tex>, and <tex>h_{4..7}</tex> from the server.
-2. Confirm that <tex>h_\text{all} = H(H(h_{0..1}||H(H(a_2)||H(\color{red}{a_3})))||h_{4..7})</tex>.
+1. Ask the server the index <tex>k</tex> of <tex>a_k</tex> in the log. Assuming that <tex>k = 3</tex>&hellip;
+2. Get <tex>H(a_4)</tex>, <tex>h_{1..2}</tex>, and <tex>h_{5..8}</tex> from the server.
+3. Calculate <tex>H(a_3)</tex> from the certificate data we have.
+4. Confirm that <tex>h_\text{all} = H(\color{purple}{H(h_{1..2}||\color{blue}{H(\color{red}{H(a_3)}||H(a_4))})}||h_{5..8})</tex>.
 
-Note that we don't even need to know any other <tex>a_n</tex>&mdash;we just need the hash of <tex>a_2</tex> and two other "intermediate" hash. Once we get all the necessary intermediate hashes from the server, we can sort of "bubble up" the binary tree to arrive at our final <tex>h_\text{all}</tex>, and because we used <tex>a_3</tex> to finally derive <tex>h_\text{all}</tex>, the list corresponding to <tex>h_\text{all}</tex> must contains <tex>a_3</tex>. It is not hard to see that, to confirm the existance of one certificate in a log of size <tex>n</tex>, we only need <tex>O(\log n)</tex> hashes if we do it this way. Because, in this case, we don't really care what the other certificates are, we can simply ask the server to give us these hashes without any further verification.
+We don't even need to know any other <tex>a_n</tex>&mdash;we just need the hash of <tex>a_4</tex> and two other "intermediate" hash, which we can simply ask the server since we don't really care what the other certificates are. Once we get all the necessary intermediate hashes from the server, we can sort of "bubble up" the binary tree to arrive at our final <tex>h_\text{all}</tex>, and because we used the hash of the certificate we want to confirm&mdash;<tex>a_k</tex>&mdash;to finally derive <tex>h_\text{all}</tex>, the list corresponding to <tex>h_\text{all}</tex> must contains <tex>a_k</tex>. It is not hard to see that, to confirm the existance of one certificate in a log of size <tex>n</tex>, we only need <tex>O(\log n)</tex> hashes if we do it this way.
+
+In the above scenario, we asked the server to help us derive the <tex>h_\text{all}</tex> we already have, based on the certificate data <tex>a_k</tex>. This is enough to convince us that <tex>a_k</tex> is in the log with "snapshot" <tex>h_\text{all}</tex>, which we can then exchange with other people to make sure that they are also seeing the version of the log we are seeing. The information that the server gave us&mdash;<tex>(k, H(a_4), h_{1..2}, h_{5..8})</tex>&mdash;to help us complete this process is called an <b>*inclusion proof*</b> of <tex>a_k</tex>, because it "proves" to us that <tex>a_k</tex> is "included" in <tex>h_\text{all}</tex>.
+
+This "binary tree" pattern works equally well for lists that aren't power-of-2-sized. For example, for a list of 6 certificates, we can have:
+
+<div class="an-list-contain" style="">
+	<div class="an-list-wrap">
+		<div class="an-list-wdesc"><tex>h = h_{1..6}</tex></div>
+		<div class="an-list-wrap">
+			<div class="an-list-wdesc"><tex>h_{1..4}</tex></div>
+			<div class="an-list-wrap">
+				<div class="an-list-wdesc"><tex>h_{1..2}</tex></div>
+				<div class="an-list-block"><tex>H(a_1)</tex></div>
+				<div class="an-list-block"><tex>H(a_2)</tex></div>
+			</div>
+			<div class="an-list-wrap">
+				<div class="an-list-wdesc"><tex>h_{3..4}</tex></div>
+				<div class="an-list-block"><tex>H(a_3)</tex></div>
+				<div class="an-list-block"><tex>H(a_4)</tex></div>
+			</div>
+		</div>
+		<div class="an-list-wrap">
+			<div class="an-list-wdesc"><tex>h_{5..6}</tex></div>
+			<div class="an-list-block"><tex>H(a_5)</tex></div>
+			<div class="an-list-block"><tex>H(a_6)</tex></div>
+		</div>
+	</div>
+</div>
+
+or, a list of 5 certificates:
+
+<div class="an-list-contain" style="">
+	<div class="an-list-wrap">
+		<div class="an-list-wdesc"><tex>h = h_{1..6}</tex></div>
+		<div class="an-list-wrap">
+			<div class="an-list-wdesc"><tex>h_{1..4}</tex></div>
+			<div class="an-list-wrap">
+				<div class="an-list-wdesc"><tex>h_{1..2}</tex></div>
+				<div class="an-list-block"><tex>H(a_1)</tex></div>
+				<div class="an-list-block"><tex>H(a_2)</tex></div>
+			</div>
+			<div class="an-list-wrap">
+				<div class="an-list-wdesc"><tex>h_{3..4}</tex></div>
+				<div class="an-list-block"><tex>H(a_3)</tex></div>
+				<div class="an-list-block"><tex>H(a_4)</tex></div>
+			</div>
+		</div>
+		<div class="an-list-block"><tex>H(a_5)</tex></div>
+	</div>
+</div>
+
+and the construction of inclusion proofs generalizes to those as well.
+
+This kind of binary-tree arrangement has a name: **(almost) complete binary tree**. It's called this way because there are no "gaps", i.e. all node have 2 children except the leaves at the bottommost level or the nodes on the very right side of the tree. Such a tree can be uniquely constructed for any given length, which means that the log server doesn't actually need to send any "trees" to the client. The concept of attaching "intermediate" hashes to the nodes, along with the construction of inclusion proofs and, as we shall see later, consistency proofs, is known as <b>*Merkle Tree*</b>, and the "final" hash&mdash;<tex>h_\text{all}</tex>&mdash;is called the <b>*tree hash*</b> (sometimes also known as "root hash").
+
+### Consistency proof
+
+Up until now, we have not discussed what happens when the log updates (more certificates is appended into the list).
 
 // So why is this useful? Well, let's consider the case where we only have 7 certificates instead of 8. With the same division pattern, our hash would look like this:
 
@@ -229,16 +289,10 @@ Note that we don't even need to know any other <tex>a_n</tex>&mdash;we just need
 	</div>
 </div>
 
-// Introduce the concept of merkle tree \
-// Certificate hash as leaf hash \
-// Introduce inclusion proof
-
 // System recap: when client receive a certificate, hash it and ask a log for inclusion proof. They can verify that the proof is valid for the tree hash they currently have, which they trust.
 
 // But they must have some way to update the tree hash to allow new certs into the tree? \
 // Critical requirement: must be tree extend only
-
-### Consistency proof
 
 &hellip;
 

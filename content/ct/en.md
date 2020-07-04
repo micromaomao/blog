@@ -257,37 +257,47 @@ This kind of binary-tree arrangement has a name: **(almost) complete binary tree
 
 ### Consistency proof
 
-Up until now, we have not discussed what happens when the log updates (more certificates is appended into the list).
-
-// So why is this useful? Well, let's consider the case where we only have 7 certificates instead of 8. With the same division pattern, our hash would look like this:
-
+<style>
+.an-list-contain .mod {
+	color: red;
+	border-color: red;
+}
+</style>
 <div class="an-list-contain" style="">
 	<div class="an-list-wrap">
-		<div class="an-list-wdesc"><tex>h = h_{0..6}</tex></div>
+		<div class="an-list-wdesc mod"><tex>h = h_{1..8}</tex></div>
 		<div class="an-list-wrap">
-			<div class="an-list-wdesc"><tex>h_{0..3}</tex></div>
+			<div class="an-list-wdesc"><tex>h_{1..4}</tex></div>
 			<div class="an-list-wrap">
-				<div class="an-list-wdesc"><tex>h_{0..1}</tex></div>
-				<div class="an-list-block"><tex>H(a_0)</tex></div>
+				<div class="an-list-wdesc"><tex>h_{1..2}</tex></div>
 				<div class="an-list-block"><tex>H(a_1)</tex></div>
+				<div class="an-list-block"><tex>H(a_2)</tex></div>
 			</div>
 			<div class="an-list-wrap">
-				<div class="an-list-wdesc"><tex>h_{2..3}</tex></div>
-				<div class="an-list-block"><tex>H(a_2)</tex></div>
+				<div class="an-list-wdesc"><tex>h_{3..4}</tex></div>
 				<div class="an-list-block"><tex>H(a_3)</tex></div>
+				<div class="an-list-block"><tex>H(a_4)</tex></div>
 			</div>
 		</div>
 		<div class="an-list-wrap">
-			<div class="an-list-wdesc"><tex>h_{4..6}</tex></div>
+			<div class="an-list-wdesc mod"><tex>h_{5..8}</tex></div>
 			<div class="an-list-wrap">
-				<div class="an-list-wdesc"><tex>h_{4..5}</tex></div>
-				<div class="an-list-block"><tex>H(a_4)</tex></div>
+				<div class="an-list-wdesc"><tex>h_{5..6}</tex></div>
 				<div class="an-list-block"><tex>H(a_5)</tex></div>
+				<div class="an-list-block"><tex>H(a_6)</tex></div>
 			</div>
-			<div class="an-list-block"><tex>H(a_6)</tex></div>
+			<div class="an-list-wrap">
+				<div class="an-list-wdesc mod"><tex>h_{7..8}</tex></div>
+				<div class="an-list-block"><tex>H(a_7)</tex></div>
+				<div class="an-list-block mod"><tex>H(a_8)</tex></div>
+			</div>
 		</div>
 	</div>
 </div>
+
+Up until now, we have not discussed what happens when more certificates is appended into the log. Obviously the tree hash <tex>t_\text{all}</tex> will change, and it will be quite easy for the server to calculate the new hash&mdash;they just have to calculate new intermediate hashes for all the nodes on the path from the newly appended children to the root, and finally calculate a new <tex>h_\text{all}</tex>. But after that, how does the client know that the new hash received from the server is really an "extension" of the original list, and that the server hasn't, for example, changed some earlier certificate?
+
+The straightforward way is for the server to present an inclusion proof for *every* certificate in the old list to show that they are still in the new list (and with position unchanged). However that's clearly not the best approach. Instead, in this example, we can have the server present inclusion proofs for <tex>h_{1..4}</tex>...
 
 // System recap: when client receive a certificate, hash it and ask a log for inclusion proof. They can verify that the proof is valid for the tree hash they currently have, which they trust.
 
@@ -310,7 +320,8 @@ Up until now, we have not discussed what happens when the log updates (more cert
 ## Signed Certificate Timestamps
 
 // &hellip;which means that as a receiver of a certificate we need to be told in which log to find it. \
-// CA can include the log name in the certificate itself before submiting it.
+// CA can include the log name in the certificate itself before submiting it. \
+// Also, in practise, the leaf hash is not just the certificate hash.
 
 // But this is not actually how things are done because&hellip;
 

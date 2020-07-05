@@ -1,0 +1,10 @@
+{
+	"compilerOptions": {
+		"strict": true,
+		"sourceMap": true,
+		"module": "ES6",
+		"target": "ES2016",
+		"lib": ["ES2016", "DOM"],
+		"outDir": "./dist/"
+	}
+}

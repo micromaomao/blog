@@ -8,13 +8,27 @@ const pug = require('pug');
 const sass = require('sass');
 const cheerio = require('cheerio');
 const mathjax = require("mathjax-node");
-const hljs = require('highlight.js');
+const hljs = require("highlight.js");
+const webpack = require("webpack");
 
 process.chdir(__dirname);
 
 let output_dir = path.resolve(__dirname, "dist");
 
 async function main () {
+  let filter;
+  switch (process.argv.length) {
+    // first 2 args are "node" and "index.js"
+    case 2:
+      filter = null;
+      break;
+    case 3:
+      filter = process.argv[2];
+      break;
+    default:
+     throw new Error("Expected one or no arguments.");
+  }
+
   let output_dir_stat = null;
   try {
     output_dir_stat = fs.statSync(output_dir);
@@ -42,8 +56,12 @@ async function main () {
   } catch (e) {
     throw new Error(`Error readdiring content/: ${e.message}`);
   }
+  if (filter !== null) {
+    console.log(` ==>  Only building ${filter}...`.gray);
+    dir_entires = dir_entires.filter(x => x == filter);
+  }
   console.log(`       (${dir_entires.length} articles to build)`.gray);
-  let progress_total_work = dir_entires.length*2 + 10;
+  let progress_total_work = dir_entires.length*3 + 10;
   let progress_current_work_done = 0;
   function print_status(status_text) {
     console.log(`[${Math.round(progress_current_work_done++ / progress_total_work * 100).toString().padStart(3, " ")}%] ${status_text}`.cyan);
@@ -268,7 +286,7 @@ async function main () {
 
           $("span").each((_, e) => {
             let node = $(e);
-            if (node.attr("class").startsWith("make-")) {
+            if ((node.attr("class") || "").startsWith("make-")) {
               let tagname = node.attr("class").substr(5);
               e.tagName = tagname;
               node.removeClass("make-" + tagname);
@@ -361,6 +379,46 @@ async function main () {
             throw new Error(e.message);
           }
         }
+      }
+      let script_path = path.resolve(cdir_path, "script.ts");
+      if (fs.existsSync(script_path)) {
+        print_status(`tsc ${script_path} > ...`);
+        let _bundle_path = path.resolve(dist_dict_path, "script.js");
+        await new Promise((resolve, reject) => {
+          webpack({
+            entry: script_path,
+            devtool: "source-map",
+            module: {
+              rules: [
+                {
+                  test: /\.ts$/,
+                  use: "ts-loader",
+                  exclude: "/node_modules/"
+                }
+              ]
+            },
+            resolve: {
+              extensions: [".ts"]
+            },
+            output: {
+              filename: "script.js",
+              path: dist_dict_path,
+            },
+            optimization: {
+              minimize: false
+            }
+          }, (err, stats) => {
+            if (err || stats.hasErrors()) {
+              reject(new Error(err || `Webpack: ${stats.toString()}`));
+            } else {
+              resolve();
+            }
+          })
+        });
+        article.script = "script.js";
+      } else {
+        progress_current_work_done++;
+        article.script = null;
       }
 
       await Tag.process_article(article);

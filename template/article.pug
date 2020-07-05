@@ -9,6 +9,8 @@ html(lang=lang_obj.id)
       meta(property="og:image",content=lang_obj.cover_image)
     style(type="text/css")!= "\n" + css
     link(rel="stylesheet", href="https://unpkg.com/highlight.js@9.16.2/styles/idea.css")
+    -if (article.script)
+      script(async, type="text/javascript", src=article.script)
   body
     a.blogtitle(href="../index.html")
       | <img src="../title.svg" alt="Mao's technical notes">

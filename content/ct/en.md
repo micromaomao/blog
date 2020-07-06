@@ -203,55 +203,11 @@ We don't even need to know any other <tex>a_n</tex>&mdash;we just need the hash 
 
 In the above scenario, we asked the server to help us derive the <tex>h_\text{all}</tex> we already have, based on the certificate data <tex>a_k</tex>. This is enough to convince us that <tex>a_k</tex> is in the log with "snapshot" <tex>h_\text{all}</tex>, which we can then exchange with other people to make sure that they are also seeing the version of the log we are seeing. The information that the server gave us&mdash;<tex>(k, H(a_4), h_{1..2}, h_{5..8})</tex>&mdash;to help us complete this process is called an <b>*inclusion proof*</b> of <tex>a_k</tex>, because it "proves" to us that <tex>a_k</tex> is "included" in <tex>h_\text{all}</tex>.
 
-This "binary tree" pattern works equally well for lists that aren't power-of-2-sized. For example, for a list of 6 certificates, we can have:
+This "binary tree" pattern and the construction of inclusion proofs work equally well for lists that aren't power-of-2-sized. Play with the following demo to see for yourself:
 
-<div class="an-list-contain" style="">
-	<div class="an-list-wrap">
-		<div class="an-list-wdesc"><tex>h = h_{1..6}</tex></div>
-		<div class="an-list-wrap">
-			<div class="an-list-wdesc"><tex>h_{1..4}</tex></div>
-			<div class="an-list-wrap">
-				<div class="an-list-wdesc"><tex>h_{1..2}</tex></div>
-				<div class="an-list-block"><tex>H(a_1)</tex></div>
-				<div class="an-list-block"><tex>H(a_2)</tex></div>
-			</div>
-			<div class="an-list-wrap">
-				<div class="an-list-wdesc"><tex>h_{3..4}</tex></div>
-				<div class="an-list-block"><tex>H(a_3)</tex></div>
-				<div class="an-list-block"><tex>H(a_4)</tex></div>
-			</div>
-		</div>
-		<div class="an-list-wrap">
-			<div class="an-list-wdesc"><tex>h_{5..6}</tex></div>
-			<div class="an-list-block"><tex>H(a_5)</tex></div>
-			<div class="an-list-block"><tex>H(a_6)</tex></div>
-		</div>
-	</div>
-</div>
-
-or, a list of 5 certificates:
-
-<div class="an-list-contain" style="">
-	<div class="an-list-wrap">
-		<div class="an-list-wdesc"><tex>h = h_{1..6}</tex></div>
-		<div class="an-list-wrap">
-			<div class="an-list-wdesc"><tex>h_{1..4}</tex></div>
-			<div class="an-list-wrap">
-				<div class="an-list-wdesc"><tex>h_{1..2}</tex></div>
-				<div class="an-list-block"><tex>H(a_1)</tex></div>
-				<div class="an-list-block"><tex>H(a_2)</tex></div>
-			</div>
-			<div class="an-list-wrap">
-				<div class="an-list-wdesc"><tex>h_{3..4}</tex></div>
-				<div class="an-list-block"><tex>H(a_3)</tex></div>
-				<div class="an-list-block"><tex>H(a_4)</tex></div>
-			</div>
-		</div>
-		<div class="an-list-block"><tex>H(a_5)</tex></div>
-	</div>
-</div>
-
-and the construction of inclusion proofs generalizes to those as well.
+<noscript id="demo-inclusion">
+	You need to enable javascript for this demo.
+</noscript>
 
 This kind of binary-tree arrangement has a name: **(almost) complete binary tree**. It's called this way because there are no "gaps", i.e. all node have 2 children except the leaves at the bottommost level or the nodes on the very right side of the tree. Such a tree can be uniquely constructed for any given length, which means that the log server doesn't actually need to send any "trees" to the client. The concept of attaching "intermediate" hashes to the nodes, along with the construction of inclusion proofs and, as we shall see later, consistency proofs, is known as <b>*Merkle Tree*</b>, and the "final" hash&mdash;<tex>h_\text{all}</tex>&mdash;is called the <b>*tree hash*</b> (sometimes also known as "root hash").
 
@@ -265,7 +221,7 @@ This kind of binary-tree arrangement has a name: **(almost) complete binary tree
 </style>
 <div class="an-list-contain" style="">
 	<div class="an-list-wrap">
-		<div class="an-list-wdesc mod"><tex>h = h_{1..8}</tex></div>
+		<div class="an-list-wdesc mod"><tex>h_\text{all} = h_{1..8}</tex></div>
 		<div class="an-list-wrap">
 			<div class="an-list-wdesc"><tex>h_{1..4}</tex></div>
 			<div class="an-list-wrap">
@@ -295,16 +251,21 @@ This kind of binary-tree arrangement has a name: **(almost) complete binary tree
 	</div>
 </div>
 
-Up until now, we have not discussed what happens when more certificates is appended into the log. Obviously the tree hash <tex>t_\text{all}</tex> will change, and it will be quite easy for the server to calculate the new hash&mdash;they just have to calculate new intermediate hashes for all the nodes on the path from the newly appended children to the root, and finally calculate a new <tex>h_\text{all}</tex>. But after that, how does the client know that the new hash received from the server is really an "extension" of the original list, and that the server hasn't, for example, changed some earlier certificate?
+Up until now, we have not discussed what happens when more certificates are appended into the log. Obviously the tree hash <tex>t_\text{all}</tex> will change. Let's use the above diagram to illustrate: the original tree contains the first 7 certificates, and <tex>a_8</tex> is a newly appended certificate.
 
-The straightforward way is for the server to present an inclusion proof for *every* certificate in the old list to show that they are still in the new list (and with position unchanged). However that's clearly not the best approach. Instead, in this example, we can have the server present inclusion proofs for <tex>h_{1..4}</tex>...
+It should be quite easy for the server to calculate the new hash&mdash;they just have to calculate new intermediate hashes for all the nodes on the path from <tex>a_8</tex> to the root (colored in <span style="color: red">red</span>), and finally calculate a new <tex>h_\text{all}</tex>. But after that, how does the client know that the new hash received from the server is really an "extension" from <tex>a_1\ldots{}a_7</tex>, and that the server hasn't, for example, changed some of <tex>a_1\ldots{}a_7</tex> and then gave the client the hash derived from the modified tree?
 
-// System recap: when client receive a certificate, hash it and ask a log for inclusion proof. They can verify that the proof is valid for the tree hash they currently have, which they trust.
+We can use the thinking we used in constructing inclusion proofs again: the server can "help" the client construct the new <tex>t_\text{all}</tex> itself, which would convince it that the new <tex>t_\text{all}</tex> really represents an "appended-only" tree from the old one. To do that, the client needs to know the old tree size (which it should already know) and the new tree size (given by the server, along with the new <tex>h_\text{all}</tex>) in order to know the structure of the tree. In this case they are 7 and 8 respectively. Then, the server gives the client <span style="color: red"><tex>H(a_8)</tex></span>, <tex>H(a_7)</tex>, <tex>h_{5..6}</tex> and <tex>h_{1..4}</tex>. The client can then piece out the final hash as <tex>H(h_{1..4} || \color{rgb(127,0,127)}{H(h_{5..6} || \color{blue}{H(H(a_7) || \color{red}{H(a_8)})})})</tex>.
 
-// But they must have some way to update the tree hash to allow new certs into the tree? \
-// Critical requirement: must be tree extend only
+Note that in this process, the server has given the client enough information about the old tree to allow it to reconstruct the old <tex>h_\text{all} = H(h_{1..4} || \color{rgb(127,0,127)}{H(h_{5..6} || \color{blue}{H(a_7)})})</tex>. What this means is that the client can be certain that the new <tex>t_\text{all}</tex> (which they just calculated) "includes" every certificate in the old tree, and also in the correct position, since the server can't "insert" new certificates before <tex>a_8</tex> otherwise the client wouldn't get the correct old <tex>h_\text{all}</tex>, and also, because <tex>H(a || b) \ne H(b || a)</tex>, the server can't swap anything.
 
-&hellip;
+Therefore, the server has just proved to the client that the new tree is an append-only extension of the old tree. This is called a <b>*consistency proof*</b>, because it proves that two tree are "consistent"&mdash;one is an append-only extension of the other. If the server publishes a new tree hash for which it can not provide a valid consistency proof, then the server must have changed something illegally.
+
+Although it might not feel like it, this procedure can be done for all old and new sizes. Play with the following demo to see for yourself:
+
+<noscript id="demo-consistency">
+	You need to enable javascript for this demo.
+</noscript>
 
 // But there's still one more problem: we need to ensure everybody sees the same "everything". \
 // => Gossiping tree hashes

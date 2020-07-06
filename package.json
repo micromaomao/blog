@@ -18,6 +18,7 @@
   },
   "homepage": "https://github.com/micromaomao/blog#readme",
   "dependencies": {
+    "@svgdotjs/svg.js": "^3.0.16",
     "cheerio": "^1.0.0-rc.3",
     "colors": "^1.4.0",
     "highlight.js": "^9.16.2",

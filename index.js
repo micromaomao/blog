@@ -385,7 +385,7 @@ async function main () {
         print_status(`tsc ${script_path} > ...`);
         let _bundle_path = path.resolve(dist_dict_path, "script.js");
         await new Promise((resolve, reject) => {
-          webpack({
+          let webpack_config = {
             entry: script_path,
             devtool: "source-map",
             module: {
@@ -398,20 +398,25 @@ async function main () {
               ]
             },
             resolve: {
-              extensions: [".ts"]
+              extensions: [".ts", ".js"],
+              modules: ["node_modules", __dirname]
             },
             output: {
               filename: "script.js",
               path: dist_dict_path,
             },
             optimization: {
-              minimize: false
+              minimize: (!!process.env["GITHUB_ACTIONS"]) || (!!process.env["CI"])
             }
-          }, (err, stats) => {
+          };
+          webpack(webpack_config, (err, stats) => {
             if (err || stats.hasErrors()) {
               reject(new Error(err || `Webpack: ${stats.toString()}`));
             } else {
               resolve();
+              if (filter !== null) {
+                webpack(webpack_config).watch({}, info => console.log(info));
+              }
             }
           })
         });

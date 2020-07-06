@@ -1,5 +1,5 @@
-let noscripts: Record<string, Element> = {};
-let placeholders: Record<string, Element> = {};
+let noscripts: Record<string, HTMLElement> = {};
+let placeholders: Record<string, HTMLElement> = {};
 
 let init_callbacks: (() => void)[] | null = [];
 export function onready(fn: (() => void)) {
@@ -10,7 +10,7 @@ export function onready(fn: (() => void)) {
 	}
 }
 
-export function bind_container(id: string): Element {
+export function bind_container(id: string): HTMLElement {
 	if (init_callbacks !== null) {
 		throw new Error("Must call after document ready.");
 	}

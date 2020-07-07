@@ -1,234 +1,18 @@
 import { bind_container, onready } from "js/jsmeta";
 import { load_mathjax } from "js/load-mathjax";
 load_mathjax();
-import { SVG, Svg, G, Container, Line } from "@svgdotjs/svg.js";
-import { texbox, point_to_rect } from "js/svgutils";
+import { DrawnTree } from "./TreeLayout";
+import { make_inclusion_proof, TreeSegment, make_consistency_proof } from "./proofs";
+import { Ellipse } from "@svgdotjs/svg.js";
 
-interface TreeLayout {
-	layer_vskip: number;
-	leaf_size: number;
-	node_height: number;
-	leaf_hskip: number;
-	margin: number;
-}
-
-function default_tree_layout(): TreeLayout {
-	return {
-		layer_vskip: 50,
-		leaf_size: 50,
-		node_height: 16,
-		leaf_hskip: 20,
-		margin: 4,
-	};
-}
-
-class DrawnTree {
-	svg: G;
-	size: number;
-	depth: number;
-	leafs: {g: G, l: Line | null}[] = [];
-	nodes: {g: G, l: Line | null}[][] = [];
-	layout: TreeLayout;
-	leaf_hovering: boolean[] = [];
-	leaf_hovering_except: number | null = null;
-	leaf_cursor_pointer: boolean = false;
-	leaf_colors: string[] = [];
-	leaf_onclick: ((i: number) => void) | null = null;
-
-	get pixel_height(): number {
-		if (this.size === 0 ) {
-			return 0;
-		}
-		return this.layout.leaf_size + (this.layout.layer_vskip + this.layout.node_height) * (this.depth - 1) + this.layout.margin * 2;
+function segm_to_tex(segm: TreeSegment): string {
+	if (segm.end === segm.start) {
+		return "0";
 	}
-
-	get pixel_width(): number {
-		return (this.layout.leaf_size + this.layout.leaf_hskip) * this.size - this.layout.leaf_hskip + this.layout.margin * 2;
+	if (segm.end - segm.start === 1) {
+		return `H(a_{${segm.start + 1}})`;
 	}
-
-	constructor (size: number, layout: TreeLayout = default_tree_layout()) {
-		this.layout = layout;
-		this.size = size;
-		if (size === 0) {
-			this.depth = 0;
-		} else {
-			let mu = 1;
-			let depth = 1;
-			while (mu < size) {
-				mu *= 2;
-				depth += 1;
-			}
-			this.depth = depth;
-		}
-		this.svg = new G({});
-	}
-
-	async draw(): Promise<void> {
-		let layout = this.layout;
-		this.svg.translate(layout.margin, layout.margin);
-		for (let i = 0; i < this.depth - 1; i ++) {
-			this.nodes.push([]);
-		}
-		let gw = Math.pow(2, this.depth - 1);
-		let di = 0;
-		function node_center(i: number): number {
-			return i * (layout.leaf_size + layout.leaf_hskip) + layout.leaf_size / 2;
-		}
-		let last_coordinates: ({x: number, y: number})[] = [];
-		while (gw > 1) {
-			let new_coordinates: ({x: number, y: number})[] = [];
-			let k = 0;
-			for (let start = 0; start < this.size; start += gw) {
-				let end = Math.min(start + gw - 1, this.size - 1);
-				if (end - start + 1 <= gw / 2) {
-					new_coordinates.push(last_coordinates[last_coordinates.length - 1]);
-					break;
-				}
-				let midx = (node_center(start) + node_center(end)) / 2;
-				let real_midx = (node_center(start) + node_center(start + gw - 1)) / 2;
-				midx = (midx + real_midx) / 2;
-				if (midx > this.pixel_width - layout.leaf_size) {
-					midx = this.pixel_width - layout.leaf_size;
-				}
-				let ybase = (layout.layer_vskip + layout.node_height) * di + layout.node_height;
-				new_coordinates.push({x: midx, y: ybase});
-				new_coordinates.push()
-				let g = new G({});
-				this.svg.add(g);
-				g.translate(midx, ybase);
-				let sg = new G({});
-				g.add(sg);
-				let label_text = `h_{${start + 1}..${end + 1}}`;
-				if (di === 0) {
-					label_text = `h_\\text{all} = ${label_text}`;
-				}
-				let label = await texbox(label_text, sg);
-				let h = label.height();
-				let w = label.width();
-				let scale = layout.node_height / h;
-				label.attr({transform: `scale(${scale})`});
-				w *= scale;
-				h *= scale;
-				sg.attr({transform: `translate(${-w/2}, ${-h})`});
-
-				let l = null;
-				let pk = Math.floor(k / 2);
-				if (last_coordinates.length > pk) {
-					let connect_to = last_coordinates[pk];
-					let [x1, y1] = [connect_to.x, connect_to.y + 2];
-					let {x: x2, y: y2} = point_to_rect({x: x1, y: y1}, {x1: midx - w / 2, y1: ybase - h, x2: midx + w / 2, y2: ybase + 2});
-					l = this.svg.line(x1, y1, x2, y2);
-					l.attr({
-						stroke: "black",
-						"stroke-width": 1
-					});
-				}
-				this.nodes[di].push({g, l});
-				k += 1;
-			}
-			gw /= 2;
-			di += 1;
-			last_coordinates = new_coordinates;
-		}
-		for (let i = 0; i < this.size; i ++) {
-			let nb = i + 1;
-			let ele = new G({})
-			let bx = i * (layout.leaf_hskip + layout.leaf_size);
-			let by = (layout.layer_vskip + layout.node_height) * (this.depth - 1);
-			ele.translate(bx, by);
-			ele.rect(layout.leaf_size, layout.leaf_size).attr({
-				fill: "transparent",
-				stroke: "black",
-				"stroke-width": "1"
-			});
-			let tex = await texbox(`H(a_{${nb}})`, ele);
-			let h = tex.height();
-			let w = tex.width();
-			let maxw = layout.leaf_size - 4;
-			let scale = 1;
-			if (w > maxw) {
-				scale = maxw / w;
-				tex.attr({transform: `scale(${scale})`});
-				w *= scale;
-				h *= scale;
-			}
-			tex.x((layout.leaf_size / 2 - w / 2) / scale);
-			tex.y((layout.leaf_size / 2 - h / 2) / scale);
-			this.svg.add(ele);
-			let l = null;
-			let i2 = Math.floor(i / 2);
-			if (last_coordinates.length > i2) {
-				let lc = last_coordinates[i2];
-				let [x1, y1] = [bx + layout.leaf_size / 2, by];
-				l = this.svg.line(x1, y1, lc.x, lc.y);
-				l.attr({
-					stroke: "black",
-					"stroke-width": 1
-				});
-			}
-			this.leafs.push({g: ele, l});
-		}
-
-		for (let i = 0; i < this.size; i ++) {
-			let g = this.leafs[i].g;
-			this.leaf_hovering.push(false);
-			g.node.addEventListener("mouseenter", evt => {
-				this.leaf_hovering[i] = true;
-				this.update_style();
-			});
-			g.node.addEventListener("mouseleave", evt => {
-				this.leaf_hovering[i] = false;
-				this.update_style();
-			});
-			g.node.addEventListener("click", evt => {
-				if (this.leaf_onclick !== null) {
-					this.leaf_onclick(i);
-					this.update_style();
-				}
-			})
-		}
-		this.svg.node.addEventListener("mouseleave", evt => {
-			for (let i = 0; i < this.size; i ++) {
-				this.leaf_hovering[i] = false;
-			}
-			this.update_style();
-		});
-		this.update_style();
-	}
-
-	update_style() {
-		for (let i = 0; i < this.size; i ++) {
-			let g = this.leafs[i].g;
-			if (this.leaf_cursor_pointer) {
-				g.node.style.cursor = "pointer";
-			} else {
-				g.node.style.cursor = "";
-			}
-			let color = "black";
-			if (this.leaf_colors.length > i) {
-				color = this.leaf_colors[i];
-			}
-			if (this.leaf_hovering[i] && this.leaf_cursor_pointer && this.leaf_hovering_except !== i) {
-				color = "blue";
-			}
-			g.findOne("rect").attr({
-				stroke: color
-			});
-			g.findOne("foreignObject").node.style.color = color;
-		}
-	}
-
-	addTo(parent: Container | HTMLElement) {
-		if (parent instanceof Container) {
-			parent.add(this.svg);
-		} else {
-			let svg_parent = SVG();
-			svg_parent.add(this.svg);
-			svg_parent.width(this.pixel_width);
-			svg_parent.height(this.pixel_height);
-			svg_parent.addTo(parent);
-		}
-	}
+	return `h_{${segm.start + 1}..${segm.end}}`;
 }
 
 async function init_inclusion_demo(container: HTMLElement) {
@@ -237,6 +21,7 @@ async function init_inclusion_demo(container: HTMLElement) {
 	controller_contain.innerHTML = "Tree size: ";
 	let tree_size_span = document.createElement("span");
 	controller_contain.appendChild(tree_size_span);
+	controller_contain.appendChild(document.createTextNode(" (slide to adjust)"));
 	controller_contain.appendChild(document.createElement("br"));
 	let controller = document.createElement("input");
 	controller.type = "range";
@@ -280,16 +65,43 @@ async function init_inclusion_demo(container: HTMLElement) {
 		tree_size_span.textContent = tsize.toString();
 		let t = new DrawnTree(tsize);
 		t.leaf_cursor_pointer = true;
-		t.leaf_onclick = i => {
-			inclusion_proof_contain.innerHTML = i.toString();
-			for (let k = 0; k < t.size; k ++) {
-				if (k === i) {
-					t.leaf_colors[k] = "rgb(0,127,0)";
-					t.leaf_hovering_except = k;
+		t.leaf_onclick = async i => {
+			t.reset_style();
+			current_inclusion = i;
+			t.leaf_hovering_except = current_inclusion;
+			t.set_leaf_text_color(current_inclusion, "rgb(0, 127, 0)");
+			let proof = make_inclusion_proof(tsize, current_inclusion);
+			inclusion_proof_contain.innerHTML = "...";
+			let current_segm = new TreeSegment(current_inclusion, current_inclusion + 1);
+			t.node_style(current_segm).line_color = "rgb(127,127,0)";
+			let tex_str = `{\\color{rgb(0,127,0)}{${segm_to_tex(current_segm)}}}`;
+			for (let i = 0; i < proof.length; i ++) {
+				let segm = proof[i];
+				let segmtex = segm_to_tex(segm);
+				let ns = t.node_style(segm);
+				if (i === 0 && segm.end - segm.start === 1) {
+					segmtex = `{\\color{rgb(127,0,127)}{${segmtex}}}`;
+					ns.line_color = "red";
+					ns.text_color = "rgb(127,0,127)";
 				} else {
-					t.leaf_colors[k] = "black";
+					segmtex = `{\\color{red}{${segmtex}}\\color{black}}`;
+					ns.line_color = ns.text_color = "red";
 				}
+				if (segm.start < current_segm.start) {
+					tex_str = `H(${segmtex} || ${tex_str})`;
+					current_segm = new TreeSegment(segm.start, current_segm.end);
+				} else {
+					tex_str = `H(${tex_str} || ${segmtex})`;
+					current_segm = new TreeSegment(current_segm.start, segm.end);
+				}
+				tex_str = `\\underbrace{${tex_str}}_{\\color{rgb(127,127,0)}{${segm_to_tex(current_segm)}}}`;
+				let ts = t.node_style(current_segm);
+				ts.text_color = ts.line_color = "rgb(127,127,0)";
 			}
+			t.node_style(current_segm).text_color = "rgb(127,127,0)";
+			let tt = await MathJax.cachedTex2SvgPromise("h_\\text{all} = " + tex_str);
+			inclusion_proof_contain.innerHTML = "";
+			inclusion_proof_contain.appendChild(tt);
 		}
 		await t.draw();
 		svg_contain.innerHTML = "";
@@ -352,24 +164,91 @@ async function init_consistency_demo(container: HTMLElement) {
 		margin: "0"
 	});
 	container.appendChild(svg_contain);
+	let proof_contain = document.createElement("div");
+	container.appendChild(proof_contain);
 	let current_promise: Promise<void> | null = null;
 	let current_tsize = 0;
 	let current_oldsize = 0;
+	let current_tree: DrawnTree = new DrawnTree(current_tsize);
+	let MathJax = await load_mathjax();
 	async function update() {
 		let tsize = parseInt(tree_size_control.value);
-		let oldsize = parseInt(old_size_control.value);
-		if (tsize === current_tsize && oldsize === current_oldsize) {
-			return;
+		let oldsize = Math.min(parseInt(old_size_control.value), tsize);
+		if (old_size_control.value !== oldsize.toString()) {
+			old_size_control.value = oldsize.toString();
 		}
-		svg_contain.innerHTML = "...";
-		current_tsize = tsize;
-		current_oldsize = oldsize;
-		tree_size_span.textContent = tsize.toString();
-		old_size_span.textContent = oldsize.toString();
-		let t = new DrawnTree(tsize);
-		await t.draw();
-		svg_contain.innerHTML = "";
-		t.addTo(svg_contain);
+		if (tsize !== current_tsize) {
+			current_tsize = tsize;
+			current_oldsize = oldsize;
+			svg_contain.innerHTML = "...";
+			tree_size_span.textContent = tsize.toString();
+			old_size_span.textContent = oldsize.toString();
+			current_tree = new DrawnTree(tsize);
+			await current_tree.draw();
+			svg_contain.innerHTML = "";
+			current_tree.addTo(svg_contain);
+			await update_proof();
+		} else if (oldsize !== current_oldsize) {
+			current_oldsize = oldsize;
+			old_size_span.textContent = oldsize.toString();
+			await update_proof();
+		}
+
+		async function update_proof() {
+			let proof = make_consistency_proof(current_oldsize, current_tsize);
+			current_tree.reset_style();
+			if (current_oldsize === current_tsize) {
+				proof_contain.innerHTML = "Nothing to proof: old size is already tree size.";
+			} else {
+				proof_contain.innerHTML = "...";
+				for (let le = current_oldsize; le < current_tsize; le ++) {
+					current_tree.set_leaf_text_color(le, "#666");
+				}
+				let current_subtree = proof[0];
+				let current_old_subtree = proof[0];
+				// First component of proof is always a part of the previous tree.
+				let old_hall_tex = `{\\color{rgb(127,127,0)}{${segm_to_tex(current_subtree)}}}`;
+				let new_hall_tex = old_hall_tex;
+				let ns = current_tree.node_style(current_subtree);
+				ns.line_color = ns.text_color = "rgb(127,127,0)";
+				for (let i = 1; i < proof.length; i ++) {
+					let subtree = proof[i];
+					let is_old_part = subtree.end <= current_oldsize;
+					let ns = current_tree.node_style(subtree);
+					let col = is_old_part ? "rgb(127,127,0)" : "red";
+					ns.line_color = ns.text_color = col;
+					if (subtree.start > current_subtree.start) {
+						new_hall_tex = `H(${new_hall_tex} || {\\color{${col}}{${segm_to_tex(subtree)}}})`;
+						if (is_old_part) {
+							old_hall_tex = `H(${old_hall_tex} || {\\color{${col}}{${segm_to_tex(subtree)}}})`;
+							current_old_subtree = new TreeSegment(current_old_subtree.start, subtree.end);
+						}
+						current_subtree = new TreeSegment(current_subtree.start, subtree.end);
+					} else {
+						new_hall_tex = `H({\\color{${col}}{${segm_to_tex(subtree)}}} || ${new_hall_tex})`;
+						if (is_old_part) {
+							old_hall_tex = `H({\\color{${col}}{${segm_to_tex(subtree)}}} || ${old_hall_tex})`;
+							current_old_subtree = new TreeSegment(subtree.start, current_old_subtree.end);
+						}
+						current_subtree = new TreeSegment(subtree.start, current_subtree.end);
+					}
+					ns = current_tree.node_style(current_subtree);
+					ns.text_color = ns.line_color = "red";
+					new_hall_tex = `\\overbrace{${new_hall_tex}}^{${segm_to_tex(current_subtree)}}`;
+					if (is_old_part) {
+						old_hall_tex = `\\underbrace{${old_hall_tex}}_{${segm_to_tex(current_old_subtree)}}`;
+					}
+				}
+				let new_tex_render = await MathJax.cachedTex2SvgPromise("h_\\text{all}\\ \\text{(new tree)} = " + new_hall_tex);
+				let old_tex_render = await MathJax.cachedTex2SvgPromise(`${segm_to_tex(current_old_subtree)}\\ \\text{(old tree)} = ` + old_hall_tex);
+				proof_contain.innerHTML = "";
+				proof_contain.appendChild(new_tex_render);
+				proof_contain.appendChild(document.createElement("br"));
+				proof_contain.appendChild(old_tex_render);
+			}
+			current_tree.old_size = current_oldsize;
+			current_tree.update_style();
+		}
 	}
 	current_promise = update().finally(() => current_promise = null);
 	let update_handler = () => {

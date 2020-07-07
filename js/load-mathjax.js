@@ -4,7 +4,20 @@ export function load_mathjax() {
 		return loading_promise;
 	}
 	window.MathJax = {
-		skipStartupTypeset: true
+		skipStartupTypeset: true,
+		startup: {
+			ready() {
+				if (MathJax.version === '3.0.5') {
+					const SVGWrapper = MathJax._.output.svg.Wrapper.SVGWrapper;
+					const CommonWrapper = SVGWrapper.prototype.__proto__;
+					SVGWrapper.prototype.unicodeChars = function (text, variant) {
+						if (!variant) variant = this.variant || 'normal';
+						return CommonWrapper.unicodeChars.call(this, text, variant);
+					}
+				}
+				MathJax.startup.defaultReady();
+			}
+		}
 	};
 	let script = document.createElement('script');
   script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js';
@@ -29,8 +42,17 @@ export function load_mathjax() {
 					return Promise.resolve(ele.outerHTML);
 				});
 				cache.set(tex, prom);
-				await prom;
-				return ele;
+				try {
+					await prom;
+					return ele;
+				} catch (e) {
+					console.error(e);
+					let errmsg = document.createElement("span");
+					errmsg.style.color = "red";
+					errmsg.style.textAlign = "left";
+					errmsg.appendChild(document.createTextNode(`MathJax errored: ${e.toString()} (tex source: ${tex})`));
+					return errmsg;
+				}
 			}
 		}
 		resolve(window.MathJax);

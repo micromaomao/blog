@@ -107,6 +107,9 @@ Say for example that we have the following log, where each <tex>a_i</tex> is a c
 	grid-area: d;
 	padding: 0 0 2px 0;
 }
+.an-list-wdesc.wdesc-small, .an-list-wdesc.wdesc-small .tex {
+	font-size: 0.85rem;
+}
 </style>
 <div class="an-list-contain">
 	<div class="an-list-block"><tex>a_1</tex></div>
@@ -162,29 +165,29 @@ Note that by spliting the tree in half, we don't need to know anything about the
 
 <div class="an-list-contain" style="">
 	<div class="an-list-wrap">
-		<div class="an-list-wdesc"><tex>h_\text{all} = h_{1..8}</tex></div>
+		<div class="an-list-wdesc"><tex>h_\text{all} = h_{1..8} = H(h_{1..4} || h_{5..8})</tex></div>
 		<div class="an-list-wrap">
-			<div class="an-list-wdesc"><tex>h_{1..4}</tex></div>
+			<div class="an-list-wdesc"><tex>h_{1..4} = H(h_{1..2} || h_{3..4})</tex></div>
 			<div class="an-list-wrap">
-				<div class="an-list-wdesc"><tex>h_{1..2}</tex></div>
+				<div class="an-list-wdesc wdesc-small"><tex>h_{1..2} = H(H(a_1) || H(a_2))</tex></div>
 				<div class="an-list-block"><tex>H(a_1)</tex></div>
 				<div class="an-list-block"><tex>H(a_2)</tex></div>
 			</div>
 			<div class="an-list-wrap">
-				<div class="an-list-wdesc"><tex>h_{3..4}</tex></div>
+				<div class="an-list-wdesc wdesc-small"><tex>h_{3..4} = H(H(a_3) || H(a_4))</tex></div>
 				<div class="an-list-block"><tex>H(a_3)</tex></div>
 				<div class="an-list-block"><tex>H(a_4)</tex></div>
 			</div>
 		</div>
 		<div class="an-list-wrap">
-			<div class="an-list-wdesc"><tex>h_{5..8}</tex></div>
+			<div class="an-list-wdesc"><tex>h_{5..8} = H(h_{5..6} || h_{7..8})</tex></div>
 			<div class="an-list-wrap">
-				<div class="an-list-wdesc"><tex>h_{5..6}</tex></div>
+				<div class="an-list-wdesc wdesc-small"><tex>h_{5..6} = H(H(a_5) || H(a_6))</tex></div>
 				<div class="an-list-block"><tex>H(a_5)</tex></div>
 				<div class="an-list-block"><tex>H(a_6)</tex></div>
 			</div>
 			<div class="an-list-wrap">
-				<div class="an-list-wdesc"><tex>h_{7..8}</tex></div>
+				<div class="an-list-wdesc wdesc-small"><tex>h_{7..8} = H(H(a_7) || H(a_8))</tex></div>
 				<div class="an-list-block"><tex>H(a_7)</tex></div>
 				<div class="an-list-block"><tex>H(a_8)</tex></div>
 			</div>

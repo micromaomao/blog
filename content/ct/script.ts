@@ -260,7 +260,7 @@ async function init_inclusion_demo(container: HTMLElement) {
 	let inclusion_proof_pf = document.createElement("div");
 	inclusion_proof_pf.appendChild(document.createTextNode("Click on any "));
 	let MathJax = await load_mathjax();
-	inclusion_proof_pf.appendChild((await MathJax.tex2svgPromise("a_n")).childNodes[0]);
+	inclusion_proof_pf.appendChild(await MathJax.cachedTex2SvgPromise("a_n"));
 	inclusion_proof_pf.appendChild(document.createTextNode(" to see inclusion proof."));
 	inclusion_proof_contain.appendChild(inclusion_proof_pf);
 	container.appendChild(inclusion_proof_contain);

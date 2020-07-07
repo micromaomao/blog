@@ -20,7 +20,7 @@ export function htmlbox(html: HTMLElement | string, parent: Container | null) {
 
 export async function texbox(tex: string, parent: Container | null): Promise<Element> {
 	let MathJax = await load_mathjax();
-	let svginner = (await MathJax.tex2svgPromise(tex)).children[0] as HTMLElement;
+	let svginner = await MathJax.cachedTex2SvgPromise(tex);
 	svginner.style.verticalAlign = "";
 	return htmlbox(svginner, parent);
 }

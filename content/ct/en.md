@@ -4,7 +4,7 @@ tags: ["security", "web security", "cryptography", "TLS", "RFC", "PKI"]
 time: "2020-05-25T16:56:31.799Z"
 ---
 
-![cover](live_cert_screenshot.png)
+![cover](cover.svg)
 
 <div class="info">
 

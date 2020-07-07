@@ -1,10 +1,17 @@
 ---
-title: "Merkle All The Way Down: the inner-workings of certificate transparency"
+title: "[WIP] Merkle All The Way Down: the inner-workings of certificate transparency"
 tags: ["security", "web security", "cryptography", "TLS", "RFC", "PKI"]
 time: "2020-05-25T16:56:31.799Z"
 ---
 
 ![cover](cover.svg)
+
+<div class="warn">
+
+<b>This article is still a work-in-progress!</b>
+
+A significant number of subsections have not been written yet.
+</div>
 
 <div class="info">
 
@@ -270,63 +277,20 @@ Although it might not feel like it, this procedure can be done for all old and n
 	You need to enable javascript for this demo.
 </noscript>
 
-// But there's still one more problem: we need to ensure everybody sees the same "everything". \
-// => Gossiping tree hashes
-
 ### Signed Tree Head (STH) and gossiping protocols
 
-// We can gossip the hashes \
-// To verify the hashes are not made up, we need logs to sign the hash. \
-// Receiving a valid STH means that we can either be sure that some older part of our subtree is "shared" properly across the network (by requesting a consistency proof), or update our tree hash to a newer version (and checking consistency proof).
-
-// Ok, but there's still one more problem though: we don't want to rely on one single log.
+<div class="info">As I have said before, this article is still work-in-progress. The rest of the content is yet to be written.</div>
 
 ## Signed Certificate Timestamps
 
-// &hellip;which means that as a receiver of a certificate we need to be told in which log to find it. \
-// CA can include the log name in the certificate itself before submiting it. \
-// Also, in practise, the leaf hash is not just the certificate hash.
-
-// But this is not actually how things are done because&hellip;
-
 ### Maximum merge delays - all about scalability.
-
-// The log gives a SCT which act as a "promise" that it will include the certificate in the near future. \
-// Client can trust the certificate even if they can't find it in the log if the MMD hasn't passed. \
-// Once it has passed, check the log to see if the promise is valid. If not, make a news.
-
-// This also means that client can even forgo checking the log altogether and still remain relatively safe - if network resource is limited for example.
-
-// But how could a CA include a SCT inside a certificate, given that they have to submit the signed cert first?
 
 ## Precertificate
 
-// CA sign a "fake" certificate to prove that they're indeed the CA about to sign the cert.
-
 ### Pratical complications
-
-// The precertificate can be signed by a delegate CA. \
-// This means that the precertificates are allowed to have different *issuer name*.
-// Mentions how it's done in practice. \
-// "The log only need to hash the TBS because the public only need to be "aware" of the certificate from inspecting the log. The public can ask the log for proof (the actual thing signed by the CA).
 
 ## My new Rust library
 
-// Some screenshot/video demo to see the system working in practise \
-// Incldes me issuing a cert for [merkleforest.xyz](https://merkleforest.xyz) and seeing it appear in my terminal.
-
-// Can be used to monitor, inspection, SCT verification, etc. \
-// Contains lots of comment
-
 ## Current adoption
 
-// Summary of current adoption and call to action \
-// 1. Ask browser to implement CT checking and \
-// 2. &hellip;make `Expect-CT` the default. \
-// 3. Run your own gossiping servers. \
-// https://no-sct.badssl.com/
-
 ## Sidenote: if we have CT why do we need CA anymore?
-
-// CT has time delay. \
-// CAs can be held accountable when they mis-issue certs, a random person on the Internet can't, and the mis-issued certificate can't be blacklisted.

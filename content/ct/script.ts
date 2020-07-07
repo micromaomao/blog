@@ -29,6 +29,11 @@ class DrawnTree {
 	leafs: {g: G, l: Line | null}[] = [];
 	nodes: {g: G, l: Line | null}[][] = [];
 	layout: TreeLayout;
+	leaf_hovering: boolean[] = [];
+	leaf_hovering_except: number | null = null;
+	leaf_cursor_pointer: boolean = false;
+	leaf_colors: string[] = [];
+	leaf_onclick: ((i: number) => void) | null = null;
 
 	get pixel_height(): number {
 		if (this.size === 0 ) {
@@ -163,6 +168,54 @@ class DrawnTree {
 			}
 			this.leafs.push({g: ele, l});
 		}
+
+		for (let i = 0; i < this.size; i ++) {
+			let g = this.leafs[i].g;
+			this.leaf_hovering.push(false);
+			g.node.addEventListener("mouseenter", evt => {
+				this.leaf_hovering[i] = true;
+				this.update_style();
+			});
+			g.node.addEventListener("mouseleave", evt => {
+				this.leaf_hovering[i] = false;
+				this.update_style();
+			});
+			g.node.addEventListener("click", evt => {
+				if (this.leaf_onclick !== null) {
+					this.leaf_onclick(i);
+					this.update_style();
+				}
+			})
+		}
+		this.svg.node.addEventListener("mouseleave", evt => {
+			for (let i = 0; i < this.size; i ++) {
+				this.leaf_hovering[i] = false;
+			}
+			this.update_style();
+		});
+		this.update_style();
+	}
+
+	update_style() {
+		for (let i = 0; i < this.size; i ++) {
+			let g = this.leafs[i].g;
+			if (this.leaf_cursor_pointer) {
+				g.node.style.cursor = "pointer";
+			} else {
+				g.node.style.cursor = "";
+			}
+			let color = "black";
+			if (this.leaf_colors.length > i) {
+				color = this.leaf_colors[i];
+			}
+			if (this.leaf_hovering[i] && this.leaf_cursor_pointer && this.leaf_hovering_except !== i) {
+				color = "blue";
+			}
+			g.findOne("rect").attr({
+				stroke: color
+			});
+			g.findOne("foreignObject").node.style.color = color;
+		}
 	}
 
 	addTo(parent: Container | HTMLElement) {
@@ -203,17 +256,41 @@ async function init_inclusion_demo(container: HTMLElement) {
 		margin: "0"
 	});
 	container.appendChild(svg_contain);
+	let inclusion_proof_contain = document.createElement("div");
+	let inclusion_proof_pf = document.createElement("div");
+	inclusion_proof_pf.appendChild(document.createTextNode("Click on any "));
+	let MathJax = await load_mathjax();
+	inclusion_proof_pf.appendChild((await MathJax.tex2svgPromise("a_n")).childNodes[0]);
+	inclusion_proof_pf.appendChild(document.createTextNode(" to see inclusion proof."));
+	inclusion_proof_contain.appendChild(inclusion_proof_pf);
+	container.appendChild(inclusion_proof_contain);
 	let current_promise: Promise<void> | null = null;
 	let current_tsize = 0;
+	let current_inclusion: number | null = null;
 	async function update() {
 		let tsize = parseInt(controller.value);
 		if (tsize === current_tsize) {
 			return;
 		}
+		current_inclusion = null;
+		inclusion_proof_contain.innerHTML = "";
+		inclusion_proof_contain.appendChild(inclusion_proof_pf);
 		svg_contain.innerHTML = "...";
 		current_tsize = tsize;
 		tree_size_span.textContent = tsize.toString();
 		let t = new DrawnTree(tsize);
+		t.leaf_cursor_pointer = true;
+		t.leaf_onclick = i => {
+			inclusion_proof_contain.innerHTML = i.toString();
+			for (let k = 0; k < t.size; k ++) {
+				if (k === i) {
+					t.leaf_colors[k] = "rgb(0,127,0)";
+					t.leaf_hovering_except = k;
+				} else {
+					t.leaf_colors[k] = "black";
+				}
+			}
+		}
 		await t.draw();
 		svg_contain.innerHTML = "";
 		t.addTo(svg_contain);

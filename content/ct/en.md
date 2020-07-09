@@ -1,7 +1,7 @@
 ---
 title: "[WIP] Merkle All The Way Down: the inner-workings of certificate transparency"
 tags: ["security", "web security", "cryptography", "TLS", "RFC", "PKI"]
-time: "2020-05-25T16:56:31.799Z"
+time: "2020-07-07T23:56:28Z"
 ---
 
 ![cover](cover.svg)

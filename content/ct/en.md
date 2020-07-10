@@ -60,7 +60,7 @@ For example, there is no easy and quick way for Facebook (or any user browser) t
 
 ### Hashing
 
-Well, let's think about the "confirm with a third party" approach. If all clients keep a local, up-to-date copy of the entire log, then sure they can send their entire record of the log between each other to "verify" that they are seeing the same thing, but that's incredibly inefficient. Instead, they could use a *hash function* to hash all the certificates together, effectively capturing a "snapshot" of the log. Then, all the clients can share this short hash between them, broadcast it publicly to let anyone use it to verify, etc. This also give us a way to establish accountability of the log: if we require the log to always sign this "snapshot" (by calculating this hash itself and publishing the signature), whenever we found something wrong, we would basically have two signatures from the log corresponding to two conflicting lists, which we can show to the world along with the full data of the two lists for everyone to verify.
+Commonly, *hash functions* are used to make sure two piece of data are the same by computing a "snapshot" token representing the data. To create such a "token", log clients could hash all the certificates in the list together in order, and all the clients can share this short hash between them, broadcast it publicly to let anyone use it to verify, etc. This also give us a way to establish accountability of the log: if we require the log to always sign this "snapshot" (by calculating this hash itself and publishing the signature), whenever we found something wrong, we would basically have two signatures from the log corresponding to two conflicting lists, which we can show to the world along with the full data of the two lists for everyone to verify.
 
 However, simply hashing everything together still isn't an efficient strategy. First of all, doing this over the entire log is a lot of computational work that potentially has to be done every time the log updates. Secondly, this requires everyone to always have an up-to-date, full copy of the log in order to verify anything. For example, if you currently have the list <tex>a_1, a_2, a_3</tex> which hashes to <tex>h_{..3}</tex>, and the server tells you another certificate <tex>a_4</tex> has been added, you can calculate the new hash <tex>h_{..4}</tex> and verify this with others, but this is only possible if you actually still know the data of <tex>a_1</tex>, <tex>a_2</tex> and <tex>a_3</tex> at the time of this verification&mdash;you can't just "forget" about them. Similarly, you won't be able to confirm that a certificate you just received somewhere is in this list, if you just know the hash, without downloading all the other certificates and calculating out the hash to confirm.
 
@@ -129,7 +129,7 @@ Say for example that we have the following log, where each <tex>a_i</tex> is a c
 	<div class="an-list-block"><tex>a_8</tex></div>
 </div>
 
-Now, as a client, all you currently have is the hash of the log. How can you verify that a certificate you received, <tex>a_k</tex>, is in the log? If the hash is a simple concatenation of <tex>a_1\ldots{}a_8</tex>, then you would need to get every <tex>a_n</tex>, find <tex>a_k</tex> in the list that you got, and hash the list to get the expected hash and compare with the hash you had earlier. Even though you do not care about any other certificates in the list, you still have to hash them since the hash is a concatenation. But, what if instead of concatenating every <tex>a_n</tex> together to get the hash, we split the list into two, hash the first half and second half separately, then "combine" the hash by hashing the concatenation of the two "sub-hash"?
+And let's say we have a certificate that we want to verify. We ask the server, which tells us that the certificate is the third certificate in the list (<tex>a_3</tex>). If the hash is a simple concatenation of <tex>a_1\ldots{}a_8</tex>, then you would need to get every <tex>a_n</tex> other than <tex>a_3</tex>, compute the hash of the list, and compare with the hash you had earlier. Even though you do not care about any other certificates in the list, you still have to hash them since the hash is a concatenation. But, what if instead of concatenating every <tex>a_n</tex> together to get the hash, we split the list into two, hash the first half and second half separately, then "combine" the hash by hashing the concatenation of the two "sub-hash"?
 
 <style>
 .half-split-hash-demo {
@@ -166,7 +166,7 @@ Now, as a client, all you currently have is the hash of the log. How can you ver
 	<div class="desc-row">&nbsp;</div>
 </div>
 
-If we then want to confirm the existance of some certificate <tex>a_k</tex> in the list, we can then first ask the server to tell us <tex>k</tex>. We don't really care what <tex>k</tex> is, as long as it is the correct index of the certificate in the list. Let's say <tex>k = 3</tex>. To confirm that <tex>a_k</tex> is in the list corresponding to <tex>h_\text{all}</tex>, we just need to get <tex>a_1</tex>, <tex>a_2</tex> and <tex>a_4</tex>, hash with <tex>a_k</tex> to get our value of <tex>p_1</tex>, then combine the hash with <tex>p_2</tex> (which we can ask the server to give us) to get <tex>h_\text{all}</tex>, and check that the hash is as expected. We can then conclude that <tex>h_\text{all}</tex> "includes" <tex>a_k</tex> since it depends on <tex>a_k</tex>, which is the certificate we want to confirm, in our calculation.
+If we then want to confirm the existance of <tex>a_3</tex> in the list, we just need to get <tex>a_1</tex>, <tex>a_2</tex> and <tex>a_4</tex>, hash with the <tex>a_3</tex> we know to get our value of <tex>p_1</tex>, then combine the hash with <tex>p_2</tex> (which we can ask the server to give us) to get <tex>h_\text{all}</tex>, and check that the hash is as expected. We can then conclude that <tex>h_\text{all}</tex> "includes" <tex>a_3</tex> since it depends on <tex>a_3</tex>, which is the certificate we want to confirm, in our calculation.
 
 Note that by spliting the tree in half, we don't need to know anything about the "irrelevant" half, other than a short hash of it, anymore. Intuitively, we can continue this "splitting" pattern to make a binary tree, with the hashes of individual certificates alone being the leaf, and every node is a "combined" hash of its two leaves:
 
@@ -202,12 +202,11 @@ Note that by spliting the tree in half, we don't need to know anything about the
 	</div>
 </div>
 
-Now, if we want to confirm that <tex>a_k</tex> is in the list corresponding to <tex>h_\text{all}</tex>, we only need to:
+Now, if we want to confirm that <tex>a_3</tex> is in the list corresponding to <tex>h_\text{all}</tex>, we only need to:
 
-1. Ask the server the index <tex>k</tex> of <tex>a_k</tex> in the log. Assuming that <tex>k = 3</tex>&hellip;
-2. Get <tex>H(a_4)</tex>, <tex>h_{1..2}</tex>, and <tex>h_{5..8}</tex> from the server.
-3. Calculate <tex>H(a_3)</tex> from the certificate data we have.
-4. Confirm that <tex>h_\text{all} = H(\color{purple}{H(h_{1..2}||\color{blue}{H(\color{red}{H(a_3)}||H(a_4))})}||h_{5..8})</tex>.
+1. Get <tex>H(a_4)</tex>, <tex>h_{1..2}</tex>, and <tex>h_{5..8}</tex> from the server.
+2. Calculate <tex>H(a_3)</tex> from the certificate data we have.
+3. Confirm that <tex>h_\text{all} = H(\color{purple}{H(h_{1..2}||\color{blue}{H(\color{red}{H(a_3)}||H(a_4))})}||h_{5..8})</tex>.
 
 We don't even need to know any other <tex>a_n</tex>&mdash;we just need the hash of <tex>a_4</tex> and two other "intermediate" hash, which we can simply ask the server since we don't really care what the other certificates are. Once we get all the necessary intermediate hashes from the server, we can sort of "bubble up" the binary tree to arrive at our final <tex>h_\text{all}</tex>, and because we used the hash of the certificate we want to confirm&mdash;<tex>a_k</tex>&mdash;to finally derive <tex>h_\text{all}</tex>, the list corresponding to <tex>h_\text{all}</tex> must contains <tex>a_k</tex>. It is not hard to see that, to confirm the existance of one certificate in a log of size <tex>n</tex>, we only need <tex>O(\log n)</tex> hashes if we do it this way.
 
@@ -277,7 +276,25 @@ Although it might not feel like it, this procedure can be done for all old and n
 	You need to enable javascript for this demo.
 </noscript>
 
-### Signed Tree Head (STH) and gossiping protocols
+### Gossiping & *Signed Tree Head* (STH)
+
+Now that we have discussed tree hash, inclusion and consistency proofs, we can come up with the simplist model how a browser (or a monitor such as [crt.sh](https://crt.sh/)) might interact with a CT log:
+
+1. Client always keep track of the current tree hash (and size), and regualrly ask the log for update.
+2. If a new tree hash with larger tree size is received, ask for consistency proof and check it. If checks OK, update the stored tree hash and size.
+3. To verify some certificate, ask for an inclusion proof of it against the current known tree hash.
+
+<div class="info">
+
+In practice, browsers don't actually do this because of privacy concerns, since asking for inclusion proof reveals which site you are visiting, and also because the CT server probably can't withstand everyone connecting to it. Detail of real-life implementation in browsers are out of the scope of this article.<footnote>read: I don't know</footnote>
+
+</div>
+
+In order to hold log servers more accountable, we also need it to sign the tree hash they gave clients with their public key. Therefore, if a log ever attempts to send inconsistent hashes, or fork the tree between clients, once this is discovered there is a way to prove that the log really did that. This also allow clients to "*gossip*" between each other&mdash;they could exchange the latest hash and signature that they received, and check for consistency, so that if the log ever tries to present different fork of the tree to different clients, there is a chance that (if they are gossiping between each other, or to a common third-party) it will be catched.
+
+This signature is called a *Signed Tree Hash* in certificate transparency, and in the protocol it includes the following information: the tree hash itself, the corrosponding tree size, and a timestamp that is no earlier than the time the last certificate is added to this tree<footnote>along with a `version` and a `signature_type`, which we won't care about.</footnote>.
+
+<noscript id="sth-fetch">If you enable JavaScript you can see the latest STH of Google's pilot log here.</noscript>
 
 <div class="info">As I have said before, this article is still work-in-progress. The rest of the content is yet to be written.</div>
 
@@ -286,8 +303,6 @@ Although it might not feel like it, this procedure can be done for all old and n
 ### Maximum merge delays - all about scalability.
 
 ## Precertificate
-
-### Pratical complications
 
 ## My new Rust library
 

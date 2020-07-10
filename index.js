@@ -14,19 +14,31 @@ const webpack = require("webpack");
 process.chdir(__dirname);
 
 let output_dir = path.resolve(__dirname, "dist");
+let skip_webpack = false;
 
 async function main () {
   let filter;
   switch (process.argv.length) {
     // first 2 args are "node" and "index.js"
+    case 0:
+    case 1:
+     throw new Error("Expected one or no arguments.");
     case 2:
       filter = null;
       break;
     case 3:
-      filter = process.argv[2];
-      break;
     default:
-     throw new Error("Expected one or no arguments.");
+      filter = process.argv[2];
+      for (let arg of process.argv.slice(3)) {
+        switch (arg) {
+          case "--skip-webpack":
+            skip_webpack = true;
+            break;
+          default:
+            throw new Error("Unexpected argument " + arg);
+        }
+      }
+      break;
   }
 
   let output_dir_stat = null;
@@ -382,44 +394,48 @@ async function main () {
       }
       let script_path = path.resolve(cdir_path, "script.ts");
       if (fs.existsSync(script_path)) {
-        print_status(`tsc ${script_path} > ...`);
-        let _bundle_path = path.resolve(dist_dict_path, "script.js");
-        await new Promise((resolve, reject) => {
-          let webpack_config = {
-            entry: script_path,
-            devtool: "source-map",
-            module: {
-              rules: [
-                {
-                  test: /\.ts$/,
-                  use: "ts-loader",
-                  exclude: "/node_modules/"
-                }
-              ]
-            },
-            resolve: {
-              extensions: [".ts", ".js"],
-              modules: ["node_modules", __dirname]
-            },
-            output: {
-              filename: "script.js",
-              path: dist_dict_path,
-            },
-            optimization: {
-              minimize: (!!process.env["GITHUB_ACTIONS"]) || (!!process.env["CI"])
-            }
-          };
-          webpack(webpack_config, (err, stats) => {
-            if (err || stats.hasErrors()) {
-              reject(new Error(err || `Webpack: ${stats.toString()}`));
-            } else {
-              resolve();
-              if (filter !== null) {
-                webpack(webpack_config).watch({}, info => console.log(info));
+        if (!skip_webpack) {
+          print_status(`tsc ${script_path} > ...`);
+          let _bundle_path = path.resolve(dist_dict_path, "script.js");
+          await new Promise((resolve, reject) => {
+            let webpack_config = {
+              entry: script_path,
+              devtool: "source-map",
+              module: {
+                rules: [
+                  {
+                    test: /\.ts$/,
+                    use: "ts-loader",
+                    exclude: "/node_modules/"
+                  }
+                ]
+              },
+              resolve: {
+                extensions: [".ts", ".js"],
+                modules: ["node_modules", __dirname]
+              },
+              output: {
+                filename: "script.js",
+                path: dist_dict_path,
+              },
+              optimization: {
+                minimize: (!!process.env["GITHUB_ACTIONS"]) || (!!process.env["CI"])
               }
-            }
-          })
-        });
+            };
+            webpack(webpack_config, (err, stats) => {
+              if (err || stats.hasErrors()) {
+                reject(new Error(err || `Webpack: ${stats.toString()}`));
+              } else {
+                resolve();
+                if (filter !== null) {
+                  webpack(webpack_config).watch({}, info => console.log(info));
+                }
+              }
+            })
+          });
+        } else {
+          print_status(`tsc skipped.`.gray);
+        }
         article.script = "script.js";
       } else {
         progress_current_work_done++;

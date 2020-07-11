@@ -80,6 +80,8 @@ Say for example that we have the following log, where each <tex>a_i</tex> is a c
 .an-list-contain {
 	display: flex;
 	align-items: baseline;
+	max-width: 100%;
+	overflow-x: auto;
 }
 .an-list-contain > :first-child {
 	margin-left: auto;
@@ -132,6 +134,10 @@ Say for example that we have the following log, where each <tex>a_i</tex> is a c
 And let's say we have a certificate that we want to verify. We ask the server, which tells us that the certificate is the third certificate in the list (<tex>a_3</tex>). If the hash is a simple concatenation of <tex>a_1\ldots{}a_8</tex>, then you would need to get every <tex>a_n</tex> other than <tex>a_3</tex>, compute the hash of the list, and compare with the hash you had earlier. Even though you do not care about any other certificates in the list, you still have to hash them since the hash is a concatenation. But, what if instead of concatenating every <tex>a_n</tex> together to get the hash, we split the list into two, hash the first half and second half separately, then "combine" the hash by hashing the concatenation of the two "sub-hash"?
 
 <style>
+.max-width-100 {
+	width: 100%;
+	overflow-x: auto;
+}
 .half-split-hash-demo {
 	display: grid;
 	width: auto;
@@ -153,24 +159,26 @@ And let's say we have a certificate that we want to verify. We ask the server, w
 	font-size: 110%;
 }
 </style>
-<div class="half-split-hash-demo">
-	<div><tex>h_\text{all} = H(</tex></div>
-	<div class="bdown"><tex>H(a_1 || a_2 || a_3 || a_4)</tex></div>
-	<div><tex>||</tex></div>
-	<div class="bdown"><tex>H(a_5 || a_6 || a_7 || a_8)</tex></div>
-	<div><tex>)</tex></div>
-	<div class="desc-row">&nbsp;</div>
-	<div class="desc-row"><tex>p_1</tex>: Hash of first half</div>
-	<div class="desc-row">&nbsp;</div>
-	<div class="desc-row"><tex>p_2</tex>: Hash of second half</div>
-	<div class="desc-row">&nbsp;</div>
+<div class="max-width-100">
+	<div class="half-split-hash-demo">
+		<div><tex>h_\text{all} = H(</tex></div>
+		<div class="bdown"><tex>H(a_1 || a_2 || a_3 || a_4)</tex></div>
+		<div><tex>||</tex></div>
+		<div class="bdown"><tex>H(a_5 || a_6 || a_7 || a_8)</tex></div>
+		<div><tex>)</tex></div>
+		<div class="desc-row">&nbsp;</div>
+		<div class="desc-row"><tex>p_1</tex>: Hash of first half</div>
+		<div class="desc-row">&nbsp;</div>
+		<div class="desc-row"><tex>p_2</tex>: Hash of second half</div>
+		<div class="desc-row">&nbsp;</div>
+	</div>
 </div>
 
 If we then want to confirm the existance of <tex>a_3</tex> in the list, we just need to get <tex>a_1</tex>, <tex>a_2</tex> and <tex>a_4</tex>, hash with the <tex>a_3</tex> we know to get our value of <tex>p_1</tex>, then combine the hash with <tex>p_2</tex> (which we can ask the server to give us) to get <tex>h_\text{all}</tex>, and check that the hash is as expected. We can then conclude that <tex>h_\text{all}</tex> "includes" <tex>a_3</tex> since it depends on <tex>a_3</tex>, which is the certificate we want to confirm, in our calculation.
 
 Note that by spliting the tree in half, we don't need to know anything about the "irrelevant" half, other than a short hash of it, anymore. Intuitively, we can continue this "splitting" pattern to make a binary tree, with the hashes of individual certificates alone being the leaf, and every node is a "combined" hash of its two leaves:
 
-<div class="an-list-contain" style="">
+<div class="an-list-contain">
 	<div class="an-list-wrap">
 		<div class="an-list-wdesc"><tex>h_\text{all} = h_{1..8} = H(h_{1..4} || h_{5..8})</tex></div>
 		<div class="an-list-wrap">
@@ -228,7 +236,7 @@ This kind of binary-tree arrangement has a name: **(almost) complete binary tree
 	border-color: red;
 }
 </style>
-<div class="an-list-contain" style="">
+<div class="an-list-contain">
 	<div class="an-list-wrap">
 		<div class="an-list-wdesc mod"><tex>h_\text{all} = h_{1..8}</tex></div>
 		<div class="an-list-wrap">
@@ -284,23 +292,31 @@ Now that we have discussed tree hash, inclusion and consistency proofs, we can c
 2. If a new tree hash with larger tree size is received, ask for consistency proof and check it. If checks OK, update the stored tree hash and size.
 3. To verify some certificate, ask for an inclusion proof of it against the current known tree hash.
 
-<div class="info">
+This is **not** what happens in practice, as we shall see later, but let's presume for now that it is.
 
-In practice, browsers don't actually do this because of privacy concerns, since asking for inclusion proof reveals which site you are visiting, and also because the CT server probably can't withstand everyone connecting to it. Detail of real-life implementation in browsers are out of the scope of this article.<footnote>read: I don't know</footnote>
+In order to hold log servers more accountable, we also need it to sign the tree hash they gave clients with a public key that everyone knows belongs to the log. Therefore, if a log ever attempts to send inconsistent hashes, or fork the tree between clients, once this is discovered there is a way to prove that the log really did that. This also allow clients to "*gossip*" between each other in a trustworthy manner&mdash;clients could simply send each other the latest hash and signature that they received, and the receiver, once verified the signature, can ask for a consistency proof between the hash they got and they hash they have, so that if the log ever tries to present different fork of the tree to different clients, there is a high chance that it will be catched.
 
-</div>
-
-In order to hold log servers more accountable, we also need it to sign the tree hash they gave clients with their public key. Therefore, if a log ever attempts to send inconsistent hashes, or fork the tree between clients, once this is discovered there is a way to prove that the log really did that. This also allow clients to "*gossip*" between each other&mdash;they could exchange the latest hash and signature that they received, and check for consistency, so that if the log ever tries to present different fork of the tree to different clients, there is a chance that (if they are gossiping between each other, or to a common third-party) it will be catched.
-
-This signature is called a *Signed Tree Hash* in certificate transparency, and in the protocol it includes the following information: the tree hash itself, the corrosponding tree size, and a timestamp that is no earlier than the time the last certificate is added to this tree<footnote>along with a `version` and a `signature_type`, which we won't care about.</footnote>.
+In the protocol, the data structure that ct server signs and give client each time they update the tree is called a *Signed Tree Hash*, and it includes the following information: the tree hash itself, the corrosponding tree size, and a timestamp that is no earlier than the time the last certificate is added to this tree.<footnote>&hellip;along with a `version` and a `signature_type`, which we won't care about.</footnote> As an example, here is the latest STH from Google's "Pilot" log (the "main" log):
 
 <noscript id="sth-fetch">If you enable JavaScript you can see the latest STH of Google's pilot log here.</noscript>
 
-<div class="info">As I have said before, this article is still work-in-progress. The rest of the content is yet to be written.</div>
+In order for effective gossiping to happen, there also has to be a common protocol. Currently (as of Jul 2020) there is no official standard on this, but there are draft proposals that have been there for quite some time now. We won't go into too much detail here, but basically clients share STHs with each other, as we expected<footnote>&hellip;and in some cases, SCTs, as discussed below</footnote>.
 
-## Signed Certificate Timestamps
+In a simple world, this article would end here. However, there are some practical factors we need to consider, which means that there is actually more to it.
 
-### Maximum merge delays - all about scalability.
+## *Signed Certificate Timestamps* \& *Maximum merge delay*
+
+In reality, there are multiple CT logs, mostly runned by compaines like Google and some large CAs. This means that once the browser gets a certificate, it need to know which log to fetch the proof from, because the certificate might have only been submitted to some but not all logs. This already makes it necessary to create a way to pass more information to the browser, along with the certificate itself.
+
+Another concern is privacy and scalability. If all the browsers in the world query one particular CT log every time they get a new certificate, and also at regular intervals to update their latest tree hash, that server might not be able to handle the load. Plus, if browsers use the simplistic approach outlined earlier and ask for an inclusion proof every time, it reveals what site the user is visiting to the log server.
+
+One solution is to bundle the proof, along with a STH which the proof is based on, with the certificate, so that clients can check the proof locally and only have to talk to the CT server to get consistency proofs, perhaps in a later time and in batch. However, this would still reveal, to a certain extent, the websites that the client visited, since the client would need to ask the server for consistency proof between the latest hash and the hash given to the client along with the certificate.
+
+The above solution, as well as not doing anything special at all, would also require that the log be able to immediately add the certificate to the tree once it is submitted by the CA (otherwise browser will reject the certificate until the log actually adds it), which is not always econmoical or possible. If, for example, thousands of certificate are being submitted per second, it would take less work to add them in batch and re-calculate the various tree hashes once instead of thousands of times.<footnote>This gets worse as the speed of certificates arriving increases, and CT log operators can't easily "add more server" to help with the stress of growing the tree in real-time, since the entire log needs to be always consistent, and certificates must be appended one after another without gaps.</footnote><footnote>1 sample experiment shows that Google's log takes 5 minute for a newly issued Let's Encrypt cert to be included.</footnote> Therefore, the protocol is actually more sophisticated than that.
+
+What really happens is that, whenever a CA submits a certificate, the log issues a *Signed Certificate Timestamp* (SCT), which is a data structure signed with the log's public key, containing the certificate itself and a timestamp of when the certificate was received by the log. Each log also has a public constant called *maximum merge delay*, and the certificate in all SCTs issued by the log must be included in the tree no later than the signed timestamp plus the maximum merge delay. For most logs, this constant is 24 hours, which means that the log have 24 hours to add any certificate submitted to it into its tree. If the public found out that a log produced a SCT but can't produce an inclusion proof for the certificate based on a STH with a timestamp that is after the deadline, it is treated as a log misbehavour.
+
+Thus, a SCT is basically a very binding "promise" that the log will include the certificate in the near future. If the browser wants to do any verification itself at all, it might need to wait some amount of time before it can directly ask the log for an inclusion proof to defend the SCT received. On the other hand, because of the existance of this "promise", the browser at least has some confidence that the certificate will be included by the log, just like if it had received an inclusion proof based on an unknown STH. [It was proposed that](https://tools.ietf.org/html/draft-ietf-trans-gossip-05#section-8.3) the browser may alternatively trust one or more third-parties (or the web server being accessed itself, at some later time) to do the actual proof checking by sending the SCT to them after verifying the validity of the SCT, and the third-party would hopefully raise awareness if the log can't defend any of the SCTs.<footnote>IMO this is basically just applying the logic of gossiping, which is inherently opportunistic and not 100%, to inclusion proofs, instead of only gossiping the STH. I might not have understood the draft correctly though.</footnote>
 
 ## Precertificate
 

@@ -8,7 +8,7 @@ export async function init_sth_fetch(container: HTMLElement) {
 		try {
 			let json = await get_json("get-sth");
 			container.style.color = "";
-			container.innerHTML = "<div>Latest signed-tree-head from Google's pilot log:</div>";
+			container.innerHTML = "";
 			let pre = document.createElement("pre");
 			pre.innerText = JSON.stringify(json, null, 2);
 			pre.style.overflowX = "auto";

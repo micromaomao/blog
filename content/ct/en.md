@@ -4,6 +4,7 @@ tags: ["security", "web security", "cryptography", "TLS", "RFC", "PKI"]
 time: "2020-07-12T19:44:04Z"
 discuss:
 	"Twitter": "https://twitter.com/WtmMao/status/1282403397887578115"
+	"Hacker News": "https://news.ycombinator.com/item?id=23814292"
 ---
 
 ![cover](cover.svg)

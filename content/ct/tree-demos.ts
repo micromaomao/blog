@@ -68,21 +68,14 @@ export async function init_inclusion_demo(container: HTMLElement) {
 			let proof = make_inclusion_proof(tsize, current_inclusion);
 			inclusion_proof_contain.innerHTML = "...";
 			let current_segm = new TreeSegment(current_inclusion, current_inclusion + 1);
-			t.node_style(current_segm).line_color = "rgb(127,127,0)";
+			t.node_style(current_segm).line_color = "red";
 			let tex_str = `{\\color{rgb(0,127,0)}{${segm_to_tex(current_segm)}}}`;
 			for (let i = 0; i < proof.length; i++) {
 				let segm = proof[i];
 				let segmtex = segm_to_tex(segm);
 				let ns = t.node_style(segm);
-				if (i === 0 && segm.end - segm.start === 1) {
-					segmtex = `{\\color{rgb(127,0,127)}{${segmtex}}}`;
-					ns.line_color = "red";
-					ns.text_color = "rgb(127,0,127)";
-				}
-				else {
-					segmtex = `{\\color{red}{${segmtex}}\\color{black}}`;
-					ns.line_color = ns.text_color = "red";
-				}
+				segmtex = `{\\color{rgb(127,127,0)}{${segmtex}}}`;
+				ns.line_color = ns.text_color = "rgb(127,127,0)";
 				if (segm.start < current_segm.start) {
 					tex_str = `H(${segmtex} || ${tex_str})`;
 					current_segm = new TreeSegment(segm.start, current_segm.end);
@@ -91,13 +84,19 @@ export async function init_inclusion_demo(container: HTMLElement) {
 					tex_str = `H(${tex_str} || ${segmtex})`;
 					current_segm = new TreeSegment(current_segm.start, segm.end);
 				}
-				tex_str = `\\underbrace{${tex_str}}_{\\color{rgb(127,127,0)}{${segm_to_tex(current_segm)}}}`;
+				tex_str = `\\underbrace{${tex_str}}_{\\color{red}{${segm_to_tex(current_segm)}}}`;
 				let ts = t.node_style(current_segm);
-				ts.text_color = ts.line_color = "rgb(127,127,0)";
+				ts.text_color = ts.line_color = "red";
 			}
-			t.node_style(current_segm).text_color = "rgb(127,127,0)";
+			t.node_style(current_segm).text_color = "red";
 			let tt = await MathJax.cachedTex2SvgPromise("h_\\text{all} = " + tex_str);
-			inclusion_proof_contain.innerHTML = "";
+			let proof_render = await MathJax.cachedTex2SvgPromise(proof.map(x => `{\\color{rgb(127,127,0)}{${segm_to_tex(x)}}}`).join(", "));
+			if (proof.length === 0) {
+				proof_render = await MathJax.cachedTex2SvgPromise("\\{\\}");
+			}
+			inclusion_proof_contain.innerHTML = "Proof: ";
+			inclusion_proof_contain.appendChild(proof_render);
+			inclusion_proof_contain.appendChild(document.createElement("br"));
 			inclusion_proof_contain.appendChild(tt);
 		};
 		await t.draw();
@@ -147,7 +146,7 @@ export async function init_consistency_demo(container: HTMLElement) {
 	old_size_control.type = "range";
 	old_size_control.min = "1";
 	old_size_control.max = "10";
-	old_size_control.value = "8";
+	old_size_control.value = "7";
 	old_size_control.style.width = "100%";
 	controller_contain.appendChild(old_size_control);
 	container.appendChild(controller_contain);
@@ -214,7 +213,7 @@ export async function init_consistency_demo(container: HTMLElement) {
 					let subtree = proof[i];
 					let is_old_part = subtree.end <= current_oldsize;
 					let ns = current_tree.node_style(subtree);
-					let col = is_old_part ? "rgb(127,127,0)" : "red";
+					let col = "rgb(127,127,0)";
 					ns.line_color = ns.text_color = col;
 					if (subtree.start > current_subtree.start) {
 						new_hall_tex = `H(${new_hall_tex} || {\\color{${col}}{${segm_to_tex(subtree)}}})`;
@@ -239,9 +238,12 @@ export async function init_consistency_demo(container: HTMLElement) {
 						old_hall_tex = `\\underbrace{${old_hall_tex}}_{${segm_to_tex(current_old_subtree)}}`;
 					}
 				}
+				let proof_render = await MathJax.cachedTex2SvgPromise(proof.map(x => `{\\color{rgb(127,127,0)}{${segm_to_tex(x)}}}`).join(", "));
 				let new_tex_render = await MathJax.cachedTex2SvgPromise("h_\\text{all}\\ \\text{(new tree)} = " + new_hall_tex);
 				let old_tex_render = await MathJax.cachedTex2SvgPromise(`${segm_to_tex(current_old_subtree)}\\ \\text{(old tree)} = ` + old_hall_tex);
-				proof_contain.innerHTML = "";
+				proof_contain.innerHTML = "Proof: ";
+				proof_contain.appendChild(proof_render);
+				proof_contain.appendChild(document.createElement("br"));
 				proof_contain.appendChild(new_tex_render);
 				proof_contain.appendChild(document.createElement("br"));
 				proof_contain.appendChild(old_tex_render);

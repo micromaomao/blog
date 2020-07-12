@@ -73,7 +73,7 @@ async function main () {
     dir_entires = dir_entires.filter(x => x == filter);
   }
   console.log(`       (${dir_entires.length} articles to build)`.gray);
-  let progress_total_work = dir_entires.length*3 + 10;
+  let progress_total_work = dir_entires.length*4 + 10;
   let progress_current_work_done = 0;
   function print_status(status_text) {
     console.log(`[${Math.round(progress_current_work_done++ / progress_total_work * 100).toString().padStart(3, " ")}%] ${status_text}`.cyan);
@@ -141,6 +141,8 @@ async function main () {
       article.assets = new Map();
       article.codename = codename;
       let dist_dict_path = path.resolve(output_dir, codename);
+      let article_base_url = "https://blog.maowtm.org/" + codename;
+      article.base_url = article_base_url;
       article.output_path = dist_dict_path;
       tryMkdirp(dist_dict_path);
       function transform_local_asset_href(href) {
@@ -208,7 +210,7 @@ async function main () {
           throw new Error(`${mdpath}: expected front matter`);
         }
         try {
-          front_matter = jsyaml.load(front_matter, {onWarning: e => print_warn(`yaml warning on ${mdpath}: ${e.message}`)});
+          front_matter = jsyaml.load(front_matter.replace(/\t/g, "  "), {onWarning: e => print_warn(`yaml warning on ${mdpath}: ${e.message}`)});
         } catch (e) {
           throw new Error(`${mdpath}: invalid yaml front matter: ${e.message}`);
         }
@@ -229,7 +231,10 @@ async function main () {
             throw new Error(`${mdpath}: front matter: invalid tags array`);
           }
         }
-        let lang_obj = {id: l, cover_image: null, title: front_matter.title, time, tags, markdown};
+        let lang_obj = {id: l, cover_image: null, title: front_matter.title, time, tags, markdown, discuss: null};
+        if (front_matter.hasOwnProperty("discuss")) {
+          lang_obj.discuss = front_matter.discuss;
+        }
         print_verbose(`Processing ${l}`);
         let md_renderer = new marked.Renderer({
           headerIds: true
@@ -238,6 +243,8 @@ async function main () {
           return orig_renderer.link(transform_local_asset_href(href), title, text);
         }
 
+        let cover_image_file = null;
+
         async function process_html(html) {
           let mathjax_style_included = false;
 
@@ -245,10 +252,12 @@ async function main () {
 
           $("img").each((_, e) => {
             let node = $(e);
-            let h = transform_local_asset_href(node.attr("src"));
+            let src = node.attr("src");
+            let h = transform_local_asset_href(src);
             if (node.attr("alt") === "cover") {
               print_verbose(`Cover image is ${h}`);
               lang_obj.cover_image = h;
+              cover_image_file = src;
               node.remove();
               return;
             }
@@ -304,6 +313,35 @@ async function main () {
               node.removeClass("make-" + tagname);
             }
           });
+
+          if (lang_obj.discuss) {
+            let d = lang_obj.discuss;
+            let keys = Object.keys(d);
+            if (keys.length > 0) {
+              let ele = $("<p>");
+              if (keys.length === 1) {
+                let k = keys[0];
+                let a = $("<a>");
+                a.text(`Discuss on ${k}`);
+                a.attr("href", d[k]);
+                ele.append(a);
+              } else {
+                ele.text("Discuss on: ");
+                let first = true;
+                for (let k of keys) {
+                  if (!first) {
+                    ele.append(", ");
+                  }
+                  let a = $("<a>");
+                  a.text(k);
+                  a.attr("href", d[k]);
+                  ele.append(a);
+                  first = false;
+                }
+              }
+              $("body").append(ele);
+            }
+          }
 
           let footnotes = [];
           let next_footnote_id = 1;
@@ -371,6 +409,16 @@ async function main () {
           throw new Error(`Error rendering ${mdpath}: ${e.message}`);
         }
         lang_obj.html = html;
+
+        if (cover_image_file && cover_image_file.endsWith(".svg")) {
+          let png_output = path.resolve(dist_dict_path, cover_image_file + ".png");
+          print_status(`convert ${png_output}`);
+          child_process.execSync(`convert -density 300 ${JSON.stringify(path.resolve(cdir_path, cover_image_file))} ${JSON.stringify(png_output)}`);
+          lang_obj.cover_image_og = cover_image_file + ".png";
+        } else {
+          progress_current_work_done += 1;
+        }
+
         article.languages.push(lang_obj);
       }
 
@@ -385,11 +433,7 @@ async function main () {
           let name = pp.base;
           let cmdline = `tar -c ${JSON.stringify(name)} | gzip > ${JSON.stringify(a.output_path)}`;
           print_status(cmdline);
-          try {
-            child_process.execSync(cmdline, {cwd: parent});
-          } catch (e) {
-            throw new Error(e.message);
-          }
+          child_process.execSync(cmdline, {cwd: parent});
         }
       }
       let script_path = path.resolve(cdir_path, "script.ts");

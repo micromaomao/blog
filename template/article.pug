@@ -5,8 +5,11 @@ html(lang=lang_obj.id)
     title= lang_obj.title + " - Mao's technical notes"
     meta(name="keywords",content=lang_obj.tags.join(','))
     meta(name="viewport",content="width=device-width, initial-scale=1.0")
-    -if (lang_obj.cover_image)
-      meta(property="og:image",content=lang_obj.cover_image)
+    meta(property="og:url",content=`${article.base_url}/${lang_obj.id}.html`)
+    meta(property="og:title",content=lang_obj.title)
+    -if (lang_obj.cover_image_og)
+      meta(property="og:image",content=`${article.base_url}/${lang_obj.cover_image_og}`)
+    meta(property="og:type",content="article")
     style(type="text/css")!= "\n" + css
     link(rel="stylesheet", href="https://unpkg.com/highlight.js@9.16.2/styles/idea.css")
     -if (article.script)
@@ -31,7 +34,6 @@ html(lang=lang_obj.id)
       |
       span.time(title=lang_obj.time.toUTCString())= "on " + lang_obj.time.toDateString()
       | .<br>
-      |
       | Authored by <a href="https://maowtm.org">maowtm (Tingmao Wang)</a> &lt;m@maowtm.org&gt;.<br>
       |
       | Content <a href="https://github.com/micromaomao/blog/blob/draft/LICENSE.md">licensed under a Creative Commons Attribution-ShareAlike 4.0 International License</a>.<br>

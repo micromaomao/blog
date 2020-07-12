@@ -1,17 +1,10 @@
 ---
-title: "[WIP] Merkle All The Way Down: the inner-workings of certificate transparency"
+title: "Merkle All The Way Down: the inner-workings of certificate transparency"
 tags: ["security", "web security", "cryptography", "TLS", "RFC", "PKI"]
 time: "2020-07-07T23:56:28Z"
 ---
 
 ![cover](cover.svg)
-
-<div class="warn">
-
-<b>This article is still a work-in-progress!</b>
-
-A significant number of subsections have not been written yet.
-</div>
 
 <div class="info">
 
@@ -310,7 +303,7 @@ In reality, there are multiple CT logs, mostly runned by compaines like Google a
 
 Another concern is privacy and scalability. If all the browsers in the world query one particular CT log every time they get a new certificate, and also at regular intervals to update their latest tree hash, that server might not be able to handle the load. Plus, if browsers use the simplistic approach outlined earlier and ask for an inclusion proof every time, it reveals what site the user is visiting to the log server.
 
-One solution is to bundle the proof, along with a STH which the proof is based on, with the certificate, so that clients can check the proof locally and only have to talk to the CT server to get consistency proofs, perhaps in a later time and in batch. However, this would still reveal, to a certain extent, the websites that the client visited, since the client would need to ask the server for consistency proof between the latest hash and the hash given to the client along with the certificate.
+One solution is to bundle the proof, along with a STH which the proof is based on, with the certificate and send both to browsers when they access a web server, so that browsers can check the proof locally and only have to talk to the CT server to get consistency proofs, perhaps in a later time and in batch. However, this would still reveal, to a certain extent, the websites that the user visited, since the browser would need to ask the server for consistency proof between the latest hash and the hash given to the client along with the certificate.
 
 The above solution, as well as not doing anything special at all, would also require that the log be able to immediately add the certificate to the tree once it is submitted by the CA (otherwise browser will reject the certificate until the log actually adds it), which is not always econmoical or possible. If, for example, thousands of certificate are being submitted per second, it would take less work to add them in batch and re-calculate the various tree hashes once instead of thousands of times.<footnote>This gets worse as the speed of certificates arriving increases, and CT log operators can't easily "add more server" to help with the stress of growing the tree in real-time, since the entire log needs to be always consistent, and certificates must be appended one after another without gaps.</footnote><footnote>1 sample experiment shows that Google's log takes 5 minute for a newly issued Let's Encrypt cert to be included.</footnote> Therefore, the protocol is actually more sophisticated than that.
 
@@ -320,8 +313,58 @@ Thus, a SCT is basically a very binding "promise" that the log will include the 
 
 ## Precertificate
 
+![A screenshot of the Firefox's embedded-SCTs section of the certificate viewer](embedded-scts.png)
+
+If you go to a random website today and inspect their certificate with Firefox<footnote>As of 11 Jul 2020, chromium doesn't show the SCT list.</footnote>, chances are that you will see a section named "embeded SCTs". This is exactly what it sounds like&mdash;some SCTs from well-known logs that promise inclusion of this certificate&mdash;embedded within the certificate itself, along with the name of the logs.
+
+If a web server presents certificates with embedded SCTs, the browser can verify the CT status of the certificate in whichever way it want, without needing the web server to give it any additional info. This makes it possible for a website to conform with CT requirement without any special server configuration.
+
+However, if CT logs needs to have the certificate first before being able to include it into its tree and issuing a SCT, how is this possible? The answer is *precertificates*.
+
+When the CA wants to embed SCTs into its certificate, it actually needs to produce two certificates&mdash;a "precertificate" to prove to logs that the CA is actually capable of and intend to sign the certificate, and the final certificate, after it receives the SCTs it needs. The two certificates must be exactly the same except in the following ways:
+
+1. The precertificate would not have the embedded SCTs, obviously.
+2. The precertificate would have an additional x509 extension&mdash;the precertificate poison&mdash;which prevents the precertificate to be used for anything other than proving to the log that the CA would sign the final certificate. Browsers won't accept any certificates with this poison.
+3. The precertificate may be signed by a delegate CA one level down the PKI tree.<footnote>&hellip;which means that it may have different issuer name and "Authority Key Identifier".</footnote>
+
+[Here is an example of a precertificate](precert-sample.pem) and [here is the corrosponding "real" certificate](precert-sample-real.pem). If you print it with openssl:
+
+```
+openssl x509 -in precert-sample.pem -noout -text
+```
+
+you should see that there is a section named `CT Precertificate Poison: critical` and that there is no SCT list, but is otherwise exactly the same as the real certiticate.
+
+Although the precertificate can't be normally used, a CA signing it should be treated the same as signing the corrosponding final certificate, which means that CT logs can accept submissions in precertificates and will add it to the log, and any monitor should treat the present of the precertificate as if the real thing is being signed by the CA.
+
+But there is one more thing&mdash;the CT log can't actually use the hash of the precertificate as the leaf hash and call it a day, because otherwise browsers wanting to verify the inclusion of some certificates that has been included this way must have the precertificate submitted to the CT in order to come up with the correct hash, but this is not the case since the precertificate is not used anymore after submission and is never given to browsers directly. Therefore, CT logs, after receiving a precertificate submission, actually removes the signature and the precertificate poison, modifies the issuer name to that of the real CA, and then hash this unsigned blob<footnote>This blob is called a TBS (to be signed) certificate.</footnote>. Therefore, any browsers wanting inclusion proof could do similar thing to the real certificate&mdash;remove the signature, remove the SCT list&mdash;and come up with the correct leaf hash (and hence be able to request and verify inclusion proof).
+
+The CT server would actually keep a copy of the signed precertificate in case anyone notice any certificates that is suspious, and failure to provide this precertificate is actually log misbehaviour. Therefore, there is no incentive for the log to create a fake leaf (to falsely incriminate an innocent CA, for example). The CT log can't take advantage of this set up to "hide" certificates either: in order to produce an inclusion proof of the "hidden" certificate, it has to include the "essence" of the certificate, which it intends to hide, in the tree.
+
+## Some minor details
+
+This brings us to the end of this article, but for the sake of completeness, I will now address some details of the certificate transparency standard which differs slightly from what we have ended up with in this article.
+
+First, the existence of precertificate and leaves containing certificate without the signature part means that there are two different kind of leaves that needs to be interpreted differently. Hence, the CT standard actually use common data structure for all leaves, and that structure would contain an enum which is either a "normal entry" or a "precertificate entry". The leaf hash is therefore the hash of the whole data structure, and it is designed in a way that browsers could reconstruct the data structure based on the certificate and the SCT, and therefore still come up with the correct leaf hash.
+
+Second, in order to mitigate against a hash in the tree being used as a leaf hash and as a "combining" hash simultaneously in some sort of attack, the leaf hash is actually calculated as the hash of a zero byte plus the structure mentioned above, rather than hashing the structure directly, and any other "combining" hash is calculated as the hash of a `0x01` byte, plus the two hashes. For example, in a tree of size 2:
+
+<center>
+<tex>h_{1..2} = H(\text{0x01}\ ||\ h_1\ ||\ h_2)</tex>,<br>
+<tex>h_1 = H(\text{0x00}\ ||\ a_1)</tex> where <tex>a_1</tex> is leaf data,<br>
+and similar for <tex>h_2</tex>.
+</center>
+
+There is also one more issue: up until now we have implicitly assumed that the browser knows the public key of all the CT logs. In reality each browser will have a [hard-coded list of CT logs to trust](https://www.gstatic.com/ct/log_list/v2/log_list.json), and that list will link log IDs with public key and the endpoint URL. Google also mantains a [larger list of all CT logs](https://www.gstatic.com/ct/log_list/v2/all_logs_list.json) that has ever been widly announced.
+
 ## My new Rust library
+
+Shameless plug, but before writing this article I actually made a Rust library handling core CT tasks named [ctclient](https://github.com/micromaomao/ctclient). There are example programs and many APIs you can play with, and the source code contains a fair amount of comments. There is a template for a simple CT monitor.
+
+I'm planning to make a complete CT monitoring solution in the near future, which would hook up this library with a web interface and some sort of notification.
 
 ## Current adoption
 
-## Sidenote: if we have CT why do we need CA anymore?
+Firefox and Chrome have some support for SCT verification, but as of July 2020 they would not complain even if no SCT is supplied [(test)](https://no-sct.badssl.com/). Websites can use an [`Expect-CT` header](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Expect-CT) to tell browsers that their certificate will always come with a valid CT, and to report any violations to some URL.
+
+Thanks to Let's Encrypt and other CAs embedding SCTs into their certificates, the vast majority of websites would not be affected if browsers started enforcing SCT verification now.

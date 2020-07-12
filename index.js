@@ -416,6 +416,9 @@ async function main () {
           child_process.execSync(`convert -density 300 ${JSON.stringify(path.resolve(cdir_path, cover_image_file))} ${JSON.stringify(png_output)}`);
           lang_obj.cover_image_og = cover_image_file + ".png";
         } else {
+          if (lang_obj.cover_image) {
+            lang_obj.cover_image_og = lang_obj.cover_image;
+          }
           progress_current_work_done += 1;
         }
 

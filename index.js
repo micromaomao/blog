@@ -413,8 +413,8 @@ async function main () {
 
         if (cover_image_file && cover_image_file.endsWith(".svg")) {
           let png_output = path.resolve(dist_dict_path, cover_image_file + ".png");
-          print_status(`convert ${png_output}`);
-          child_process.execSync(`convert -density 300 ${JSON.stringify(path.resolve(cdir_path, cover_image_file))} ${JSON.stringify(png_output)}`);
+          print_status(`rsvg-convert ${png_output}`);
+          child_process.execSync(`rsvg-convert -d 300 -p 300 -o ${JSON.stringify(png_output)} ${JSON.stringify(path.resolve(cdir_path, cover_image_file))}`);
           lang_obj.cover_image_og = cover_image_file + ".png";
         } else {
           if (lang_obj.cover_image) {

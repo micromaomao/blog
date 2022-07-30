@@ -17,6 +17,17 @@ jobs:
           npm i -g svgo && npm ci
         env:
           CI: true
+      - name: Install latest imagemagick
+        run: |
+          sudo apt update && \
+          sudo apt install libfontconfig1 fontconfig libfontconfig1-dev libharfbuzz-dev libfribidi0 && \
+          mkdir /tmp/magick && \
+          cd /tmp/magick && \
+          curl -sL https://imagemagick.org/archive/binaries/magick -o magick.AppImage && \
+          chmod +x magick.AppImage && \
+          ./magick.AppImage --appimage-extract && \
+          echo "LD_LIBRARY_PATH=$(realpath ./squashfs-root/usr/lib)" >> $GITHUB_ENV && \
+          echo "PATH=$PATH:$(realpath ./squashfs-root/usr/bin)" >> $GITHUB_ENV
       - name: Generate website
         run: node index.js
       - name: Upload artifacts

@@ -107,8 +107,8 @@ export class DrawnTree {
 					label_text = `h_\\text{all} = ${label_text}`;
 				}
 				let label = await texbox(label_text, sg);
-				let h = label.height();
-				let w = label.width();
+				let h = label.height() as number;
+				let w = label.width() as number; // FIXME
 				let scale = layout.node_height / h;
 				label.attr({ transform: `scale(${scale})` });
 				w *= scale;
@@ -146,8 +146,8 @@ export class DrawnTree {
 				"stroke-width": "1"
 			});
 			let tex = await texbox(`H(a_{${nb}})`, ele);
-			let h = tex.height();
-			let w = tex.width();
+			let h = tex.height() as number;
+			let w = tex.width() as number; // FIXME
 			let maxw = layout.leaf_size - 4;
 			let scale = 1;
 			if (w > maxw) {
@@ -235,10 +235,10 @@ export class DrawnTree {
 			if (this.leaf_hovering[i] && this.leaf_cursor_pointer && this.leaf_hovering_except !== i) {
 				color = "blue";
 			}
-			g.findOne("rect").attr({
+			g.findOne("rect")!.attr({
 				stroke: color
 			});
-			g.findOne("foreignObject").node.style.color = color;
+			g.findOne("foreignObject")!.node.style.color = color;
 			this.leafs[i].l?.attr({stroke: line_color});
 		}
 
@@ -247,7 +247,7 @@ export class DrawnTree {
 			let nodes = this.nodes[di];
 			for (let i = 0; i < styles.length; i ++) {
 				let {g, l} = nodes[i];
-				g.findOne("foreignObject").node.style.color = styles[i].text_color;
+				g.findOne("foreignObject")!.node.style.color = styles[i].text_color;
 				l?.attr({stroke: styles[i].line_color});
 			}
 		}

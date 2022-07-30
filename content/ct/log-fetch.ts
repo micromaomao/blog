@@ -13,7 +13,7 @@ export async function init_sth_fetch(container: HTMLElement) {
 			pre.innerText = JSON.stringify(json, null, 2);
 			pre.style.overflowX = "auto";
 			container.appendChild(pre);
-		} catch (e) {
+		} catch (e: any) {
 			container.innerText = e.message;
 			container.style.color = "red";
 		}

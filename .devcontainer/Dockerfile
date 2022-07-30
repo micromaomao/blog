@@ -1,4 +1,4 @@
-FROM node:lts
+FROM node
 RUN npm i -g svgo
 USER node:node
 ENV HOME=/home/node

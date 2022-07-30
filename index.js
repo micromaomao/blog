@@ -1,7 +1,7 @@
 require("colors");
 const fs = require("fs");
 const path = require("path");
-const marked = require('marked');
+const { marked } = require('marked');
 const jsyaml = require('js-yaml');
 const child_process = require('child_process');
 const pug = require('pug');
@@ -394,7 +394,7 @@ async function main () {
               if (lang === "") {
                 cb(null, code);
               } else {
-                cb(null, hljs.highlight(lang, code).value);
+                cb(null, hljs.highlight(code, { language: lang }).value);
               }
             }}, (err, output) => {
               if (err) {
@@ -406,6 +406,7 @@ async function main () {
           });
           html = await process_html(html);
         } catch (e) {
+          console.error(e);
           throw new Error(`Error rendering ${mdpath}: ${e.message}`);
         }
         lang_obj.html = html;
@@ -580,5 +581,6 @@ main().then(() => {
   console.log(` ==>  Built everything (${Math.round((Date.now() - start_time) / 1000)}s).`.green.bold);
 }, e => {
   process.stderr.write(`Fatal: ${e.message}\n`.bold.red);
+  console.error(e);
   process.exit(1);
 });

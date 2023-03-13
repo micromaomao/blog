@@ -1,7 +1,7 @@
 ---
 title: "A Minecraft Server on Google Cloud that puts itself to sleep"
 tags: ["cloud", "minecraft", "google-cloud", "architecture"]
-time: "2022-07-30T00:37:50.689Z"
+time: "2022-08-19T00:53:16Z"
 discuss: {}
 ---
 

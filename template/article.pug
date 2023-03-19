@@ -25,7 +25,7 @@ html(lang=lang_obj.id)
         each t, i in lang_obj.tags
           -if (i != 0)
             | #{" "}
-          a.tag(href="../tagindex/" + encodeURIComponent(t) + ".html")= t
+          a.tag(href="../tagindex/" + encodeURIComponent(t.toLowerCase()) + ".html")= t
 
     != lang_obj.html
 

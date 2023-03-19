@@ -500,13 +500,14 @@ async function main () {
     static async process_article(article) {
       let article_tags = new Set(article.languages.map(l => l.tags).flat());
       for (let tag of article_tags.values()) {
+        let tag_lower = tag.toLowerCase();
         let t;
-        if (typeof (t = tags.get(tag)) != "undefined") {
+        if (typeof (t = tags.get(tag_lower)) != "undefined") {
           await t.addArticle(article);
         } else {
           t = new Tag(tag);
           await t.addArticle(article);
-          tags.set(tag, t);
+          tags.set(tag_lower, t);
           progress_total_work += 1;
         }
       }
@@ -548,7 +549,7 @@ async function main () {
   let tagindex_dir = path.resolve(output_dir, "tagindex");
   tryMkdirp(tagindex_dir);
   for (let t of tags.values()) {
-    let outhtmlfile = path.resolve(tagindex_dir, `${t.name}.html`);
+    let outhtmlfile = path.resolve(tagindex_dir, `${t.name.toLowerCase()}.html`);
     print_status("emit " + outhtmlfile);
     let html = tagindex_template({tag: t});
     try {

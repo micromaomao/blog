@@ -12,5 +12,5 @@ mixin list_articles(articles, pick_language_fn, in_tagdir)
           each t, i in l.tags
             -if (i != 0)
               | #{" "}
-            a.tag(href=`${in_tagdir ? "" : "tagindex/"}${encodeURIComponent(t)}.html`)= t
+            a.tag(href=`${in_tagdir ? "" : "tagindex/"}${encodeURIComponent(t.toLowerCase())}.html`)= t
         .time= l.time.toDateString()

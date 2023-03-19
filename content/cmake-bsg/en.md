@@ -1,6 +1,6 @@
 ---
 title: "CMake: A build system generator for pretty much anything"
-tags: ["tooling", "building", "linux", "cmake"]
+tags: ["tooling", "building", "Linux", "cmake"]
 time: "2019-12-01T20:00:00.220Z"
 ---
 

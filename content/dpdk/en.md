@@ -11,13 +11,13 @@ discuss: {}
 
 Sorry for the meme in the title, that was cringe.
 
-Anyway, recently at work I have been learning about this fancy framework we are using in a product with high-performance networking requirement&mdash;[*Data Plane Development Kit*](https://www.dpdk.org/) (DPDK). It is a set of user-space NIC drivers and related utility libraries that enables an application to bypass the Linux kernel's networking stack, and directly send and receive packets from the hardware (plus interact with more advanced hardware offloading features) when using supported NICs (which are usually server-grade products, not your average consumer NIC).
+Anyway, recently at work I have been learning about this fancy framework we are using in a product with high-performance networking requirement&mdash;[*Data Plane Development Kit*](https://www.dpdk.org/) (DPDK). It is a set of user-space NIC drivers and related utility libraries (like fast buffer pools or queues) that enables an application to bypass the Linux kernel's networking stack, and directly send and receive packets from the hardware (plus potentially interact with more advanced hardware offloading features or other configurations) when using supported NICs, which are usually server-grade products (and not your average consumer NIC). Instead of relying on inturrupts (like the kernel does), DPDK applications use &ldquo;Poll mode drivers&rdquo; (PMDs) to process packets in a loop, and is able to get them, often in bursts, directly from the hardware's receive queues via user-space IO or other driver-specific magic.
 
 As it turns out, the Linux kernel, while performing well enough for the majority of networking use cases, is not perfect at processing high-throughput UDP packets. A basic application which simply send packets in a loop can use the [`sendmmsg`](https://man7.org/linux/man-pages/man2/sendmmsg.2.html) syscall to queue a large number of packets to the kernel, and calling [`recv`](https://man7.org/linux/man-pages/man2/recv.2.html) in a loop is able to roughly handle the packet echoed back. In my test environment, I was able to achieve around 1M small packets per second (varies from time to time, likely due to cloud environment changes).<footnote>In this test, there are 2 machines&mdash;one running a "send/receive" program implemented with Linux syscall, and the other running a "reflect" program, but using DPDK. This effectively means that we are only counting in the Linux overhead once. If both end uses the kernel networking stack, this number is around 300-600k.</footnote>
 Such a number is likely more than enough for the majority of applications, but when working with this level of packet rate, things are very unstable&mdash;around 10-20% of the packets are not received (happens at somewhat lower load as well), and you get [some real spikey graphs](https://github.com/micromaomao/dpdk-project/blob/58db791568a3098ac6a8fafefb7b46a1ffb16090/data/a.ipynb) if you plot the packet rate over time, even at the sending end.
 
 As you might have seen from the cover graph of this article, you can get much higher and much more stable performance with DPDK. Official documentation from DPDK claims that it is able to achieve the theoretical maximum packet rate under hardware bandwidth limitation.<footnote>See <a target="_blank" href="https://www.dpdk.org/wp-content/uploads/sites/35/2014/09/DPDK-SFSummit2014-HighPerformanceNetworkingLeveragingCommunity.pdf">&ldquo;SPEED MATTERS&rdquo; DPDK slide</a> page 3 for the claim, and <a target="_blank" href="https://fast.dpdk.org/doc/perf/DPDK_22_07_NVIDIA_Mellanox_NIC_performance_report.pdf">this recent test report</a>.</footnote>
-For a 10 Gbps NIC, this means upwards of 30M (small) packets per second. Of course, due to both my inexperience in writing and testing high performance code, and the lack of a proper test environment (I do not have physical hardware to run these tests, and testing in the cloud can be susceptible to a wide range of environmental factors), I was not able to get anywhere near that. However, I was able to see significant improvement over the best result I can get with using the standard Linux API&mdash;in most cases I was able to achieve 3M packets/s without more than 1% packet loss, and my best result so far has been 3.5 Mpkt/s with 0.1% loss, significantly outperforming the best Linux numbers I got of 1 Mpkts/s at 10% loss.
+For a 10 Gbps NIC, this means upwards of 30M (small) packets per second. Of course, due to both my inexperience in writing and testing high performance code, and the lack of a proper test environment (I do not have physical hardware to run these tests, and testing in the cloud can be susceptible to a wide range of environmental factors), I was not able to get anywhere near that. However, I was able to see significant improvement over the best result I can get with using the standard Linux API&mdash;in most cases I was able to achieve 3M packets/s without more than 1% packet loss, and my best result so far has been 3.5 Mpkt/s with (average) 0.1% loss, significantly outperforming the best Linux numbers I got of 1 Mpkts/s at 10% loss.
 
 I do not, however, plan to focus on performance too much in the remainder of this article, because this is not really (yet) my area of expertise, and I have very likely not used the most optimized approach. Instead, I will walk through how I implemented my own DPDK application, what I have learned, the challenges involved, and some potential future work.
 
@@ -96,28 +96,28 @@ It is not terribly relevant to us right now if we just want to get things set up
 
 ## How the application works
 
-The application I made for this project is basically an improved version of the [DPDK Basic Forwarding Sample Application](https://doc.dpdk.org/guides/sample_app_ug/skeleton.html). The sample application simply forwarded raw ethernet packets in a recv/send loop, without any other processing like IP / UDP. I added, on top of this:
+[The application](https://github.com/micromaomao/dpdk-project) I made for this project is basically an improved version of the [DPDK Basic Forwarding Sample Application](https://doc.dpdk.org/guides/sample_app_ug/skeleton.html). The sample application simply forwarded raw ethernet packets in a recv/send loop, without any other processing like IP / UDP. I added, on top of this:
 
 * Ability to construct and parse Ethernet, IP and UDP packets, in order to properly forward, as well as send UDP packets. (Shout out to the [`etherparse` Rust crate](https://docs.rs/etherparse/latest/etherparse/) which I've used here.)
 * Stats logging: number of transmitted and received packets, latency and packet loss tracking (via including a timestamp in the packets).
-* Multi-threading, and handling multiple rx/tx queues.
+* Multi-threading, and handling multiple receive (rx) and transmit (tx) queues.
 * Rate limiting (for proper packet loss results).
 * Configuration options via the command line, like ports to bind to, IP/MAC addresses, number of queues, packet size, etc.
 
 The application has two &ldquo;modes&rdquo;, intended to be used on separate VMs. In &ldquo;sendrecv&rdquo; mode, the application generates UDP packets with an index and timestamp, and fill the rest of the space with pseudorandom data. It also, on separate threads, receives packets coming in, verifies that it is valid and intact, then increment the statistics. In &ldquo;reflect&rdquo; mode, the application simply sends back the packets it receives, without any modification other than swapping source MAC, IP and port with destination MAC, IP and port (and possibly recomputing checksums, depending on whether this is offloaded).
 
-The application is a combined C++ and Rust codebase, and can be built if that you have a C++ compiler, Rust toolchain, and CMake installed (as well as the DPDK library, installed earlier via running `ninja install` in the DPDK build directory):
+The application is a combined C++ and Rust codebase, and can be built if that you have a C++ compiler, Rust toolchain, and CMake installed (as well as the DPDK library, installed earlier via running `ninja install` in the DPDK build directory). To build it, clone the [git repo](https://github.com/micromaomao/dpdk-project) locally, then run:
 
 ```bash
 cmake . -Bbuild -DCMAKE_BUILD_TYPE=Release -GNinja
 cd build; ninja
 ```
 
-Once build, it can be ran after setting up a DPDK environment (as outlined earlier). It needs to be started as root due to various Linux permission limits. Here are the arguments I used for testing &mdash; replace the NIC MAC (`-p`) and IP addresses with values for your VMs:
+Once build, it can be ran after setting up a DPDK environment (as outlined [earlier](#setup)). To avoid random permission issues, start it as root. Here are the arguments I used for testing &mdash; replace the NIC MAC (`-p`) and IP addresses with values for your VMs:
 
 ```bash
 # On VM 1: sendrecv
-sudo build/dpdkproj -l 0-15 -- -p xx:xx:xx:xx:xx:xx -r 15 -t 1 sendrecv -s ~/dpdk-dpdk.csv --src x.x.x.x --src-port-range 10000-30000 --dest y.y.y.y:10000 --dest-mac 12:34:56:78:9a:bc --stats-evict-interval-secs 120 --stats-evict-threshold-secs 1 --stats-interval-ms 1 --packet-size 16 -R 3500 --burst-size 32
+sudo build/dpdkproj -l 0-15 -- sendrecv -p xx:xx:xx:xx:xx:xx -r 15 -t 1 -s /dev/stdout --src x.x.x.x --src-port-range 10000-30000 --dest y.y.y.y:10000 --dest-mac 12:34:56:78:9a:bc --stats-evict-interval-secs 120 --stats-evict-threshold-secs 1 --stats-interval-ms 1 --packet-size 16 -R 3500 --burst-size 32
 
 # On VM 2: reflect
 sudo build/dpdkproj -l 0-15 -- reflect -p xx:xx:xx:xx:xx:xx -r 16 -t 16 -s /dev/stdout --stats-evict-interval-secs 5 --stats-evict-threshold-secs 1 --stats-interval-ms 1000 --burst-size 128
@@ -129,21 +129,31 @@ On Azure, MAC addresses are not used to direct packets, and Azure responds to al
 
 `-l` is an [EAL argument](https://doc.dpdk.org/guides/linux_gsg/linux_eal_parameters.html) which will be parsed by the DPDK library. In this case it specifies the cores to run on. Anything following `--` is passed to our application.
 
-The `-R` argument specifies the rate limit, and in this case it is set to 3500 per stats interval, which we set to 1ms, giving us a rate of 3.5Mpkts/s. This is due to a limitation in how the current rate limiting works &mdash; using a larger interval is more performant, but will cause packets to be sent out in brusts, rather than spreaded out at a steady rate, causing lots of packet loss.
+The `-R` argument specifies the rate limit, and in this case it is set to 3500 per stats interval, which we set to 1ms, giving us a rate of 3.5Mpkts/s. 1ms is a very small stats interval, and using a larger one is more performant (less stats output and more localized atomic access), but due to the current implementation coupling rate-limit &ldquo;resolution&rdquo; to stats intervals, using a larger interval will cause packets to be sent out in brusts, rather than spreaded out at a steady rate, causing lots of packet loss.
 
-`-r` and `-t` specifies the number of RX and TX queues (and thus threads). As it turns out, one tx thread is already maxing out the throughput I can get, and adding more tx threads causes both the rx and tx numbers to plummet, for some reason.
+`-r` and `-t` specifies the number of RX and TX queues (and thus threads). As it turns out, one tx thread is already maxing out the throughput I can get, and adding more tx threads causes both the rx and tx numbers to plummet, for some reason (maybe unprocessed rx descriptors makes sending slower in some way&hellip;?).
+
+`--burst-size` specifies the maximum number of packets to send/receive in one go:
+
+* For reflect mode this is not too interesting &mdash; if multiple packets arrived and are queued, we want to process them as fast as possible, and a larger burst size (as long as the queue size is a lot larger) will usually be better for speed.
+* For sendrecv mode, however, a burst size that is too large can cause unsteady packet sending speed (effectively like having a less fine rate-limit resolution), and can lead to large packet loss.
+
+You can run `sudo build/dpdkproj -- --help` to see a list of application-specific arguments, or without the `--` to see a list of EAL arguments.
 
 ## Results
+
+The application outputs stats to the file specified by `-s` in CSV format. Each row represent one &ldquo;stats interval&rdquo;, and contains the timestamp, number of packets sent and received, packet loss, and latency. The latter two stats are computed by reading the timestamp data from the received packets.
 
 ![A XKCD-style plot of packets/s against time, plotting two lines - tx and rx. The tx line stays completely flat at 3.5M except for a regular pattern of sudden drop of ~100k every ~100 seconds, and the rx line has random spiky drops, but never goes below 3.3M.](packet-stats.svg)
 
 ![A XKCD-style plot of packet loss (%) against time, showing lots of random spikes, which can go from 0.5% up to 1%, with a baseline rate of around 0.05%.](drops-stats.svg)
 
-The result I'm able to achieve varies with time, likely due to hardware or other environment changes. This is just a part of testing in the cloud, I guess&hellip; However, I have been able to confirm the above result on two separate weekends. The sending is rate-limited at 3.5M packets/s (pushing it higher results in higher packet loss), and the overall packet loss is around 0.1%. You can find the raw data and the Python notebook which generated these graphs in [the /data folder in the project repo](https://github.com/micromaomao/dpdk-project/tree/470744d14e3770755369dbfb75fa3df997e90b92/data).
+The result I'm able to achieve varies with time, likely due to hardware or other environment changes (just a fact of testing in the cloud, I guess&hellip;). However, I have been able to confirm the above result on two separate weekends. The sending is rate-limited at 3.5M packets/s (pushing it higher results in higher packet loss), and the overall packet loss is around 0.1%. You can find the raw data and the Python notebook which generated these graphs in [the /data folder in the project repo](https://github.com/micromaomao/dpdk-project/tree/470744d14e3770755369dbfb75fa3df997e90b92/data).
 
-As mentioned in the introduction, this is significantly better than the equivalent application using Linux sockets API, which was able to do arounnd 1 Mpkt/s with a 10% loss. However, this is nowhere near line rate performance (12500 Mbps in this case, which is around 18M 84-byte frames per second) which DPDK is expected to get, and there are several issues with my implementation that I already know of, but have not had the time or experience to fix.
+As mentioned in the introduction, this is significantly better than the equivalent application using Linux sockets API, which was able to do arounnd 1 Mpkt/s with a 10% loss. However, this is nowhere near line rate performance (12500 Mbps in this case, which is around 18M 84-byte frames per second) which DPDK is expected to get, and there are several issues with my implementation that I already know of, but have not had the time or skill to fix.
 
-As mentioned earlier, my application also tracked latency, and I can confirm that the vast majority of packets have round-trip latency of less than 1ms. However, due to a poor choice of time unit (using ms instead of say, μs), I do not currently know exactly how long the average latency is.
+My application also tracked latency, and I can confirm that the vast majority of packets have round-trip latency of less than 1ms. However, due to a poor choice of time unit (using ms instead of say, μs or even ns), I do not currently know exactly how long the average latency is &mdash; many packets simply arrive within the same millisecond.
+
 
 ## Appendix: Baseline (Linux kernel sending/recving + DPDK echo) setup &amp; measurements
 

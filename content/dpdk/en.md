@@ -5,7 +5,7 @@ time: "2023-03-12T22:31:31.115Z"
 discuss: {}
 ---
 
-![cover](packet-stats.svg)
+![cover](cover.png)
 
 <script async defer src="https://buttons.github.io/buttons.js"></script>
 
@@ -161,6 +161,10 @@ The DPDK implementation of sendrecv and reflect is significantly more capable th
 However, using DPDK does come with some very significant drawbacks. It requires specific environment setup and hardware/platform support, whereas the Linux networking stack will basically work universally. More importantly, it is a very complex and low-level tool, and you need a lot more code to do even basic stuff like ARP, IP routing, TCP/UDP flows, etc, all of which the Linux kernel handles &ldquo;out-of-the-box&rdquo;. It also does not work well with common Linux tools like `tcpdump`, making debugging potentially more difficult.
 
 There is also no reason why Linux cannot be made to perform better, even if not completely matching the performance of the DPDK poll-mode driver. For example, there are more complex kernel APIs like [Express Data Path](https://en.wikipedia.org/wiki/Express_Data_Path), which allows some (albeit basic) custom packet processing while bypassing essentially all of the kernel networking stack. The Linux kernel could also, in theory, use a similar poll-mode driver in high-throughput scenarios, and if combined with stuff like [io_uring](https://unixism.net/loti/what_is_io_uring.html) to eliminate syscall overhead and do [zero-copy buffer passing](https://lwn.net/Articles/879724/), it could potentially achieve similar performance to DPDK.
+
+## Challenges, learnings, and potential improvements
+
+TODO
 
 
 ## Appendix: Baseline (Linux kernel sending/recving + DPDK echo) setup &amp; measurements

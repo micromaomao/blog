@@ -1,7 +1,7 @@
 ---
 title: "Blazingly⚡ fast🚀 packet processing with DPDK"
 tags: ["networking", "DPDK", "performance", "Azure", "Linux"]
-time: "2023-03-12T22:31:31.115Z"
+time: "2023-04-07T00:40:20.004Z"
 discuss:
   "GitHub": "https://github.com/micromaomao/dpdk-project/issues"
 ---
@@ -147,6 +147,8 @@ The application outputs stats to the file specified by `-s` in CSV format. Each 
 
 ![A XKCD-style plot of packets/s against time, plotting two lines - tx and rx. The tx line stays completely flat at 3.5M except for a regular pattern of sudden drop of ~100k every ~100 seconds, and the rx line has random spiky drops, but never goes below 3.3M.](packet-stats.svg)
 
+<a id="drop-rate-graph"></a>
+
 ![A XKCD-style plot of packet loss (%) against time, showing lots of random spikes, which can go from 0.5% up to 1%, with a baseline rate of around 0.05%.](drops-stats.svg)
 
 The result I'm able to achieve varies with time, likely due to hardware or other environment changes (just a fact of testing in the cloud, I guess&hellip;). However, I have been able to confirm the above result on two separate weekends. The sending is rate-limited at 3.5M packets/s (pushing it higher results in higher packet loss), and the overall packet loss is around 0.1%. You can find the raw data and the Python notebook which generated these graphs in [the /data folder in the project repo](https://github.com/micromaomao/dpdk-project/tree/470744d14e3770755369dbfb75fa3df997e90b92/data).
@@ -185,36 +187,56 @@ As such, I was not able to get any useful, trustworthy information from `perf` t
 
 ## Potential improvements
 
-The goal of this project was not to make something that would compete with existing packet benchmarking tools and e.g. achieve line rate performance or ultra high stability, but rather to learn about DPDK and high-performance networking in general. However, I can think of several possible improvements (or route to more investigation) that could be made to the application that would bring it closer to that.
+The goal of this project was not to make something that would compete with existing packet benchmarking tools and e.g. achieve perfect performance or ultra high stability, but rather to learn about DPDK and high-performance networking in general. However, I can think of several possible improvements (or route to more investigation) that could be made to the application that would bring it closer to that.
 
-### Stats recording
+### Stats handling
 
-* Likely start by removing all stats-related code altogether from the sendrecv end (and just seeing the number at the reflector side)
+Currently, statistics are collected for every &ldquo;interval&rdquo;, and a backlog of these interval stats are kept in a double-ended queue. When the queue is full, an &ldquo;eviction&rdquo; is triggered, which writes the data for all intervals older than a certain threshold to a csv file, then rotates the queue. This design is so that stats can be back-applied, for example when we receive a packet with a timestamp in an older interval.
+
+The issue here is that thread safety is achieved both by using atomics for all values, and by putting the whole queue behind a read-write lock to support evictions. This means that each stat update needs to take a read lock. While the Rust RwLock seems to be implemented efficiently (i.e. it just spins when uncontended, which in our case is almost always the case), this is still not an ideal solution. Also, a write lock need to be held for eviction, which blocks all threads writing stats. This is likely why there are regular, periodic downward spikes in the Tx rate graph.
+
+A first step to investigating the extent of this problem would be to remove all stats-related code altogether from the sendrecv end (and just seeing whether the number at the reflector side improves significantly). Also, using `try_read` instead of blocking on the RwLock, and when failing keeping a thread-local backlog of stat updates, is likely to remove the downward spikes.
+
+Due to how the code is currently structured, each packet received currently results in taking the RwLock separately, and also doing (separate) atomic increments. This is also likely to be contributing to the problem.
+
+Alternative designs might eliminate the RwLock altogether by using a lock-free approach based on swapping atomic pointers.
 
 ### Rate limiting
 
+The above problem is made significantly worse by using a very fine stat interval (1ms). Because rate limiting is currently coupled to stats interval, such a small interval is needed to achieve uniform packet rate. Having an entry for every millisecond is also likely very bad for cache locality, and also causes more writes to the csv file.
+
 ### Addressing packet loss
 
-* Brust size?
-* Isolating cores?
+I managed to achieve an overall packet loss of 0.1%, however, as you can tell from the [graph](#drop-rate-graph), there are frequent high spikes which can go up to 0.8%. This is actually completely unacceptable for a real-world production system which relies on reliable, high network throughput, such as phone/video calls, and is especially indicative of a problem when you realize that this is just traffic in the same datacenter.
+
+I'm not able to confidently say what is causing this / how to improve it, but I suspect it might be related to the following:
+
+* The stats issue mentioned earlier &mdash; using less locks / atomics / memory might help reduce variance in the time taken for each packet, thus making it more stable (i.e. less drop) at the same load.
+
+* Non-optimal burst size, non-uniform / spiky sending rate, etc. may result in traffic pattern which doesn't work well with the middle boxes between our VMs. Currently brust size is configurable but not separately for send and recv, and it is quite likely the send and recv have different optimal values.
+
+* Core isolation &mdash; Linux might be scheduling other random stuff from time to time on our packet-processing cores, causing us to lose packets. I haven't investigated this but there is likely some very low-hanging fruits here, and it would also be helpful to gather stats like max number of (unprocessed) entries in the rx queue, if DPDK supports that. For 3.5 Mpkt/s evenly distributed to 16 cores, it takes only 4.7ms to fill up a single core's 1024 entry queue.
+
+It is also worth investigating whether the bottleneck is on the sendrecv end or the reflect end, although I suspect it is the former as it is doing more work and is the only end suffering from the stats issue.
 
 ### Rx queue distribution
 
-* Need metrics
+Speaking of even distribution, I do not have any metrics yet to show whether the packets are being handled evenly by all cores. NICs usually rely on hashing a combination of source and destination IP addresses and ports to determine which queue to send the packet to, but this is not guaranteed to be uniform, especially if there are subtle problems in my packet generation.
 
 ### General optimization
 
-* LTO
-* PGO
-* Manually marking likelihood of branches, which a lot of DPDK code likes to do
+There are also some general optimization techniques that applies to all applications but which I haven't tried yet, like:
+
+* Setting up proper link-time optimization (LTO) between C++ and Rust, especially since we are crossing this boundary a lot.
+* Trying profile-guided optimization (PGO), or manually marking likelihood of branches (stuff like `if(likely(...))`), which a lot of DPDK code likes to do.
 
 ### Feature improvements
 
 Aside from perf, there are also other ways this application can be made more &ldquo;production-ready&rdquo;, whatever that means for a packet generator:
 
-* Duplicate checking
-* Reordering metrics
-* More flexible packet generation &mdash; maybe even a DSL / graph-like structure for tracking flow states. Kinda leads itself to highly accurate packet loss / latency stats.
+* On the receiving end, I'm not doing any duplicate checking, so if for some reason the packets are being repeated this will lead to inaccurate rx stats (although it seems unlikely this will happen in practice, and it is also hard to implement without causing perf issues or significantly worsening cache locality).
+* More metrics in a more &ldquo;mainstream&rdquo; format, like Prometheus.
+* More flexible packet generation &mdash; maybe even a DSL / graph-like structure for tracking flow states. Kinda leads itself to highly accurate packet loss / latency stats and duplicate prevention. This may also be a good opportunity to play around with JIT compilation, although this is probably heading down the over-engineering rabbit hole.
 
 ## Thanks
 

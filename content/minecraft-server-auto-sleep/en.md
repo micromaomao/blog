@@ -38,6 +38,10 @@ The following image summarizes this architecture:
 
 Note that there are a couple of intricacies regarding running BungeeCord, such as the need to run the backend server in offline mode and open to trusted connections only.
 
+<p class="warn">
+In this setup, authentication is handled by BungeeCord instead of the backend server, and the backend server runs in offline mode. Therefore, you <b>must</b> ensure that the backend server is not inadvertently exposed to the internet (such as by listening on your private vnet only).
+</p>
+
 Before we continue, I would also like to point out that suspend is not available for E2 VMs. This means that you will not be able to use the shared core instances which are significantly cheaper than standard instances (although with limited performance).
 
 ---

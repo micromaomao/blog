@@ -1,6 +1,6 @@
 ---
 title: "Understanding AWS security policies"
-tags: ["cloud", "aws", "security"]
+tags: ["cloud", "AWS", "security"]
 time: "2020-01-06T14:18:04.000Z"
 ---
 

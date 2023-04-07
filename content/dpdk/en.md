@@ -1,6 +1,6 @@
 ---
 title: "Blazingly⚡ fast🚀 packet processing with DPDK"
-tags: ["networking", "DPDK", "performance", "Azure", "Linux"]
+tags: ["networking", "DPDK", "performance", "Azure", "Linux", "Rust"]
 time: "2023-04-07T00:40:20.004Z"
 discuss:
   "GitHub": "https://github.com/micromaomao/dpdk-project/issues"

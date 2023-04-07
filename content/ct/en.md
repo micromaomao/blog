@@ -9,13 +9,9 @@ discuss:
 
 ![cover](cover.svg)
 
-<div class="info">
-
-**Prerequisite knowledge**: digital signatures ([public key cryptography](https://en.wikipedia.org/w/index.php?title=Public-key_cryptography&oldid=958099718#Description)), [hash function](https://en.wikipedia.org/wiki/Hash_function).
-
-Estimated read time: around a hour
-
-</div>
+<p class="info">
+This article assumes background knowledge on: digital signatures (<a href="https://en.wikipedia.org/w/index.php?title=Public-key_cryptography&oldid=958099718#Description">public key cryptography</a>), <a href="https://en.wikipedia.org/wiki/Hash_function">hash function</a>.
+</p>
 
 The morden web *relies* on public-key cryptography. It allows us to somewhat secure our communication with a server that we had never talked to before, which is not possible with symmetric encryption alone. However, public-key crypto on its own doesn't defend us against *Man-in-the-Middle* (MitM) attacks, where an active attacker is able to modify our connection and replace, for example, the server's public key sent to us with their own public key. Because of that, we requires that the public key of web servers be signed by a publicly trusted *Certificate Authority* (CA) in the form of a *certificate* bound to a domain name, and we trust that those CAs would only sign certificates after they have verified the server they are signing for controls the domain.<footnote>On a more meta level, our problem is that we want be able to relate short, human-memorable names (domain names) with server identity. Because these domain names doesn't have any mathematical property we can exploit (like a public key), this is generally not possible to do securely without either trusting a third-party to establish the relation for us (e.g. DNS servers mapping domains to IP addresses, and CAs mapping domains to public key(s)), or using some kind of peer-to-peer network that relies on some consensus protocol that guards against rewrite attack, such as a blockchain + proof of work. Check out the "*Ethereum Name Service*" for a real-life example of such approach.</footnote>
 
@@ -254,9 +250,13 @@ This is **not** what happens in practice, as we shall see later, but let's presu
 
 In order to hold log servers more accountable, we also need it to sign the tree hash they gave clients with a public key that everyone knows belongs to the log. Therefore, if a log ever attempts to send inconsistent hashes, or fork the tree between clients, once this is discovered there is a way to prove that the log really did that. This also allow clients to "*gossip*" between each other in a trustworthy manner&mdash;clients could simply send each other the latest hash and signature that they received, and the receiver, once verified the signature, can ask for a consistency proof between the hash they got and they hash they have, so that if the log ever tries to present different fork of the tree to different clients, there is a high chance that it will be catched.
 
-In the protocol, the data structure that ct server signs and give client each time they update the tree is called a *Signed Tree Hash*, and it includes the following information: the tree hash itself, the corrosponding tree size, and a timestamp that is no earlier than the time the last certificate is added to this tree.<footnote>&hellip;along with a `version` and a `signature_type`, which we won't care about.</footnote> As an example, here is the latest STH from Google's "Pilot" log (the "main" log):
+In the protocol, the data structure that ct server signs and give client each time they update the tree is called a *Signed Tree Hash*, and it includes the following information: the tree hash itself, the corrosponding tree size, and a timestamp that is no earlier than the time the last certificate is added to this tree.<footnote>&hellip;along with a `version` and a `signature_type`, which we won't care about.</footnote> As an example, here is the latest STH from Google's "argon2023" log:
 
-<noscript id="sth-fetch">If you enable JavaScript you can see the latest STH of Google's pilot log here.</noscript>
+<noscript id="sth-fetch">If you enable JavaScript you can see the latest STH of argon2023 here.</noscript>
+
+<p class="info">
+Note that CT logs are regularly retired, and so for readers in the future, the above demo might have been broken due to the log no longer existing. (It used to point to the pilot log here, but that has retired so I updated it.)
+</p>
 
 In order for effective gossiping to happen, there also has to be a common protocol. Currently (as of Jul 2020) there is no official standard on this, but there are draft proposals that have been there for quite some time now. We won't go into too much detail here, but basically clients share STHs with each other, as we expected<footnote>&hellip;and in some cases, SCTs, as discussed below</footnote>.
 

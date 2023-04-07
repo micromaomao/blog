@@ -1,4 +1,4 @@
-export async function get_json(path: string, baseurl: string = "https://ct.googleapis.com/pilot/ct/v1/"): Promise<any> {
+export async function get_json(path: string, baseurl: string = "https://ct.googleapis.com/logs/argon2023/ct/v1/"): Promise<any> {
 	let res = await fetch(baseurl + path, {method: "GET", credentials: "omit", mode: "cors"});
 	return await res.json();
 }

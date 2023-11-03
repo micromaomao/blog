@@ -18,7 +18,7 @@ html(lang=lang_obj.id)
     a.blogtitle(href="../index.html")
       | <img src="../title.svg" alt="Mao's technical notes">
     -if (lang_obj.cover_image)
-      img(src=lang_obj.cover_image, alt="cover image", class="coverimg")
+      img(src=lang_obj.cover_image, alt=(lang_obj.cover_alt || "cover image"), class="coverimg")
     h1= lang_obj.title
     -if (lang_obj.tags.length > 0)
       .tags

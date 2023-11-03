@@ -1,5 +1,10 @@
 @use "base" as *
 
+body
+  line-height: 1.75
+pre
+  line-height: 1.5
+
 @mixin h($fontsize, $sharpm, $sharps)
   font-family: 'Times New Roman', Times, serif
   font-size: $fontsize
@@ -72,6 +77,9 @@ p.info, div.info
   padding: 0.2em 1em
   margin-top: -0.2em
   margin-bottom: -0.3em
+
+sup.footnoteref
+  user-select: none
 
 sup:target, .footnote-revref:target
   background-color: rgba(yellow, 0.2)

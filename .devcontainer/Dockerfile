@@ -1,6 +1,7 @@
-FROM node
-RUN apt update && apt install librsvg2-bin
-RUN npm i -g svgo
+FROM node:lts
+RUN apt update -y && apt install librsvg2-bin -y
+RUN npm i -g svgo nodemon
 USER node:node
 ENV HOME=/home/node
-ENTRYPOINT [ "sleep", "100d" ]
+ENTRYPOINT [ "/bin/bash", "-c" ]
+CMD [ "sleep", "100d" ]

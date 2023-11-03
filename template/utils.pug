@@ -6,7 +6,7 @@ mixin list_articles(articles, pick_language_fn, in_tagdir)
         hr
       li.article
         -if (l.cover_image !== null)
-          img.cover(src=`${in_tagdir ? "../" : ""}${encodeURIComponent(article.codename)}/${l.cover_image}`)
+          img.cover(src=`${in_tagdir ? "../" : ""}${encodeURIComponent(article.codename)}/${l.cover_image}`, alt=(l.cover_alt || "cover image"))
         a.title(href=`${in_tagdir ? "../" : ""}${encodeURIComponent(article.codename)}/${l.id}.html`)= l.title
         .tags
           each t, i in l.tags

@@ -258,6 +258,9 @@ async function main () {
               print_verbose(`Cover image is ${h}`);
               lang_obj.cover_image = h;
               cover_image_file = src;
+              if (front_matter.hasOwnProperty("cover_alt")) {
+                lang_obj.cover_alt = front_matter.cover_alt;
+              }
               node.remove();
               return;
             }
@@ -356,7 +359,8 @@ async function main () {
             let sup = $("<sup />");
             let sup_a = $("<a />");
             sup_a.attr("href", `#ref-${nb}`);
-            sup_a.text(`[${nb}]`);
+            sup_a.text(nb.toString());
+            sup.attr("class", "footnoteref");
             sup.attr("id", `revref-${nb}`);
             sup.append(sup_a);
             node.after(sup);

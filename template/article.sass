@@ -25,7 +25,7 @@ h2
 h3
   @include h(18px, 34px, "### ")
 
-p a, ul a, li a, body > a.home
+p a, ul a, li a, h2 a, h3 a, h4 a, body > a.home
   outline: none
   -webkit-tap-highlight-color: transparent
   color: $color-link
@@ -91,3 +91,8 @@ noscript
   border: dashed 2px #000
   padding: 1rem 2rem
   margin: 1em 0
+
+blockquote
+  border-left: 4px solid #ccc
+  padding-left: 1em
+  margin: 0

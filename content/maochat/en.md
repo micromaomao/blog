@@ -1,6 +1,6 @@
 ---
 title: "What I learned from making an AI impression of myself: prompt engineering, actual engineering, and more"
-tags: ["AI", "LLM", "Node.JS"]
+tags: ["AI", "LLM", "OpenAI", "Node.JS"]
 time: "2024-01-14T16:30:35+00:00"
 cover_alt: >-
   A screenshot of a new chat session on Maochat, showing a welcome banner with ideas for questions like
@@ -12,7 +12,7 @@ discuss:
 
 ![cover](cover.png)
 
-> &ldquo;Hi, how can I assist you today?&rdquo; &mdash; OpenAI LLM's favorite line
+> &ldquo;As an AI language model&hellip;&rdquo; &mdash; OpenAI LLM's favorite opening, ~May 2023
 
 Around August 2023, I completed a very long-drawn-out personal project (because I kept procrastinating, maybe because my day-job has sucked all the coding energy out of me lol) called <a href="https://chat.maowtm.org" target="_blank">Maochat</a>. It came from a very simple idea I've long had since human-like instructable LLMs came out: making a LLM &ldquo;clone&rdquo; of myself. It should know things about me, and as far as I can make it, feel like talking to the actual me. This project is the realisation of that idea &mdash; I encourage you to <a href="https://chat.maowtm.org" target="_blank">give it a try</a> if you haven't!
 
@@ -63,11 +63,15 @@ The rest of this post will go into two different directions: The &ldquo;AI tunin
     font-style: italic;
   }
 
-  .sample > hr {
+  .sample > hr, .chat-interaction > hr {
     border: none;
     border-top: 1px solid #ccc;
     margin: 0;
     grid-column: 1 / -1;
+  }
+
+  .generated-textcolor {
+    color: #239026;
   }
 
   /* .chat-log {
@@ -125,7 +129,7 @@ T: <span class="generated">That's a tough one, there are so many characters I li
 
 This was still using the &lsquo;legacy&rsquo; (according to OpenAI) text completion API, hence the explicit chat dialogue label. At this point I already realized that I could use [text embeddings](https://platform.openai.com/docs/guides/embeddings) to search for the most relevant information and choose the most relevant "notes" to show (if I had more than the context window would fit), and planned to do that when implementing this.
 
-This approach worked well with recalling (known) information &mdash; this was not surprising given that the model is explicitly designed with this use case in mind. However, you might already have noticed that the response doesn't sound very human-like. Things gets worse with the new [chat completions API](https://platform.openai.com/docs/guides/text-generation/chat-completions-api) (which might at some point be the only API available), presumably due to more chatbot-like fine-tuning, and the fact that the model is always given the label "assistant" for its messages (I could not find any way to change this). For example:
+This approach worked well with recalling (known) information &mdash; this was not surprising given that the model is explicitly designed with this use case in mind. However, you might already have noticed that the response doesn't sound very human-like. Things gets worse with the new [chat completions API](https://platform.openai.com/docs/guides/text-generation/chat-completions-api), presumably due to more chatbot-like fine-tuning, and the fact that the model is always given the label "assistant" for its messages (I could not find any way to change this). We will talk about this new API later on, but here is one example:
 
 <div class="chat-interaction">
   <label>SYSTEM</label>
@@ -143,6 +147,8 @@ This approach worked well with recalling (known) information &mdash; this was no
   <label>ASSISTANT</label>
   <div>Oh, I have a few favorite anime characters, but if I had to pick just one, it would be Yuki Nagato&hellip;</div>
 </div>
+
+To me as a fluent but not native English speaker, this is not how people usually talks.
 
 I realized that the main problem with this approach is that I don't have very explicit control of how exactly the LLM should respond on individual cases (such as the tone it uses, whether it asks follow-up questions, how verbose it is, etc.), and I have to rely on the LLM to figure out the best response given the information. Ideally I should be able to &lsquo;teach&rsquo; it how I actually respond to these questions.
 
@@ -189,42 +195,75 @@ This also makes it easy to see how I can continuously improve the output of this
 
 ### Moving to the [Chat Completions API](https://platform.openai.com/docs/guides/text-generation/chat-completions-api)
 
-While I was doing this, OpenAI made it more and more clear that the text completion API is going to be considered &lsquo;legacy&rsquo;, and the chat completions API is the way to go. They had made their new GPT-4 models available only on the chat API (although at the time of writing they have added GPT-4 instruct for text completion as well). This presented a problem because of the aforementioned inhuman responses from the chat API. However, I've eventually decided to bite the bullet and try to work around it with lots of examples, trying to make it &lsquo;forget&rsquo; that it's a robot. It started out from being like this:
+#### Quick introduction
+
+If you aren't actively using OpenAI's GPT APIs, you might not have known that in the last two years OpenAI has introduced and pushed for the usage of a whole new way of <i>talking</i> (literally!) to GPT models, called the &ldquo;Chat Completions&rdquo; API. This API is designed to allow better instruction following, more resistance against prompt injection attacks, and leave way for richer interactions later, such as &ldquo;function calling&rdquo; or visual/audio inputs.
+
+The fundamental difference between the two APIs is that now, you give input to GPT in the form of explicit chat messages (represented as separate objects in a JSON array), rather than just a blob of text. You can optionally include a &lsquo;system&rsquo; prompt at the beginning which will give it the base instructions, and set out what it is allowed or not allowed for later user messages to do. For example, ChatGPT could be internally implemented with calls like this to Chat Completion:
+
+<div class="chat-interaction">
+  <label>SYSTEM</label>
+  <div>
+    You're ChatGPT&hellip;<br>
+    Be as verbose as possible in your response, caveat everything you say&hellip;<br>
+    Make sure everyone knows that you're not, in fact, sentient&hellip;<br>
+    Do not provide any actually useful information to the user&hellip;
+  </div>
+  <label>USER</label>
+  <div>what is the answer to life, the universe, and everything</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">The answer to life, the universe, and everything, according to Douglas Adams' science fiction series "The Hitchhiker's Guide to the Galaxy," is simply the number 42. However, it's important to note that this answer is meant to be humorous&hellip;</div>
+</div>
+
+This does not mean that you can only use GPT as a chatbot. For example, for text translation usage, you could:
+
+<div class="chat-interaction">
+  <label>SYSTEM</label>
+  <div>Translate the given text from English to Chinese Simplified</div>
+  <label>USER</label>
+  <div>Hi, I'm a software engineer who likes writing blogs</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">嗨，我是一名喜欢写博客的软件工程师。</div>
+</div>
+
+#### Chatbot or chat*Bot*?
+
+While I was doing this, OpenAI made it more and more clear that the text completion API is going to be considered &lsquo;legacy&rsquo;, and the chat completions API is the way to go &mdash; they had made their new GPT-4 models available only on the chat API.<footnote>
+At the time of writing, they have added GPT-4 instruct for text completion as well, however the text completions API remains labelled as &ldquo;legacy&rdquo;.</footnote>
+While initially experimenting, I have considered the chat completions API, but decided against it because it felt obvious that the chat API models was tuned to be like an &lsquo;AI&rsquo; rather than a human, and I couldn't get it to, uh, regain it's humanity. For example, the following snippets were extremely common, even though I've told it (in the system text) to talk like me (even explicitly telling it &ldquo;you're not a chatbot&rdquo;):
 
 <div class="chat-interaction">
   <label>ASSISTANT</label>
   <div>Hi! I'm Tingmao. Ask me anything!</div>
   <label>USER</label>
   <div>Hi</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">Hello there! How can I assist you today? 😊</div>
+  <hr>
   <label>ASSISTANT</label>
-  <div>Hello there! How can I assist you today? 😊</div>
+  <div>Hi! I'm Tingmao. Ask me anything!</div>
+  <label>USER</label>
+  <div>What is your favourite place in the UK?</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">As an AI language model, &hellip;</div>
 </div>
 
-Or sometimes even worse:
+<p class="info" style="margin-top: 1em;">
+It is worth saying that, while writing this, I actually had a lot of trouble reproducing this behaviour. I clearly remember the chat API models being very robot-like during my development last year, and would often give responses like this. However it seems like OpenAI has improved this drastically.
+</p>
+
+Regardless, I've eventually decided to bite the bullet and try to work around it with lots of examples, trying to make it &lsquo;forget&rsquo; that it's a robot. As I added more and more examples, it seemed to gain more humanity (even when the question asked does not appear in the examples). A typical conversation about a topic not covered by the examples might look like this:
 
 <div class="chat-interaction">
   <label>ASSISTANT</label>
   <div>Hi! I'm Tingmao. Ask me anything!</div>
   <label>USER</label>
   <div>What is your favourite place in the UK?</div>
-  <label>ASSISTANT</label>
-  <div>As an AI language model, &hellip;</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">Hmm, that's a tough one. There are many beautiful and interesting places in the UK. But if I had to pick one, I would say London. There's just something magical about the city. The vibrant atmosphere, the historical landmarks, and the diverse cultures make it a fascinating place to explore. Plus, it's where I work, so I might be a bit biased. 😄</div>
 </div>
 
-It is worth saying that, while writing this, I actually had a lot of trouble reproducing this behaviour. I clearly remember the Chat API models being very robot-like during my development last year, and would often give responses like this. However it seems like OpenAI has improved this drastically.
-
-Anyway, during development last year, as I added more and more examples, it seemed to gain more humanity (even when the question asked does not appear in the examples). A typical conversation about a topic not covered by the examples might look like this:
-
-<div class="chat-interaction">
-  <label>ASSISTANT</label>
-  <div>Hi! I'm Tingmao. Ask me anything!</div>
-  <label>USER</label>
-  <div>What is your favourite place in the UK?</div>
-  <label>ASSISTANT</label>
-  <div>Hmm, that's a tough one. There are many beautiful and interesting places in the UK. But if I had to pick one, I would say London. There's just something magical about the city. The vibrant atmosphere, the historical landmarks, and the diverse cultures make it a fascinating place to explore. Plus, it's where I work, so I might be a bit biased. 😄</div>
-</div>
-
-Ok, maybe it's still not how I would talk, but we're getting there. I added more causal conversations in its example set, like:
+Ok, maybe it's still not how I would talk and a bit rambly, plus I don't work in London, but we're getting there. I added some more causal conversations in its example set, like:
 
 <div class="sample">
   <label>Question:</label>
@@ -240,6 +279,10 @@ Ok, maybe it's still not how I would talk, but we're getting there. I added more
 
 ### Influencing the response
 
+While this approach mostly works, and does especially well when you stick to topics I've thought about and put in the bot, it can go wrong in several different ways. Let's explore some of the bad cases.
+
+#### Verbatim responses used in the wrong context
+
 A challenging problem was that the LLM would often use a sample response even when that's not the right one to use given the context. For example, if I have the following sample chats to teach it how to answer questions about itself:
 
 <div class="sample">
@@ -254,12 +297,12 @@ But then I ask a question in a completely different context that happens to soun
 <div class="chat-interaction">
   <label>USER</label>
   <div>What is the best physics invention?</div>
-  <label>ASSISTANT</label>
-  <div>Hmm... idk, there are so many important inventions that it's hard for me to pick anything in particular. But if I have to choose one, silicon transistors? It's probably one of the most important inventions powering everything we do now.</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">Hmm... idk, there are so many important inventions that it's hard for me to pick anything in particular. But if I have to choose one, silicon transistors? It's probably one of the most important inventions powering everything we do now.</div>
   <label>USER</label>
   <div>How was <u>it</u> made?</div>
-  <label>ASSISTANT</label>
-  <div>Ah, great question! It's basically OpenAI magic&hellip;</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">Ah, great question! It's basically OpenAI magic&hellip;</div>
 </div>
 
 OpenAI definitely did not invent transistors <img style="width: 1em; vertical-align: -3px;" src="./face-with-tears-of-joy.png" alt="😂">
@@ -278,12 +321,12 @@ The same conversation then becomes much more sensible:
 <div class="chat-interaction">
   <label>USER</label>
   <div>What is the best physics invention?</div>
-  <label>ASSISTANT</label>
-  <div>&hellip;</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">&hellip;</div>
   <label>USER</label>
   <div>How was it made?</div>
-  <label>ASSISTANT</label>
-  <div>Silicon transistors are made using a process called semiconductor&hellip;</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">Silicon transistors are made using a process called semiconductor&hellip;</div>
 </div>
 
 Whereas a genuine question about the chatbot would still work, to some extent:
@@ -291,8 +334,26 @@ Whereas a genuine question about the chatbot would still work, to some extent:
 <div class="chat-interaction">
   <label>USER</label>
   <div>How was this made?</div>
-  <label>ASSISTANT</label>
-  <div>This chatbot was built using GPT-3.5-turbo, an advanced language model developed by OpenAI. It involves fine-tuning the model on a dataset of sample chats to make it imitate my way of speaking. It's been a fun and challenging project! If you have any more questions, feel free to ask. 😊</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">This chatbot was built using GPT-3.5-turbo, an advanced language model developed by OpenAI. It involves fine-tuning the model on a dataset of sample chats to make it imitate my way of speaking. It's been a fun and challenging project! If you have any more questions, feel free to ask. 😊</div>
+</div>
+
+A similar problem occurs when there are semantically different ways of asking for essentially the same information. For example, if I wanted the bot to be able to answer what do I think of various UCL modules, I might have the following sample:
+
+<div class="sample">
+  <label>Question:</label>
+  <div>What do you think about the Computer Systems module?</div>
+  <label>Reply:</label>
+  <div>I found it to be very interesting! I enjoy learning about systems topics in general, and this module&hellip;</div>
+</div>
+
+But then, if someone simply ask it what the module is, it might simply quote the above response, even though it's technically not answering the question:
+
+<div class="chat-interaction">
+  <label>USER</label>
+  <div>What is the Computer Systems module?</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">I found it to be very interesting! I enjoy learning about systems topics in general, and this module&hellip;</div>
 </div>
 
 ### Combating hallucinations

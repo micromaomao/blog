@@ -357,15 +357,17 @@ If you pretend for a sec that the vectors are two-dimensional, they might look l
 
 <p><img src="./cat-embeddings.png" style="width: 700px;" alt="an X-Y plane with 4 points, each being one of the 4 sentences. Sentence 1 and 2, on the top-right, are basically next to each other, whereas sentence 3 falls on the middle-right, and sentence 4 falls on the bottom-left."></p>
 
-While real embeddings have much more dimensions and the pattern would not be this clear-cut, the intuition will still apply. For example, sentence 1 and 2 will have vectors that are very close to each other, sentence 3 will be a bit further away (but will be pretty close since it's still talking about the animal cat), wherease sentence 4 will be the furthest away from all of 1, 2, and 3 (since it isn't even talking about the animal cat anymore).
+While real embeddings have much more dimensions and the pattern would not be this clear-cut, the intuition will still apply. For example, sentence 1 and 2 will have vectors that are very close to each other, sentence 3 will be a bit further away (but will still be pretty close since it's still talking about cats), wherease sentence 4 will be the furthest away from all of 1, 2, and 3 (since it isn't even talking about the animal cat anymore).
 
-You can play around with embeddings a bit more in the below interactive tool:
+You can play around with embeddings a bit more in the below interactive tool. Try putting in several similar or dissimilar sentences and see how the similarity score changes. The tool will highlight the input that's most similar with the first input. In practice, abstract concepts like &lsquo;happy&rsquo; or &lsquo;sad&rsquo; also meaningfully correlates with sentences that have those properties, so you can also try putting in a generic sentence, then the words &lsquo;happy&rsquo; and &lsquo;sad&rsquo; and see which word is most &ldquo;similar&rdquo; to your first input.
 
 <div style="background-color: white; border: 1px solid #999; padding: 10px;">
   <noscript id="embedding_tool">
     Javascript is required to use this tool.
   </noscript>
 </div>
+
+#### Using embeddings to select and rank samples
 
 ### Influencing the response
 
@@ -434,17 +436,23 @@ A similar problem occurs when there are semantically different ways of asking fo
   <label>Question:</label>
   <div>What do you think about the Computer Systems module?</div>
   <label>Reply:</label>
-  <div>I found it to be very interesting! I enjoy learning about systems topics in general, and this module&hellip;</div>
+  <div>I found it to be very interesting! I enjoy learning about systems topics in general, and this module covered&hellip;</div>
 </div>
 
-But then, if someone simply ask it what the module is, it might simply quote the above response, even though it's technically not answering the question:
+But then, if someone simply ask it what the module is, it might just quote the above response, even though it's technically not answering the question:
 
 <div class="chat-interaction">
   <label>USER</label>
   <div>What is the Computer Systems module at UCL?</div>
   <label class="generated-textcolor">ASSISTANT</label>
-  <div class="generated-textcolor">I found it to be very interesting! I enjoy learning about systems topics in general, and this module&hellip;</div>
+  <div class="generated-textcolor">I found it to be very interesting! I enjoy learning about systems topics in general, and this module covered&hellip;</div>
 </div>
+
+I can improve the response in this particular case by just adding in another sample response for this question, with the reply worded differently, but this is a recurring problem in general.
+
+#### Storing simple follow-up questions
+
+In one of the above example, we encountered an instance of a &lsquo;trivial&rsquo; follow-up question&mdash;&ldquo;How was it made?&rdquo;. Storing a reply to this requires some special care.
 
 ### Combating hallucinations
 

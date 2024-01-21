@@ -9,7 +9,7 @@
 		"typeRoots": ["./node_modules/@types", "./node_modules/@svgdotjs"],
 		"baseUrl": ".",
 		"allowJs": true,
-		"moduleResolution": "node",
+		"moduleResolution": "Bundler",
 		"esModuleInterop": true,
 		"jsx": "preserve"
 	},

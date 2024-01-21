@@ -461,18 +461,16 @@ async function main() {
                 distDir: dist_dict_path,
                 optimize: minimize,
                 distEntry: "script.js",
-                sourceMap: true
-              }
-            },
-            defaultTargetOptions: {
-              engines: {
-                browsers: ["> 0.5%, last 2 versions, not dead"]
+                sourceMap: true,
+                engines: {
+                  browsers: ["> 0.5%, last 2 versions, not dead"]
+                }
               }
             }
           });
           let res = await bundler.run();
           res.bundleGraph.traverseBundles(b => {
-            bundles.push({url: b.name, type: b.type});
+            bundles.push({ url: b.name, type: b.type });
             console.log(` ==>  ${b.type}: ${b.name}`);
           });
         } else {

@@ -5,7 +5,7 @@ import { DeleteRegular, AddCircleRegular } from "@fluentui/react-icons";
 import { PureComponent, RefObject, createContext, createRef, useContext, useEffect, useState } from "react";
 
 import * as styles from "./embeddings.module.css";
-import { norm, dot, similarity } from "./vectools";
+import { norm, dot } from "./vectools";
 
 const setBestMatchHighlightContext = createContext<any>(null);
 

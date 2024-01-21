@@ -5,7 +5,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "watch": "env NODE_ENV=development nodemon -e '*.*' -i .git -i node_modules -i server -i dist -i .parcel-cache index.js",
+    "build": "env NODE_ENV=production node index.js"
   },
   "repository": {
     "type": "git",
@@ -17,7 +18,9 @@
     "url": "https://github.com/micromaomao/blog/issues"
   },
   "homepage": "https://github.com/micromaomao/blog#readme",
-  "dependencies": {
+  "devDependencies": {
+    "@fluentui/react-components": "^9.45.0",
+    "@fluentui/react-icons": "^2.0.225",
     "@parcel/config-default": "^2.11.0",
     "@parcel/core": "^2.11.0",
     "@svgdotjs/svg.js": "^3.0.16",
@@ -28,13 +31,10 @@
     "marked": "^4.0.18",
     "mathjax-node": "^2.1.1",
     "nodemon": "^2.0.21",
+    "parcel": "^2.11.0",
     "pug": "^3.0.2",
-    "sass": "^1.23.7"
-  },
-  "devDependencies": {
-    "@fluentui/react-components": "^9.45.0",
-    "@fluentui/react-icons": "^2.0.225",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "sass": "^1.23.7"
   }
 }

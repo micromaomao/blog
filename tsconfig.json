@@ -11,7 +11,9 @@
 		"allowJs": true,
 		"moduleResolution": "Bundler",
 		"esModuleInterop": true,
-		"jsx": "preserve"
-	},
-	"include": [ "decls.d.ts" ]
+		"jsx": "preserve",
+		"paths": {
+			"js/*": ["./js/*"],
+		}
+	}
 }

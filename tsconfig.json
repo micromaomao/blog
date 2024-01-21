@@ -1,6 +1,6 @@
 {
 	"compilerOptions": {
-		"strict": true,
+		"strict": false,
 		"sourceMap": true,
 		"module": "ES6",
 		"target": "ESNext",
@@ -8,6 +8,10 @@
 		"outDir": "./dist/",
 		"typeRoots": ["./node_modules/@types", "./node_modules/@svgdotjs"],
 		"baseUrl": ".",
-		"allowJs": true
-	}
+		"allowJs": true,
+		"moduleResolution": "node",
+		"esModuleInterop": true,
+		"jsx": "preserve"
+	},
+	"include": [ "decls.d.ts" ]
 }

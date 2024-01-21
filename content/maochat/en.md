@@ -359,6 +359,12 @@ If you pretend for a sec that the vectors are two-dimensional, they might look l
 
 While real embeddings have much more dimensions and the pattern would not be this clear-cut, the intuition will still apply. For example, sentence 1 and 2 will have vectors that are very close to each other, sentence 3 will be a bit further away (since it's still talking about the animal cat), wherease sentence 4 will be the furthest away from all of 1, 2, and 3 (since it isn't even talking about the animal cat anymore).
 
+You can play around with embeddings a bit more in the below interactive tool:
+
+<noscript id="embedding_tool">
+  Javascript is required to use this tool.
+</noscript>
+
 ### Influencing the response
 
 While this approach mostly works, and does especially well when you stick to topics I've thought about and put in the bot, it can go wrong in several different ways. Let's explore some of the bad cases.

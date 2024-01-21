@@ -449,6 +449,12 @@ async function main () {
         if (!skip_webpack) {
           print_status(`tsc ${script_path} > ...`);
           let _bundle_path = path.resolve(dist_dict_path, "script.js");
+          const babel_loader = {
+            loader: "babel-loader",
+            options: {
+              presets: ["@babel/preset-react"]
+            }
+          };
           await new Promise((resolve, reject) => {
             let webpack_config = {
               entry: script_path,
@@ -456,14 +462,29 @@ async function main () {
               module: {
                 rules: [
                   {
+                    test: /\.css$/,
+                    use: [
+                      "style-loader",
+                      "css-loader"
+                    ]
+                  },
+                  {
                     test: /\.ts$/,
                     use: "ts-loader",
                     exclude: "/node_modules/"
-                  }
+                  },
+                  {
+                    test: /\.jsx$/,
+                    use: [babel_loader]
+                  },
+                  {
+                    test: /\.tsx$/,
+                    use: [babel_loader, "ts-loader"]
+                  },
                 ]
               },
               resolve: {
-                extensions: [".ts", ".js"],
+                extensions: [".ts", ".js", ".jsx", ".tsx", ".css"],
                 modules: ["node_modules", __dirname]
               },
               output: {

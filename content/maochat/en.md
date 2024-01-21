@@ -365,8 +365,6 @@ You can play around with embeddings a bit more in the below interactive tool:
   <noscript id="embedding_tool">
     Javascript is required to use this tool.
   </noscript>
-
-  <div style="font-size: 16px; color: #555; margin-top: 6px;">Powered by my own OpenAI key. Rate limited.</div>
 </div>
 
 ### Influencing the response

@@ -451,15 +451,15 @@ async function main() {
       if (fs.existsSync(script_path)) {
         if (!skip_webpack) {
           print_status(`parcel ${script_path} > ...`);
-          let minimize = process.env.NODE_ENV === "production";
+          let production = process.env.NODE_ENV === "production";
           let bundler = new Parcel({
             entries: script_path,
             defaultConfig: "@parcel/config-default",
-            mode: minimize ? "production" : "development",
+            mode: production ? "production" : "development",
             targets: {
               default: {
                 distDir: dist_dict_path,
-                optimize: minimize,
+                optimize: production,
                 distEntry: "script.js",
                 sourceMap: true,
                 engines: {

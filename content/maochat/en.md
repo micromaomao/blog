@@ -14,7 +14,35 @@ discuss:
 
 > &ldquo;As an AI language model&hellip;&rdquo; &mdash; OpenAI LLM's favorite opening, ~May 2023
 
-Around August 2023, I completed a very long-drawn-out personal project (because I kept procrastinating, maybe because my day-job has sucked all the coding energy out of me lol) called <a href="https://chat.maowtm.org" target="_blank">Maochat</a>. It came from a very simple idea I've long had since human-like instructable LLMs came out: making a LLM &ldquo;clone&rdquo; of myself. It should know things about me, and as far as I can make it, feel like talking to the actual me. This project is the realisation of that idea &mdash; I encourage you to <a href="https://chat.maowtm.org" target="_blank">give it a try</a> if you haven't!
+Around August 2023, I completed a very long-drawn-out personal project (because I kept procrastinating, maybe because my day-job has sucked all the coding energy out of me lol) called <a href="https://chat.maowtm.org" target="_blank">Maochat</a>. It came from a very simple idea I've long had since human-like instructable LLMs came out: making a LLM &ldquo;clone&rdquo; of myself. It should know things about me, and as far as I can make it, feel like talking to the actual me (or at least an actual human). This project is the realisation of that idea &mdash; I encourage you to give it a try if you haven't!
+
+<style>
+  .trynow {
+    display: inline-block;
+    padding: 5px 20px;
+    background-color: #a200e1;
+    color: #ffffff;
+    text-decoration: none;
+    border-radius: 4px;
+    font-weight: normal;
+    margin: 5px;
+  }
+
+  .trynow:hover, .trynow:active, .trynow:focus {
+    background-color: #8a00cd;
+  }
+
+  .trynow:hover:active {
+    background-color: #46127d;
+  }
+</style>
+<script async defer src="https://buttons.github.io/buttons.js"></script>
+
+<p style="text-align: center;">
+  <a href="https://chat.maowtm.org" target="_blank" class="trynow">Try it now</a><br>
+  <a href="https://github.com/micromaomao/chat.maowtm.org" target="_blank" style="vertical-align: 8px;">View source on GitHub</a>
+  <a class="github-button" href="https://github.com/micromaomao/chat.maowtm.org" data-size="large" data-show-count="true" aria-label="Star micromaomao/chat.maowtm.org on GitHub">Star</a>
+</p>
 
 Why did I want to make this? Honestly, it's mostly just for fun. I did not think of any serious use-case that such a bot could have. It's like how making a LLM anime character is fun, and I didn't have much reservation against making a &lsquo;character.ai&rsquo; of myself &mdash; I know myself best, after all. Also, I was just looking for an AI/LLM project to, uh, enrich my resume, and this seemed like a fun idea that's still approchable for someone who has not much background in ML.
 
@@ -22,7 +50,27 @@ Overall, I think it was quite successful: it's actually fun and human-like to ta
 
 The rest of this post will go into two different directions: The &ldquo;AI tuning&rdquo; side of the project, and the architectural / software-engineering side. There is a lot to learn from both, and in the end I will come back and talk a bit more about how I feel about the project as a whole.
 
-## AI wrangling
+<style>
+  .dramatic-title {
+    text-align: center;
+    font-size: 30px;
+    margin-top: 50px;
+  }
+
+  .dramatic-title:before {
+    display: none;
+    content: '';
+    width: 0;
+    margin: 0;
+    padding: 0;
+  }
+
+  .dramatic-title .numeral {
+    opacity: 0.5;
+  }
+</style>
+
+<h2 class="dramatic-title"><span class="numeral">I. </span>AI wrangling</h2>
 
 <style>
   .llm-interaction, .chat-interaction, .sample {
@@ -127,9 +175,7 @@ User: Who is your favorite anime character?
 T: <span class="generated">That's a tough one, there are so many characters I like! If I had to pick just one, it would probably be Yuki Nagato from Haruhi Suzumiya &hellip; <i>(40 more words of explanation)</i></span>
 </pre>
 
-This was still using the &lsquo;legacy&rsquo; (according to OpenAI) text completion API, hence the explicit chat dialogue label. At this point I already realized that I could use [text embeddings](https://platform.openai.com/docs/guides/embeddings) to search for the most relevant information and choose the most relevant "notes" to show (if I had more than the context window would fit), and planned to do that when implementing this.
-
-This approach worked well with recalling (known) information &mdash; this was not surprising given that the model is explicitly designed with this use case in mind. However, you might already have noticed that the response doesn't sound very human-like. Things gets worse with the new [chat completions API](https://platform.openai.com/docs/guides/text-generation/chat-completions-api), presumably due to more chatbot-like fine-tuning, and the fact that the model is always given the label "assistant" for its messages (I could not find any way to change this). We will talk about this new API later on, but here is one example:
+This was still using the &lsquo;legacy&rsquo; (according to OpenAI) text completion API, hence the explicit chat dialogue label. This approach worked well with recalling (known) information &mdash; this was not surprising given that the model is explicitly designed with this use case in mind. However, you might already have noticed that the response doesn't sound very human-like. Things gets worse with the new [chat completions API](https://platform.openai.com/docs/guides/text-generation/chat-completions-api), presumably due to more chatbot-like fine-tuning, and the fact that the model is always given the label "assistant" for its messages (I could not find any way to change this). We will talk about this new API later on, but here is one example:
 
 <div class="chat-interaction">
   <label>SYSTEM</label>
@@ -189,7 +235,7 @@ User: Do you have a waifu you like the most?
 You: <span class="generated">My favorite waifu is Yuki! She is cool and mysterious, and cute! If you haven't seen it yet, then I definitely recommend watching The Melancholy of Haruhi Suzumiya.</span>
 </pre>
 
-Not an exact response, but good enough for me. This does changes with different generation attempts, but at least I can just code in alternative expressions of the same question if I'm particularly worried about a particular response. When there is an exact match, it is pretty good at consistently following my coded responses.
+Not an exact response, but good enough for me. This does changes with different generation attempts, but at least I can just code in alternative expressions of the same question if I'm particularly worried about a particular response. When there is an exact match, it is pretty good at consistently following my coded responses (as long as the example appears at the top - we will later discuss matching examples and ranking).
 
 This also makes it easy to see how I can continuously improve the output of this AI &mdash; I just need to add more and more examples to the database, and it will talk more and more like me! It's not obvious that this would have been possible if I've continued with the &lsquo;notes&rsquo; approach. Plus, when I have a large enough dataset, such a format allows me to easily do [model fine-tuning](https://platform.openai.com/docs/guides/fine-tuning), or skip the LLM entirely in a significant number of cases &mdash; neither of which would have been possible with just a set of knowledge notes, even if it's a large set.
 
@@ -277,6 +323,10 @@ Ok, maybe it's still not how I would talk and a bit rambly, plus I don't work in
   <div>I'm doing great, thanks for asking!</div>
 </div>
 
+### Using [Embeddings](https://platform.openai.com/docs/guides/embeddings)
+
+As part of this project, I also wanted to explore using &ldquo;text embeddings&rdquo;. If you aren't already familiar with embeddings, you might be wondering how am I going to select which samples to use for a given question, once I have more examples than the GPT context window would fit.
+
 ### Influencing the response
 
 While this approach mostly works, and does especially well when you stick to topics I've thought about and put in the bot, it can go wrong in several different ways. Let's explore some of the bad cases.
@@ -351,13 +401,13 @@ But then, if someone simply ask it what the module is, it might simply quote the
 
 <div class="chat-interaction">
   <label>USER</label>
-  <div>What is the Computer Systems module?</div>
+  <div>What is the Computer Systems module at UCL?</div>
   <label class="generated-textcolor">ASSISTANT</label>
   <div class="generated-textcolor">I found it to be very interesting! I enjoy learning about systems topics in general, and this module&hellip;</div>
 </div>
 
 ### Combating hallucinations
 
-## Architecture
+<h2 class="dramatic-title"><span class="numeral">II. </span>Architecture</h2>
 
-## Conclusion
+<h2 class="dramatic-title">Conclusion</h2>

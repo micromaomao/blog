@@ -12,8 +12,11 @@ html(lang=lang_obj.id)
     meta(property="og:type",content="article")
     style(type="text/css")!= "\n" + css
     link(rel="stylesheet", href="https://unpkg.com/highlight.js@9.16.2/styles/idea.css")
-    -if (article.script)
-      script(async, type="text/javascript", src=article.script)
+    each b in article.bundles
+      -if (b.type == "css")
+        link(rel="stylesheet", href=b.url)
+      -else if (b.type == "js")
+        script(type="text/javascript", src=b.url)
   body
     a.blogtitle(href="../index.html")
       | <img src="../title.svg" alt="mw casual engineering">

@@ -9,20 +9,20 @@ const sass = require('sass');
 const cheerio = require('cheerio');
 const mathjax = require("mathjax-node");
 const hljs = require("highlight.js");
-const webpack = require("webpack");
+const { default: Parcel } = require("@parcel/core");
 
 process.chdir(__dirname);
 
 let output_dir = path.resolve(__dirname, "dist");
 let skip_webpack = false;
 
-async function main () {
+async function main() {
   let filter;
   switch (process.argv.length) {
     // first 2 args are "node" and "index.js"
     case 0:
     case 1:
-     throw new Error("Expected one or no arguments.");
+      throw new Error("Expected one or no arguments.");
     case 2:
       filter = null;
       break;
@@ -73,7 +73,7 @@ async function main () {
     dir_entires = dir_entires.filter(x => x == filter);
   }
   console.log(`       (${dir_entires.length} articles to build)`.gray);
-  let progress_total_work = dir_entires.length*4 + 10;
+  let progress_total_work = dir_entires.length * 4 + 10;
   let progress_current_work_done = 0;
   function print_status(status_text) {
     console.log(`[${Math.round(progress_current_work_done++ / progress_total_work * 100).toString().padStart(3, " ")}%] ${status_text}`.cyan);
@@ -90,7 +90,7 @@ async function main () {
     print_status(`Compile template: ${file_path}`);
     let fn;
     try {
-      fn = pug.compileFile(file_path, {pretty: true});
+      fn = pug.compileFile(file_path, { pretty: true });
     } catch (e) {
       throw new Error(`Error compiling ${file_path}: ${e.message}`);
     }
@@ -107,7 +107,7 @@ async function main () {
       throw new Error(`Error compiling ${sass_path}: ${e.message}`);
     }
     return function (obj) {
-      Object.assign(obj, {css});
+      Object.assign(obj, { css });
       return fn(obj);
     };
   }
@@ -123,7 +123,7 @@ async function main () {
   });
 
   function tryMkdirp(path) {
-    fs.mkdirSync(path, {recursive: true});
+    fs.mkdirSync(path, { recursive: true });
     print_verbose(`mkdir -p ${path}`);
   }
 
@@ -192,7 +192,7 @@ async function main () {
         let l = md.substr(0, md.length - 3);
         print_status(`Scanning ${codename}: ${l}`);
         let mdpath = path.resolve(cdir_path, md);
-        let markdown = fs.readFileSync(mdpath, {encoding: "utf8"});
+        let markdown = fs.readFileSync(mdpath, { encoding: "utf8" });
         let lines = markdown.split('\n');
         let front_matter = null;
         if (lines.length > 0 && lines[0] == '---') {
@@ -210,7 +210,7 @@ async function main () {
           throw new Error(`${mdpath}: expected front matter`);
         }
         try {
-          front_matter = jsyaml.load(front_matter.replace(/\t/g, "  "), {onWarning: e => print_warn(`yaml warning on ${mdpath}: ${e.message}`)});
+          front_matter = jsyaml.load(front_matter.replace(/\t/g, "  "), { onWarning: e => print_warn(`yaml warning on ${mdpath}: ${e.message}`) });
         } catch (e) {
           throw new Error(`${mdpath}: invalid yaml front matter: ${e.message}`);
         }
@@ -231,7 +231,7 @@ async function main () {
             throw new Error(`${mdpath}: front matter: invalid tags array`);
           }
         }
-        let lang_obj = {id: l, cover_image: null, title: front_matter.title, time, tags, markdown, discuss: null};
+        let lang_obj = { id: l, cover_image: null, title: front_matter.title, time, tags, markdown, discuss: null };
         if (front_matter.hasOwnProperty("discuss")) {
           lang_obj.discuss = front_matter.discuss;
         }
@@ -239,7 +239,7 @@ async function main () {
         let md_renderer = new marked.Renderer({
           headerIds: true
         });
-        md_renderer.link = function(href, title, text) {
+        md_renderer.link = function (href, title, text) {
           return orig_renderer.link(transform_local_asset_href(href), title, text);
         }
 
@@ -374,13 +374,13 @@ async function main () {
             sp.addClass("footnote-revref");
             sp.append(a);
             fnele.append(sp, ": ", footnote_html);
-            footnotes.push({nb, fnele});
+            footnotes.push({ nb, fnele });
           }
           $("footnote:not(footnote footnote)").each(iter_proc);
           footnotes.sort((a, b) => Math.sign(a.nb - b.nb));
           if (footnotes.length > 0) {
             let footnote_sec = $("<ul />");
-            for (let {fnele} of footnotes) {
+            for (let { fnele } of footnotes) {
               let li = $("<li />");
               li.append(fnele);
               footnote_sec.append(li);
@@ -394,13 +394,15 @@ async function main () {
         let html;
         try {
           html = await new Promise((resolve, reject) => {
-            marked(markdown, {headerIds: true, renderer: md_renderer, highlight: (code, lang, cb) => {
-              if (lang === "") {
-                cb(null, code);
-              } else {
-                cb(null, hljs.highlight(code, { language: lang }).value);
+            marked(markdown, {
+              headerIds: true, renderer: md_renderer, highlight: (code, lang, cb) => {
+                if (lang === "") {
+                  cb(null, code);
+                } else {
+                  cb(null, hljs.highlight(code, { language: lang }).value);
+                }
               }
-            }}, (err, output) => {
+            }, (err, output) => {
               if (err) {
                 reject(new Error(`Error highlighting: ${err.message}`));
               } else {
@@ -441,79 +443,45 @@ async function main () {
           let name = pp.base;
           let cmdline = `tar -c ${JSON.stringify(name)} | gzip > ${JSON.stringify(a.output_path)}`;
           print_status(cmdline);
-          child_process.execSync(cmdline, {cwd: parent});
+          child_process.execSync(cmdline, { cwd: parent });
         }
       }
       let script_path = path.resolve(cdir_path, "script.ts");
+      let bundles = [];
       if (fs.existsSync(script_path)) {
         if (!skip_webpack) {
-          print_status(`tsc ${script_path} > ...`);
-          let _bundle_path = path.resolve(dist_dict_path, "script.js");
-          const babel_loader = {
-            loader: "babel-loader",
-            options: {
-              presets: ["@babel/preset-react"]
+          print_status(`parcel ${script_path} > ...`);
+          let minimize = (!!process.env["GITHUB_ACTIONS"]) || (!!process.env["CI"]);
+          let bundler = new Parcel({
+            entries: script_path,
+            defaultConfig: "@parcel/config-default",
+            mode: minimize ? "production" : "development",
+            targets: {
+              default: {
+                distDir: dist_dict_path,
+                optimize: minimize,
+                distEntry: "script.js",
+                sourceMap: true
+              }
+            },
+            defaultTargetOptions: {
+              engines: {
+                browsers: ["> 0.5%, last 2 versions, not dead"]
+              }
             }
-          };
-          await new Promise((resolve, reject) => {
-            let webpack_config = {
-              entry: script_path,
-              devtool: "source-map",
-              module: {
-                rules: [
-                  {
-                    test: /\.css$/,
-                    use: [
-                      "style-loader",
-                      "css-loader"
-                    ]
-                  },
-                  {
-                    test: /\.ts$/,
-                    use: "ts-loader",
-                    exclude: "/node_modules/"
-                  },
-                  {
-                    test: /\.jsx$/,
-                    use: [babel_loader]
-                  },
-                  {
-                    test: /\.tsx$/,
-                    use: [babel_loader, "ts-loader"]
-                  },
-                ]
-              },
-              resolve: {
-                extensions: [".ts", ".js", ".jsx", ".tsx", ".css"],
-                modules: ["node_modules", __dirname]
-              },
-              output: {
-                filename: "script.js",
-                path: dist_dict_path,
-              },
-              optimization: {
-                minimize: (!!process.env["GITHUB_ACTIONS"]) || (!!process.env["CI"])
-              }
-            };
-            webpack(webpack_config, (err, stats) => {
-              if (err || stats.hasErrors()) {
-                reject(new Error(err || `Webpack: ${stats.toString()}`));
-              } else {
-                resolve();
-                if (filter !== null) {
-                  webpack(webpack_config).watch({}, info => console.log(info));
-                }
-              }
-            })
+          });
+          let res = await bundler.run();
+          res.bundleGraph.traverseBundles(b => {
+            bundles.push({url: b.name, type: b.type});
+            console.log(` ==>  ${b.type}: ${b.name}`);
           });
         } else {
           print_status(`tsc skipped.`.gray);
         }
-        article.script = "script.js";
       } else {
         progress_current_work_done++;
-        article.script = null;
       }
+      article.bundles = bundles;
 
       await Tag.process_article(article);
       return article;
@@ -576,7 +544,7 @@ async function main () {
   for (let t of tags.values()) {
     let outhtmlfile = path.resolve(tagindex_dir, `${t.name.toLowerCase()}.html`);
     print_status("emit " + outhtmlfile);
-    let html = tagindex_template({tag: t});
+    let html = tagindex_template({ tag: t });
     try {
       fs.writeFileSync(outhtmlfile, html)
     } catch (e) {
@@ -586,7 +554,7 @@ async function main () {
 
   let index_file_path = path.resolve(output_dir, "index.html");
   print_status("emit " + index_file_path);
-  fs.writeFileSync(index_file_path, index_template({articles}));
+  fs.writeFileSync(index_file_path, index_template({ articles }));
 
   let cc_ext_file_path = path.resolve(output_dir, "request_cc_extension.html");
   print_status("emit " + cc_ext_file_path);

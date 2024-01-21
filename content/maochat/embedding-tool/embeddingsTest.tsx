@@ -4,14 +4,7 @@ import { Alert } from "@fluentui/react-components/unstable";
 import { DeleteRegular, AddCircleRegular } from "@fluentui/react-icons";
 import { PureComponent, RefObject, createContext, createRef, useContext, useEffect, useState } from "react";
 
-// import * as styles from "./embeddings.module.css";
-const styles = {
-  inputRow: "inputRow",
-  inputField: "inputField",
-  inputRowNoRemove: "inputRowNoRemove",
-  removeInputBtn: "removeInputBtn",
-  embeddingsBar: "embeddingsBar"
-}
+import * as styles from "./embeddings.module.css";
 
 const setBestMatchHighlightContext = createContext<any>(null);
 

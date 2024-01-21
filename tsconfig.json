@@ -4,16 +4,24 @@
 		"sourceMap": true,
 		"module": "ES6",
 		"target": "ESNext",
-		"lib": ["ESNext", "DOM"],
+		"lib": [
+			"ESNext",
+			"DOM"
+		],
 		"outDir": "./dist/",
-		"typeRoots": ["./node_modules/@types", "./node_modules/@svgdotjs"],
+		"typeRoots": [
+			"./node_modules/@types",
+			"./node_modules/@svgdotjs"
+		],
 		"baseUrl": ".",
 		"allowJs": true,
 		"moduleResolution": "Bundler",
 		"esModuleInterop": true,
 		"jsx": "preserve",
 		"paths": {
-			"js/*": ["./js/*"],
+			"js/*": [
+				"./js/*"
+			],
 		}
 	}
 }

@@ -5,6 +5,7 @@ import { DeleteRegular, AddCircleRegular } from "@fluentui/react-icons";
 import { PureComponent, RefObject, createContext, createRef, useContext, useEffect, useState } from "react";
 
 import * as styles from "./embeddings.module.css";
+import { norm, dot, similarity } from "./vectools";
 
 const setBestMatchHighlightContext = createContext<any>(null);
 
@@ -116,8 +117,50 @@ class ResponseError extends Error {
   }
 }
 
+const PROXY_ENDPOINT = process.env.BACKEND_ENDPOINT;
+
+async function fetchEmbeddingsSingle(input: string, model: string, signal: AbortSignal): Promise<any> {
+  let res = await fetch(new URL("/openai/v1/embeddings", PROXY_ENDPOINT), {
+    method: "POST",
+    body: JSON.stringify({ input, model }),
+    headers: {
+      "Content-Type": "application/json"
+    }
+  });
+  if (!res.ok) {
+    let err_msg;
+    if (res.headers.get("content-type")?.startsWith("application/json")) {
+      err_msg = (await res.json()).error?.message ?? "Unknown error";
+    } else {
+      err_msg = await res.text();
+    }
+    throw new Error("Error fetching embeddings: " + err_msg);
+  }
+  let json = await res.json();
+  return {
+    embedding: json.data[0].embedding
+  }
+}
+
 async function fetchEmbeddingDebugResult(inputs: string[], model: string): Promise<any> {
-  throw new Error("unimplemented");
+  const abortController = new AbortController();
+  try {
+    const embeddings = await Promise.all(inputs.map(async input => {
+      const res = await fetchEmbeddingsSingle(input, model, abortController.signal);
+      return res.embedding;
+    }));
+    const norms = embeddings.map(e => norm(e));
+    const similarities = [1];
+    for (let i = 1; i < embeddings.length; i += 1) {
+      similarities.push(dot(embeddings[0], embeddings[i]) / (norms[0] * norms[i]));
+    }
+    return {
+      embeddings, similarities,
+    };
+  } catch (e) {
+    abortController.abort();
+    throw e;
+  }
 }
 
 function useEmbeddingDebugResult(inputs: string[], model: string): { data: any, error: Error, isLoading: boolean, retry: () => void } {

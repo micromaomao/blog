@@ -5,8 +5,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "watch": "env NODE_ENV=development nodemon -e '*.*' -i .git -i node_modules -i server -i dist -i .parcel-cache index.js",
-    "build": "env NODE_ENV=production node index.js"
+    "watch": "env NODE_ENV=development BACKEND_ENDPOINT=http://localhost:3000 nodemon -e '*.*' -i .git -i node_modules -i server -i dist -i .parcel-cache index.js",
+    "build": "env NODE_ENV=production node index.js",
+    "dev:server": "cd server && env NODE_ENV=development nodemon -w . -e '*.js' -e '*.ts' -x 'ts-node index.ts'",
+    "serve:server": "cd server && env NODE_ENV=production ts-node index.ts"
   },
   "repository": {
     "type": "git",
@@ -24,6 +26,7 @@
     "@parcel/config-default": "^2.11.0",
     "@parcel/core": "^2.11.0",
     "@svgdotjs/svg.js": "^3.0.16",
+    "@types/express": "^4.17.21",
     "cheerio": "^1.0.0-rc.3",
     "colors": "^1.4.0",
     "highlight.js": "^11.6.0",
@@ -35,6 +38,12 @@
     "pug": "^3.0.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "sass": "^1.23.7"
+    "sass": "^1.23.7",
+    "ts-node": "^10.9.2"
+  },
+  "dependencies": {
+    "dotenv": "^16.3.2",
+    "express": "^4.18.2",
+    "pg": "^8.11.3"
   }
 }

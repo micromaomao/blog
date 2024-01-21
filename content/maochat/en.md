@@ -24,7 +24,7 @@ Around August 2023, I completed a very long-drawn-out personal project (because 
     color: #ffffff;
     text-decoration: none;
     border-radius: 4px;
-    font-weight: normal;
+    font-weight: 600;
     margin: 5px;
   }
 
@@ -357,7 +357,7 @@ If you pretend for a sec that the vectors are two-dimensional, they might look l
 
 <p><img src="./cat-embeddings.png" style="width: 700px;" alt="an X-Y plane with 4 points, each being one of the 4 sentences. Sentence 1 and 2, on the top-right, are basically next to each other, whereas sentence 3 falls on the middle-right, and sentence 4 falls on the bottom-left."></p>
 
-While real embeddings have much more dimensions and the pattern would not be this clear-cut, the intuition will still apply. For example, sentence 1 and 2 will have vectors that are very close to each other, sentence 3 will be a bit further away (since it's still talking about the animal cat), wherease sentence 4 will be the furthest away from all of 1, 2, and 3 (since it isn't even talking about the animal cat anymore).
+While real embeddings have much more dimensions and the pattern would not be this clear-cut, the intuition will still apply. For example, sentence 1 and 2 will have vectors that are very close to each other, sentence 3 will be a bit further away (but will be pretty close since it's still talking about the animal cat), wherease sentence 4 will be the furthest away from all of 1, 2, and 3 (since it isn't even talking about the animal cat anymore).
 
 You can play around with embeddings a bit more in the below interactive tool:
 

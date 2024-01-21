@@ -8,7 +8,7 @@
     "watch": "env NODE_ENV=development BACKEND_ENDPOINT=http://localhost:3000 nodemon -e '*.*' -i .git -i node_modules -i server -i dist -i .parcel-cache index.js",
     "build": "env NODE_ENV=production node index.js",
     "dev:server": "cd server && env NODE_ENV=development nodemon -w . -e '*.js' -e '*.ts' -x 'ts-node index.ts'",
-    "serve:server": "cd server && env NODE_ENV=production ts-node index.ts"
+    "start:server": "cd server && env NODE_ENV=production ts-node index.ts"
   },
   "repository": {
     "type": "git",

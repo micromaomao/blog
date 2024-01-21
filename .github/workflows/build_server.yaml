@@ -1,0 +1,27 @@
+name: Build backend server
+
+on:
+  push
+
+jobs:
+  docker-build-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v2
+      - run: echo IMAGE_NAME=ghcr.io/${{ github.repository }}/backend >> $GITHUB_ENV
+      - name: Build main service
+        run: |
+          docker build . -t $IMAGE_NAME -f server.Dockerfile
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Push
+        if: github.ref == 'refs/heads/master'
+        run: |
+          docker push $IMAGE_NAME

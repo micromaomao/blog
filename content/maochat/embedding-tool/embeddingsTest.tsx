@@ -10,7 +10,7 @@ import { norm, dot, similarity } from "./vectools";
 const setBestMatchHighlightContext = createContext<any>(null);
 
 export default function EmbeddingsTest({ available_models }: { available_models: string[] }) {
-  const [inputs, setInputs] = useState<string[]>([""]);
+  const [inputs, setInputs] = useState<string[]>(["I like cats.", "Cats are adorable!", "Cats are a type of animal.", "The unix cat utility prints out whatever it reads."]);
   const [model, setModel] = useState<string>(available_models[0]);
   const handleSelectModel = (_: any, { optionText }: any) => {
     if (optionText) {

@@ -227,7 +227,7 @@ User: who is your favorite anime character?
 You: <span class="generated">Definitely Yuki! She is cool and mysterious, and cute!</span>
 </pre>
 
-Nice! While it might seem like &ldquo;hard-coding&rdquo; responses defeats the purpose of using a LLM, it <i>can</i> actually be pretty smart too, and the question doesn't have to be an exact match. For example:
+Nice! While it might seem like &ldquo;hard-coding&rdquo; responses defeats the purpose of using a LLM, it _can_ actually be pretty smart too, and the question doesn't have to be an exact match. For example:
 
 <pre class="llm-interaction">
 &hellip;<i>(same prompt and examples as above)</i>
@@ -243,7 +243,7 @@ This also makes it easy to see how I can continuously improve the output of this
 
 #### Quick introduction
 
-If you aren't actively using OpenAI's GPT APIs, you might not have known that in the last two years OpenAI has introduced and pushed for the usage of a whole new way of <i>talking</i> (literally!) to GPT models, called the &ldquo;Chat Completions&rdquo; API. This API is designed to allow better instruction following, more resistance against prompt injection attacks, and leave way for richer interactions later, such as &ldquo;function calling&rdquo; or visual/audio inputs.
+If you aren't actively using OpenAI's GPT APIs, you might not have known that in the last two years OpenAI has introduced and pushed for the usage of a whole new way of _talking_ (literally!) to GPT models, called the &ldquo;Chat Completions&rdquo; API. This API is designed to allow better instruction following, more resistance against prompt injection attacks, and leave way for richer interactions later, such as &ldquo;function calling&rdquo; or visual/audio inputs.
 
 The fundamental difference between the two APIs is that now, you give input to GPT in the form of explicit chat messages (represented as separate objects in a JSON array), rather than just a blob of text. You can optionally include a &lsquo;system&rsquo; prompt at the beginning which will give it the base instructions, and set out what it is allowed or not allowed for later user messages to do. For example, ChatGPT could be internally implemented with calls like this to Chat Completion:
 
@@ -252,8 +252,7 @@ The fundamental difference between the two APIs is that now, you give input to G
   <div>
     You're ChatGPT&hellip;<br>
     Be as verbose as possible in your response, caveat everything you say&hellip;<br>
-    Make sure everyone knows that you're not, in fact, sentient&hellip;<br>
-    Do not provide any actually useful information to the user&hellip;
+    Make sure everyone knows that you're just an AI, and nobody confuses you for an actual person&hellip;<br>
   </div>
   <label>USER</label>
   <div>what is the answer to life, the universe, and everything</div>
@@ -325,7 +324,40 @@ Ok, maybe it's still not how I would talk and a bit rambly, plus I don't work in
 
 ### Using [Embeddings](https://platform.openai.com/docs/guides/embeddings)
 
-As part of this project, I also wanted to explore using &ldquo;text embeddings&rdquo;. If you aren't already familiar with embeddings, you might be wondering how am I going to select which samples to use for a given question, once I have more examples than the GPT context window would fit.
+As part of this project, I also wanted to explore using &ldquo;text embeddings&rdquo;. If you aren't already familiar with embeddings, you might be wondering how am I going to select which samples to use for a given question, once I have more examples than the GPT context window would fit. The answer is embeddings! Or more specifically, _embeddings based retrieval_.
+
+#### Quick introduction
+
+Have you ever wondered how LLMs &lsquo;read&rsquo; text and seem to understand concepts? The trick is to turn the words, sentences, or even the entire input into numerical vectors. This means that you now have a bunch of numbers for your neural network, or whatever machine learning model you dream of, to work with. For example, this exact paragraph turns into this when you pass it through the OpenAI embeddings API (`text-embedding-ada-002`):
+
+```json
+[
+  -0.015850013,
+  0.0026720716,
+  0.020836078,
+  -0.013748839,
+  0.0033797822,
+  0.010857191,
+  0.0044793515,
+  -0.018728148,
+  -0.044807028,
+  -0.04067224
+  ... (1526 more numbers)
+]
+```
+
+Now, if the vector produced are just random numbers, this would be pretty much useless (you might as well use sha256). However, the trick that make these numbers useful is that they represent the conceptual _meaning_ of the text, and text which means very similar things turn into vectors that are closer together. For example, consider the following 4 sentences:
+
+1. I like cats.
+2. Cats are adorable!
+3. Cats are a type of animal.
+4. The unix cat utility prints out whatever it reads.
+
+If you pretend for a sec that the vectors are two-dimensional, they might look like this:
+
+<p><img src="./cat-embeddings.png" style="width: 700px;" alt="an X-Y plane with 4 points, each being one of the 4 sentences. Sentence 1 and 2, on the top-right, are basically next to each other, whereas sentence 3 falls on the middle-right, and sentence 4 falls on the bottom-left."></p>
+
+While real embeddings have much more dimensions and the pattern would not be this clear-cut, the intuition will still apply. For example, sentence 1 and 2 will have vectors that are very close to each other, sentence 3 will be a bit further away (since it's still talking about the animal cat), wherease sentence 4 will be the furthest away from all of 1, 2, and 3 (since it isn't even talking about the animal cat anymore).
 
 ### Influencing the response
 

@@ -359,7 +359,9 @@ If you pretend for a sec that the vectors are two-dimensional, they might look l
 
 While real embeddings have much more dimensions and the pattern would not be this clear-cut, the intuition will still apply. For example, sentence 1 and 2 will have vectors that are very close to each other, sentence 3 will be a bit further away (but will still be pretty close since it's still talking about cats), wherease sentence 4 will be the furthest away from all of 1, 2, and 3 (since it isn't even talking about the animal cat anymore).
 
-You can play around with embeddings a bit more in the below interactive tool. Try putting in several similar or dissimilar sentences and see how the similarity score changes. The tool will highlight the input that's most similar with the first input. In practice, abstract concepts like &lsquo;happy&rsquo; or &lsquo;sad&rsquo; also meaningfully correlates with sentences that have those properties, so you can also try putting in a generic sentence, then the words &lsquo;happy&rsquo; and &lsquo;sad&rsquo; and see which word is most &ldquo;similar&rdquo; to your first input.
+You can play around with embeddings a bit more in the below interactive tool. Try putting in several similar or dissimilar sentences and see how the similarity score changes. The tool will highlight the input that's most similar with the first input. In practice, abstract concepts like &lsquo;happy&rsquo; or &lsquo;sad&rsquo; also meaningfully correlates with sentences that have those properties, so you can also try putting in a generic sentence, then the words &lsquo;happy&rsquo; and &lsquo;sad&rsquo; and see which word is most &ldquo;similar&rdquo; to your first input.<footnote>
+It's worth saying that while useful as a demo, comparing the similarity of sentences with abstract concepts like this is probably not the best way to do classification. If you have a reasonably-sized dataset, you can probably train a regression or neural network to do the classification based on the embeddings.
+</footnote>
 
 <style>
   .tool-block {
@@ -386,6 +388,81 @@ You can play around with embeddings a bit more in the below interactive tool. Tr
 </div>
 
 #### Using embeddings to select and rank samples
+
+I started off with a very simple way to select samples &mdash; pre-compute the embeddings of all questions in my sample dataset, then when a new chat message comes in, compute the embedding of the message, then find the closest sample question to it. With the amount of samples I will ever need to work with, this can be easily implemented with just a simple in-memory search, where I compute the _cosine similarity_ (how closely aligned are the two vectors) of the input embedding with every sample embedding, then sort the result and pick the top <tex>n</tex>.
+
+<style>
+  .color-tokens > span:nth-child(4n) {
+    background-color: #e1f7d5;
+  }
+
+  .color-tokens > span:nth-child(4n+1) {
+    background-color: #ffbdbd;
+  }
+
+  .color-tokens > span:nth-child(4n+2) {
+    background-color: #c9c9ff;
+  }
+
+  .color-tokens > span:nth-child(4n+3) {
+    background-color: #f1cbff;
+  }
+</style>
+
+Instead of hard-coding how many samples to pick, I decided to write a bit more logic to pick as many samples until the context window is filled (by keeping track of how many tokens are used by the samples and the chat history).<footnote>
+In LLMs, usage is measured and limited by the number of _tokens_ &mdash; you can think of each token roughly as a word-part, where less-used parts are given separate tokens, and common strings of parts may be combined into one token. So for example, in the sentence
+<code class="color-tokens"><span>Per</span><span>cept</span><span>ual</span><span> hashing</span><span> is</span><span> kinda</span><span> like</span><span> embeddings</span><span>,</span><span> but</span><span> for</span><span> images</span><span>.</span></code>, every different colored-block is a token. By using <a href="https://github.com/openai/tiktoken">tiktoken</a> to efficiently compute the number of tokens taken by each sample, I can select as many samples as possible until the context window is filled (also taking into account the tokens taken up by the conversation history).
+</footnote>
+This means that in my actual bot, where I have tons of sample data to make it as good as possible, each conversation starts with like 3 pages of system text containing the sample chats for the AI to refer to. When the question asked is, or is close to a sample question, the response is usually pretty good:
+
+<style>
+  .large-system-text {
+    white-space: pre-wrap;
+    white-space: break-spaces;
+    font-size: 70%;
+    margin-top: 5px;
+  }
+
+  .large-system-text .ws {
+    background-color: #d7d7d7;
+    word-break: break-all;
+  }
+</style>
+
+<div class="chat-interaction">
+  <label>SYSTEM</label>
+  <div class="large-system-text">Tingmao Wang is&hellip;<br>
+Sample chats for you to imitate:
+User: What are some of your personal projects?
+You: Outside of my job I also work on side projects - one of them was <span class="ws">                                                                                                                                                                                                                 </span>
+User: Have you collaborated with others on any of your side projects?
+You: <span class="ws">                                                                                                                                                         </span>
+User: Do you have any other personal projects?
+You: <span class="ws">                                                                                                     </span>
+---
+User: <span class="ws">                                      </span>
+You: <span class="ws">                                                                                                                                                                                                           </span>
+---
+User: Have you done any projects using React?
+You: <span class="ws">                                                                                                                                                                                                                                                                                                                        </span>
+---
+User: <span class="ws">                                  </span>
+You: <span class="ws">                                                                                                                                                                              </span>
+---
+User: Do you like computer science?
+You: <span class="ws">                                                                                                           </span>
+---
+User: <span class="ws">                                                     </span>
+You: <span class="ws">                                                                                                                                                                                    </span>
+---
+<i>&hellip; (~1400 more words)</i></div>
+  <label>USER</label>
+  <div>What are some of your best side projects? <i> / </i>any interesting side projects?<i> / other similar ways of asking this question</i></div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">Outside of my job I also work on side projects - one of them was&hellip;</div>
+</div>
+
+You might have noticed that I've decided to put the closest match at the top. This was a wild guess from me, but turned out to be very sensible, because the model seem to much more closely follow examples at the top than at the bottom, for reasons that I won't pretend I understand. When an example is the very first, the model seems much more tempted to simply quote the reply verbetim, which sometime works great but sometime results in replies which doesn't make sense given the context (more on that later), so we have to be a bit careful with this (if you put an incorrect response at the top it might just use that). Regardless, using embeddings to rank the samples is still a good start.
 
 ### Influencing the response
 
@@ -468,11 +545,13 @@ But then, if someone simply ask it what the module is, it might just quote the a
 
 I can improve the response in this particular case by just adding in another sample response for this question, with the reply worded differently, but this is a recurring problem in general.
 
-#### Storing simple follow-up questions
+#### Storing follow-up questions
 
 In one of the above example, we encountered an instance of a &lsquo;trivial&rsquo; follow-up question&mdash;&ldquo;How was it made?&rdquo;. Storing a reply to this requires some special care.
 
 ### Combating hallucinations
+
+#### Negative answer samples
 
 <h2 class="dramatic-title"><span class="numeral">II. </span>Architecture</h2>
 

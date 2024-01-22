@@ -7,11 +7,22 @@ import { PureComponent, RefObject, createContext, createRef, useContext, useEffe
 import * as styles from "./embeddings.module.css";
 import { norm, dot } from "./vectools";
 
+import precached_results from "./precached_results.json";
+let embeddings_cache: Record<string, Map<string, number[]>> = {};
+for (let pc of precached_results) {
+  if (!embeddings_cache[pc.model]) {
+    embeddings_cache[pc.model] = new Map();
+  }
+  embeddings_cache[pc.model].set(pc.text, pc.embedding);
+}
+
 const setBestMatchHighlightContext = createContext<any>(null);
 
 export default function EmbeddingsTest({ available_models }: { available_models: string[] }) {
-  const [inputs, setInputs] = useState<string[]>(["I like cats.", "Cats are adorable!", "Cats are a type of animal.", "The unix cat utility prints out whatever it reads."]);
-  const [model, setModel] = useState<string>(available_models[0]);
+  const initialInputs = precached_results.map(r => r.text);
+  const initialModel = precached_results[0].model;
+  const [inputs, setInputs] = useState<string[]>(initialInputs);
+  const [model, setModel] = useState<string>(initialModel);
   const handleSelectModel = (_: any, { optionText }: any) => {
     if (optionText) {
       setModel(optionText);
@@ -26,7 +37,7 @@ export default function EmbeddingsTest({ available_models }: { available_models:
   const inputsValid = inputs.map(ipt => ipt.length > 0);
   const modelValid = model.length > 0;
   const formValid = inputsValid.every(x => x) && inputs.length > 0 && modelValid;
-  const [currentResultInput, setCurrentResultInput] = useState<any>(null);
+  const [currentResultInput, setCurrentResultInput] = useState<any>({ inputs: initialInputs, model: initialModel });
   const [bestMatchHighlight, setBestMatchHighlight] = useState<number | null>(null);
   const handleSubmit = () => {
     setShowValidation(true);
@@ -120,6 +131,9 @@ class ResponseError extends Error {
 const PROXY_ENDPOINT = process.env.BACKEND_ENDPOINT;
 
 async function fetchEmbeddingsSingle(input: string, model: string, signal: AbortSignal): Promise<any> {
+  if (embeddings_cache[model]?.has(input)) {
+    return { embedding: embeddings_cache[model].get(input) };
+  }
   let res = await fetch(new URL("/openai/v1/embeddings", PROXY_ENDPOINT), {
     method: "POST",
     body: JSON.stringify({ input, model }),
@@ -137,8 +151,13 @@ async function fetchEmbeddingsSingle(input: string, model: string, signal: Abort
     throw new Error("Error fetching embeddings: " + err_msg);
   }
   let json = await res.json();
+  let embedding = json.data[0].embedding;
+  if (!embeddings_cache[model]) {
+    embeddings_cache[model] = new Map();
+  }
+  embeddings_cache[model].set(input, embedding);
   return {
-    embedding: json.data[0].embedding
+    embedding
   }
 }
 

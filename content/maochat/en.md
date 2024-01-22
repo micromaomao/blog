@@ -361,10 +361,28 @@ While real embeddings have much more dimensions and the pattern would not be thi
 
 You can play around with embeddings a bit more in the below interactive tool. Try putting in several similar or dissimilar sentences and see how the similarity score changes. The tool will highlight the input that's most similar with the first input. In practice, abstract concepts like &lsquo;happy&rsquo; or &lsquo;sad&rsquo; also meaningfully correlates with sentences that have those properties, so you can also try putting in a generic sentence, then the words &lsquo;happy&rsquo; and &lsquo;sad&rsquo; and see which word is most &ldquo;similar&rdquo; to your first input.
 
-<div style="background-color: white; border: 1px solid #999; padding: 10px;">
+<style>
+  .tool-block {
+    background-color: white;
+    border: 1px solid #999;
+    padding: 10px;
+    min-height: 700px;
+  }
+
+  @media (max-width: 600px) {
+    .tool-block {
+      margin-left: -20px;
+      margin-right: -20px;
+    }
+  }
+</style>
+
+<div class="tool-block">
   <noscript id="embedding_tool">
     Javascript is required to use this tool.
   </noscript>
+
+  <div style="color: #777; font-size: 14px;">Requests are logged to prevent abuse.</div>
 </div>
 
 #### Using embeddings to select and rank samples

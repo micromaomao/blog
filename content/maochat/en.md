@@ -1,6 +1,6 @@
 ---
 title: "What I learned from making an AI impression of myself: prompt engineering, actual engineering, and more"
-tags: ["AI", "LLM", "OpenAI", "Node.JS"]
+tags: ["AI", "LLM", "Text Embeddings", "OpenAI", "Node.JS"]
 time: "2024-01-14T16:30:35+00:00"
 cover_alt: >-
   A screenshot of a new chat session on Maochat, showing a welcome banner with ideas for questions like
@@ -118,8 +118,16 @@ The rest of this post will go into two different directions: The &ldquo;AI tunin
     grid-column: 1 / -1;
   }
 
+  .sample .gray {
+    opacity: 0.5;
+  }
+
   .generated-textcolor {
     color: #239026;
+  }
+
+  .red-textcolor {
+    color: #a00000;
   }
 
   /* .chat-log {
@@ -387,11 +395,17 @@ It's worth saying that while useful as a demo, comparing the similarity of sente
   <div style="color: #777; font-size: 14px;">Requests are logged to prevent abuse.</div>
 </div>
 
-#### Using embeddings to select and rank samples
+#### Selecting samples
 
 I started off with a very simple way to select samples &mdash; pre-compute the embeddings of all questions in my sample dataset, then when a new chat message comes in, compute the embedding of the message, then find the closest sample question to it. With the amount of samples I will ever need to work with, this can be easily implemented with just a simple in-memory search, where I compute the _cosine similarity_ (how closely aligned are the two vectors) of the input embedding with every sample embedding, then sort the result and pick the top <tex>n</tex>.
 
+If you have more data than a couple of thousands, the standard way to do this is to use a database designed to store and index vectors (a _vector database_). There are extensions for PostgreSQL or other databases that usuallly allows you to easily to nearest neighbour search, although different implementations might have different limitations on e.g. the number of dimensions.
+
 <style>
+  .color-tokens {
+    display: inline;
+  }
+
   .color-tokens > span:nth-child(4n) {
     background-color: #e1f7d5;
   }
@@ -413,7 +427,7 @@ Instead of hard-coding how many samples to pick, I decided to write a bit more l
 In LLMs, usage is measured and limited by the number of _tokens_ &mdash; you can think of each token roughly as a word-part, where less-used parts are given separate tokens, and common strings of parts may be combined into one token. So for example, in the sentence
 <code class="color-tokens"><span>Per</span><span>cept</span><span>ual</span><span> hashing</span><span> is</span><span> kinda</span><span> like</span><span> embeddings</span><span>,</span><span> but</span><span> for</span><span> images</span><span>.</span></code>, every different colored-block is a token. By using <a href="https://github.com/openai/tiktoken">tiktoken</a> to efficiently compute the number of tokens taken by each sample, I can select as many samples as possible until the context window is filled (also taking into account the tokens taken up by the conversation history).
 </footnote>
-This means that in my actual bot, where I have tons of sample data to make it as good as possible, each conversation starts with like 3 pages of system text containing the sample chats for the AI to refer to. When the question asked is, or is close to a sample question, the response is usually pretty good:
+This means that in my actual bot, where I have tons of sample data so that I can make it as good as possible, each conversation starts with like 3 pages of system text containing the sample chats for the AI to refer to. When the question asked is, or is close to a sample question, the response is usually pretty good:
 
 <style>
   .large-system-text {
@@ -461,8 +475,6 @@ You: <span class="ws">                                                          
   <label class="generated-textcolor">ASSISTANT</label>
   <div class="generated-textcolor">Outside of my job I also work on side projects - one of them was&hellip;</div>
 </div>
-
-You might have noticed that I've decided to put the closest match at the top. This was a wild guess from me, but turned out to be very sensible, because the model seem to much more closely follow examples at the top than at the bottom, for reasons that I won't pretend I understand. When an example is the very first, the model seems much more tempted to simply quote the reply verbetim, which sometime works great but sometime results in replies which doesn't make sense given the context (more on that later), so we have to be a bit careful with this (if you put an incorrect response at the top it might just use that). Regardless, using embeddings to rank the samples is still a good start.
 
 ### Influencing the response
 
@@ -545,9 +557,165 @@ But then, if someone simply ask it what the module is, it might just quote the a
 
 I can improve the response in this particular case by just adding in another sample response for this question, with the reply worded differently, but this is a recurring problem in general.
 
+#### Sample ranking
+
+You might have noticed that I've decided to put the closest matching sample at the top. This was just an arbitrary choice I made initially, but turned out to be very sensible, because the model seem to much more closely follow examples at the top than at the bottom, for reasons that I won't pretend I understand.
+
+When an example is the very first, the model seems much more tempted to simply quote the reply verbetim, which sometime works great but sometime results in replies which doesn't make sense given the context, so we have to be a bit careful with this &mdash; if you put an incorrect response at the top, and if the sample question sounds similar to the user's message, it might just use that. Regardless, using embeddings to rank the samples is still a good start. There is potential for more investigation, for example by deliberately adding irrelevant samples at the top when the user's message isn't an exact match.
+
+One experiment I did was to simply reverse the order of the samples as seen by the model, so the closest sounding samples are given near the end of the system prompt. If we take the &ldquo;What are some of your best side projects?&rdquo; example shown above and reverse the order of the samples, we get:
+
+<div class="chat-interaction">
+  <label>SYSTEM</label>
+  <div class="large-system-text">Tingmao Wang is&hellip;<br>
+Sample chats for you to imitate:
+<i>&hellip; (~1400 more words)</i>
+---
+User: <span class="ws">                                                     </span>
+You: <span class="ws">                                                                                                                                                                                    </span>
+---
+User: Do you like computer science?
+You: <span class="ws">                                                                                                           </span>
+---
+User: <span class="ws">                                  </span>
+You: <span class="ws">                                                                                                                                                                              </span>
+---
+User: Have you done any projects using React?
+You: <span class="ws">                                                                                                                                                                                                                                                                                                                        </span>
+---
+User: <span class="ws">                                      </span>
+You: <span class="ws">                                                                                                                                                                                                           </span>
+---
+User: What are some of your personal projects?
+You: Outside of my job I also work on side projects - one of them was <span class="ws">                                                                                                                                                                                                                 </span>
+User: Have you collaborated with others on any of your side projects?
+You: <span class="ws">                                                                                                                                                         </span>
+User: Do you have any other personal projects?
+You: <span class="ws">                                                                                                     </span></div>
+  <label>USER</label>
+  <div>What are some of your best side projects?</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">
+    // TODO fill in
+  </div>
+</div>
+
 #### Storing follow-up questions
 
-In one of the above example, we encountered an instance of a &lsquo;trivial&rsquo; follow-up question&mdash;&ldquo;How was it made?&rdquo;. Storing a reply to this requires some special care.
+You might have noticed that in the above example, some of the samples were &lsquo;follow-up&rsquo; of an earlier question. For example, &ldquo;What are some of your personal projects?&rdquo; followed by &ldquo;Have you collaborated with others on any of your side projects?&rdquo;. There is no reason why we can't write samples for these follow-up questions as well, especially if we want the bot to be conversational, rather than just a Q&amp;A machine.
+
+In one of the earlier example, we encountered an instance of a follow-up question which requires some more care to handle&mdash;&ldquo;How was it made?&rdquo;. I call them &ldquo;context sensitive follow-ups&rdquo;. Another example might be:
+
+<div class="sample">
+  <label class="gray">Question:</label>
+  <div class="gray">Have you watched any romcom anime?</div>
+  <label class="gray">Reply:</label>
+  <div class="gray">I don't watch a lot of these types of anime, but I have watched, for example, Chuunibyou&hellip;</div>
+  <label>Question:</label>
+  <div>What is it about?</div>
+  <label>Reply:</label>
+  <div>
+    It is centered around a delusional girl who imagine that she has anime-protagonist abilities / weapons (but actually doesn't)&hellip;
+  </div>
+</div>
+
+Storing a reply to this requires some special care, because whether this sample (&ldquo;What is it about?&rdquo;) is relevant in the current conversation depends on not just the question itself, but also what has been talked about before. Therefore, if we only used a simple similarity-based ranking, the presence of this sample would worsen the wrong-context responses discussed before:
+
+<div class="chat-interaction">
+  <label>SYSTEM</label>
+  <div>
+    <i>&hellip;</i><br>
+    Sample chats for you to imitate:<br>
+    <span class="red-textcolor">User: What is it about?<br>
+    You: It is centered around a delusional girl who imagine that she has anime-protagonist abilities / weapons (but actually doesn't)&hellip;<br>
+    <i>&hellip;</i>
+    </span></div>
+  <label>USER</label>
+  <div>What books have you most recently read?</div>
+  <label>ASSISTANT</label>
+  <div class="generated-textcolor">I've been reading a book about large-scale / distributed software systems lately. It's called &ldquo;Designing Data Intensive Applications&rdquo;&hellip;</div>
+  <label>USER</label>
+  <div>What is it about?</div>
+  <label class="red-textcolor">ASSISTANT</label>
+  <div class="red-textcolor">
+    It is centered around a delusional girl who imagine that she has anime-protagonist abilities / weapons (but actually doesn't)&hellip;
+  </div>
+</div>
+
+In order to properly represent this follow-up sample, we need to treat our sample database not just as a list of questions and answers, but rather, a tree of messages and replies. This means that each sample question will have a &lsquo;parent&rsquo;, and we can ensure that whenever we show a follow-up sample, we show the parent first to give the model the context it needs. When ranking the samples for relevancy, we can also factor in whether a sample's parent matches any of the current chat messages, and lower the similarity score for those that likely has nothing to do with the current conversation. Here is an example of what a part of the tree may look like:
+
+<style>
+  .dialogue-tree {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: flex-start;
+  }
+
+  .dialogue-tree > .q {
+    font-weight: bold;
+  }
+
+  .dialogue-tree > .a {
+  }
+
+  .dialogue-tree > .a::before {
+    content: "→";
+    margin-right: 0.5em;
+  }
+
+  .dialogue-tree > .children {
+    margin-left: 0.4em;
+    border-left: solid 1px #aaa;
+    padding-left: 1.2em;
+  }
+</style>
+
+<div class="dialogue-tree">
+  <div class="q">Have you watched any romcom anime?</div>
+  <div class="a">&hellip;for example, Chuunibyou&hellip;</div>
+  <div class="children">
+    <div class="dialogue-tree">
+      <div class="q">What is it about?</div>
+      <div class="a">&hellip;</div>
+      <div class="children">
+        <div class="dialogue-tree">
+          <div class="q">That sounds fun</div>
+          <div class="a">In that case I would recommend you check it out!</div>
+        </div>
+      </div>
+    </div>
+    <div class="dialogue-tree">
+      <div class="q">Why do you like it?</div>
+      <div class="a">&hellip;</div>
+    </div>
+  </div>
+</div>
+
+or
+
+<div class="dialogue-tree">
+  <div class="q">What is your favoruite programming language?</div>
+  <div class="a">I like Rust because it's got a lot of modern features and syntatic sugar&hellip;</div>
+  <div class="children">
+    <div class="dialogue-tree">
+      <div class="q">Do you use any other languages?</div>
+      <div class="a">Yes, I also use Python, JavaScript, &hellip;</div>
+      <div class="children">
+        <div class="dialogue-tree">
+          <div class="q">Is there any Rust syntax you wish those other languages had?</div>
+          <div class="a">&hellip;</div>
+        </div>
+      </div>
+    </div>
+    <div class="dialogue-tree">
+      <div class="q">What do you mean by &ldquo;modern features&rdquo;?</div>
+      <div class="a">Algebratic data types (<code>Option&lt;T&gt;</code>, <code>Result&lt;T, E&gt;</code>), structural matching, &hellip;</div>
+    </div>
+  </div>
+</div>
+
+This approach doesn't mean that the user _has_ to ask the parent question first. For example, if they ask &ldquo;What is Chuunibyou about?&rdquo; or &ldquo;What syntax from Rust do you wish other programming language had?&rdquo; from the beginning directly, as long as their question still has some similarity with the &lsquo;root&rsquo; question according to the embeddings (like both being about anime, or programming languages), the relevant samples will still be selected and ranked appropriately, whereas if they ask &ldquo;What are some modern features of x86 CPUs?&rdquo;, because it has nothing to do with programming languages, the &ldquo;What do you mean by &lsquo;modern features&rsquo;?&rdquo; sample above will hopefully be ranked lower or not be selected to include in the prompt.
 
 ### Combating hallucinations
 

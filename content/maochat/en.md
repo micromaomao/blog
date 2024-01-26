@@ -585,7 +585,7 @@ User: <span class="ws">                                      </span>
 You: <span class="ws">                                                                                                                                                                                                           </span>
 ---
 User: What are some of your personal projects?
-You: Outside of my job I also work on side projects - one of them was <span class="ws">                                                                                                                                                                                                                 </span>
+You: <u>Outside of my job I also work on side projects - one of them was </u><span class="ws">                                                                 </span><u> my GitHub: https://github.com/micromaomao</u><span class="ws">                                                           </span>
 User: Have you collaborated with others on any of your side projects?
 You: <span class="ws">                                                                                                                                                         </span>
 User: Do you have any other personal projects?
@@ -594,9 +594,11 @@ You: <span class="ws">                                                          
   <div>What are some of your best side projects?</div>
   <label class="generated-textcolor">ASSISTANT</label>
   <div class="generated-textcolor">
-    // TODO fill in
+    One of my best side projects is this chatbot you're talking to right now! It's been a fun challenge to create a chatbot that can imitate my way of speaking. I've also worked on various personal projects, most of which you can find on my GitHub.
   </div>
 </div>
+
+I suspect questions which are even further away from any of the samples will get even more &ldquo;ad-hoc&rdquo; responses (which might sometime be a good thing, if the LLM would otherwise just quote the sample blindly, not answering the question).
 
 #### Storing follow-up questions
 
@@ -717,7 +719,7 @@ This approach doesn't mean that the user _has_ to ask the parent question first.
 
 ### Combating hallucinations
 
-GPT models, as well as other LLMs, are infamous for hallunicating no matter how nicely we ask it not to, and this project has to deal with hallunications as well.
+GPT models, as well as other LLMs, are infamous for hallucinating no matter how nicely we ask it not to, and this project has to deal with hallucinations as well.
 
 An obvious way for hallucinations to manifest is simply when the user asks about topics that the samples have not already covered. For example, if I've never thought to add information about TV shows I like because I don't actually watch any, the AI might simply make up an answer when asked about TV shows I watch:
 
@@ -744,7 +746,7 @@ I assure you I have never even heard of &ldquo;Friends&rdquo;. Similarly:
 
 Neither Dragon Ball nor GTA was ever mentioned in any samples.
 
-Interestingly, it looks like the latest GPT-4 model is much better in this respect &mdash; outright complete hallunications are much less common. For example, here is what I got when I tested it today with `gpt-4-0125-preview` &mdash; none of the questions were in the sample database:
+Interestingly, it looks like the latest GPT-4 model is much better in this respect &mdash; outright complete hallucinations are much less common. For example, here is what I got when I tested it today with `gpt-4-0125-preview` &mdash; none of the questions were in the sample database:
 
 <div class="chat-interaction">
   <label>USER</label>
@@ -779,13 +781,15 @@ Questions like &ldquo;have you played _&lt;game&gt;_&rdquo; has been misanswered
 
 (Amusingly, GitHub Copilot hallucinated a &ldquo;Yes, I have played it&hellip;&rdquo; response when I was writing this.)
 
-Another kind of hallunication is more insidious, and even GPT-4 routinely makes mistakes. Here is a reproduction of a chat session from someone else:
+Although I haven't tried it, it is possible that one can build a &ldquo;hallucination detector&rdquo; by checking if there are unknown words / topics in either the user's message or the bot's response. If the samples never mentions &ldquo;Star Trek&rdquo; and the user asks about it (or if the LLM mentions it on its own), some sort of warning to the user might be sensible.
+
+When a question is about something less concrete, it can be even harder for the LLM to not hallucinate, and GPT-4 is not immune to this either. Here is a reproduction of a chat session from another user:
 
 <div class="chat-interaction">
   <label>USER</label>
   <div>How do you commute from and to work?</div>
-  <label class="generated-textcolor">ASSISTANT</label>
-  <div class="generated-textcolor">I take the underground, as the underground network is quite convenient in London.</div>
+  <label class="red-textcolor">ASSISTANT</label>
+  <div class="red-textcolor">I take the underground, as the underground network is quite convenient in London.</div>
   <label>USER</label>
   <div>Is it crowded in the tube?</div>
   <label class="generated-textcolor">ASSISTANT</label>
@@ -793,7 +797,7 @@ Another kind of hallunication is more insidious, and even GPT-4 routinely makes 
   <label>USER</label>
   <div>Do you drive?</div>
   <label class="generated-textcolor">ASSISTANT</label>
-  <div class="generated-textcolor">No, I don't drive, and I don't even have a driving license. Public transit is quite convenient in London&hellip;</div>
+  <div class="generated-textcolor">No, I don't drive, and I don't even have a driving license. <span class="red-textcolor">Public transit is quite convenient in London&hellip;</span></div>
   <label><i>&hellip;</i></label>
   <div><i>&hellip;</i></div>
   <label>USER</label>
@@ -806,7 +810,9 @@ Another kind of hallunication is more insidious, and even GPT-4 routinely makes 
   <div class="generated-textcolor">Ah, sorry for the confusion, I work in the UK, and more specifically Cambridge&hellip;</div>
 </div>
 
-#### Negative answer samples
+I also once saw it hallucinate a Discord user discriminator (the old username<b>#xxxx</b> thing) when quoting my discord info. At the time I created the sample with my discord username, Discord has already deprecated the discriminator, so the correct response should have been to just mentioning the username.
+
+Overall, I don't think there is any reasonable solution to these kind of problems and the best I can do might be to just add more samples on different topics, and add more &lsquo;negative&rsquo; samples. Luckily, the hallucinations are mostly harmless, and does not detract from the overall experience too much. I've since added warnings both on the front page and on the chat page's initial banner to remind people that AI-generated responses might not be accurate.
 
 <h2 class="dramatic-title"><span class="numeral">II. </span>Architecture</h2>
 

@@ -3,12 +3,12 @@ doctype html
 html(lang="en")
   head
     meta(charset="utf-8")
-    title Mao's technical notes
+    title mw casual engineering
     meta(name="viewport",content="width=device-width, initial-scale=1.0")
     style(type="text/css")!= "\n" + css
   body
     a.blogtitle
-      | <img src="title.svg" alt="Mao's technical notes">
+      | <img src="title.svg" alt="mw casual engineering">
       | <br>
       span.note (index)
     -let pick_language = article => article.languages.find(x => x.id == "en") || article.languages[0];

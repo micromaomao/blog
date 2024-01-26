@@ -814,6 +814,10 @@ I also once saw it hallucinate a Discord user discriminator (the old username<b>
 
 Overall, I don't think there is any reasonable solution to these kind of problems and the best I can do might be to just add more samples on different topics, and add more &lsquo;negative&rsquo; samples. Luckily, the hallucinations are mostly harmless, and does not detract from the overall experience too much. I've since added warnings both on the front page and on the chat page's initial banner to remind people that AI-generated responses might not be accurate.
 
+### Unnecessary continuation; or, &ldquo;can you just shut the f**k up?&rdquo;
+
+One of the most unexpectedly challenging problem turned out to be getting the LLM to _stop talking_. Here is what I mean:
+
 <h2 class="dramatic-title"><span class="numeral">II. </span>Architecture</h2>
 
 <h2 class="dramatic-title">Conclusion</h2>

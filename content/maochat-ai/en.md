@@ -1,6 +1,6 @@
 ---
-title: "What I learned from making an AI impression of myself: prompt engineering, actual engineering, and more"
-tags: ["AI", "LLM", "Text Embeddings", "OpenAI", "Node.JS"]
+title: "I made an AI impression of myself"
+tags: ["AI", "LLM", "Text Embeddings", "OpenAI"]
 time: "2024-01-14T16:30:35+00:00"
 cover_alt: >-
   A screenshot of a new chat session on Maochat, showing a welcome banner with ideas for questions like

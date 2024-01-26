@@ -476,11 +476,9 @@ You: <span class="ws">                                                          
   <div class="generated-textcolor">Outside of my job I also work on side projects - one of them was&hellip;</div>
 </div>
 
-### Influencing the response
+### Improving _Context-Awareness_
 
 While this approach mostly works, and does especially well when you stick to topics I've thought about and put in the bot, it can go wrong in several different ways. Let's explore some of the bad cases.
-
-#### Verbatim responses used in the wrong context
 
 A challenging problem was that the LLM would often use a sample response even when that's not the right one to use given the context. For example, if I have the following sample chats to teach it how to answer questions about itself:
 
@@ -561,7 +559,7 @@ I can improve the response in this particular case by just adding in another sam
 
 You might have noticed that I've decided to put the closest matching sample at the top. This was just an arbitrary choice I made initially, but turned out to be very sensible, because the model seem to much more closely follow examples at the top than at the bottom, for reasons that I won't pretend I understand.
 
-When an example is the very first, the model seems much more tempted to simply quote the reply verbetim, which sometime works great but sometime results in replies which doesn't make sense given the context, so we have to be a bit careful with this &mdash; if you put an incorrect response at the top, and if the sample question sounds similar to the user's message, it might just use that. Regardless, using embeddings to rank the samples is still a good start. There is potential for more investigation, for example by deliberately adding irrelevant samples at the top when the user's message isn't an exact match.
+When an example is the very first, the model seems much more tempted to simply quote the reply verbetim, which sometime works great but sometime results in replies which doesn't make sense given the context, so we have to be a bit careful with this &mdash; if you put an incorrect response at the top, and if the sample question sounds similar to the user's message, it might just use that. Regardless, using embeddings to rank the samples is still a good start. There is potential for more investigation, for example by deliberately adding irrelevant samples at the top when the user's message isn't an exact match &mdash; I can probably explore this area a bit more.
 
 One experiment I did was to simply reverse the order of the samples as seen by the model, so the closest sounding samples are given near the end of the system prompt. If we take the &ldquo;What are some of your best side projects?&rdquo; example shown above and reverse the order of the samples, we get:
 
@@ -642,7 +640,7 @@ Storing a reply to this requires some special care, because whether this sample 
   </div>
 </div>
 
-In order to properly represent this follow-up sample, we need to treat our sample database not just as a list of questions and answers, but rather, a tree of messages and replies. This means that each sample question will have a &lsquo;parent&rsquo;, and we can ensure that whenever we show a follow-up sample, we show the parent first to give the model the context it needs. When ranking the samples for relevancy, we can also factor in whether a sample's parent matches any of the current chat messages, and lower the similarity score for those that likely has nothing to do with the current conversation. Here is an example of what a part of the tree may look like:
+In order to properly represent this follow-up sample, we need to treat our sample database not just as a list of questions and answers, but rather, a tree of messages and replies, and potential follow-up user messages. This means that each sample question will have a &lsquo;parent&rsquo;, and we can ensure that whenever we show a follow-up sample, we show the parent first to give the model the context it needs. When ranking the samples for relevancy, we can also factor in whether a sample's parent matches any of the existing chat messages (including the current one and all the messages before), and lower the similarity score for those that likely has nothing to do with the current conversation, regardless of how similar the particular sample question is to the user's most recent message. Here is an example of what a part of the tree may look like:
 
 <style>
   .dialogue-tree {
@@ -715,9 +713,98 @@ or
   </div>
 </div>
 
-This approach doesn't mean that the user _has_ to ask the parent question first. For example, if they ask &ldquo;What is Chuunibyou about?&rdquo; or &ldquo;What syntax from Rust do you wish other programming language had?&rdquo; from the beginning directly, as long as their question still has some similarity with the &lsquo;root&rsquo; question according to the embeddings (like both being about anime, or programming languages), the relevant samples will still be selected and ranked appropriately, whereas if they ask &ldquo;What are some modern features of x86 CPUs?&rdquo;, because it has nothing to do with programming languages, the &ldquo;What do you mean by &lsquo;modern features&rsquo;?&rdquo; sample above will hopefully be ranked lower or not be selected to include in the prompt.
+This approach doesn't mean that the user _has_ to ask the parent question first. For example, if they ask &ldquo;What is Chuunibyou about?&rdquo; or &ldquo;What syntax from Rust do you wish other programming language had?&rdquo; from the beginning directly, as long as their question still has some similarity with the &lsquo;root&rsquo; question according to the embeddings (like both being about anime, or programming languages), the relevant samples will still be selected and ranked appropriately, whereas if they ask &ldquo;What are some modern features of x86 CPUs?&rdquo;, because it has nothing to do with programming languages, the &ldquo;What do you mean by &lsquo;modern features&rsquo;?&rdquo; sample above will hopefully be ranked lower or not be selected to include in the prompt, avoiding a potential strange response.
 
 ### Combating hallucinations
+
+GPT models, as well as other LLMs, are infamous for hallunicating no matter how nicely we ask it not to, and this project has to deal with hallunications as well.
+
+An obvious way for hallucinations to manifest is simply when the user asks about topics that the samples have not already covered. For example, if I've never thought to add information about TV shows I like because I don't actually watch any, the AI might simply make up an answer when asked about TV shows I watch:
+
+<div class="chat-interaction">
+  <label>USER</label>
+  <div>What's your favourite TV show?</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">Hmm, that's a tough one! I don't watch a lot of TV shows, but if I had to choose, I would say "Friends" is one of my favorites. It's a classic sitcom that never fails to make me laugh. What about you, what's your favorite TV show?</div>
+</div>
+
+I assure you I have never even heard of &ldquo;Friends&rdquo;. Similarly:
+
+<div class="chat-interaction">
+  <label>USER</label>
+  <div>What is your favourite dragon ball character?</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">Hmm, that's a tough one! I would have to say my favorite Dragon Ball character is Goku. He's just so determined and&hellip;</div>
+  <hr />
+  <label>USER</label>
+  <div>Have you played GTA 5?</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">Yes, I have played GTA 5! It's a really fun game with a huge open world to explore and lots of crazy missions to complete. The online multiplayer mode is also a blast to play with friends.</div>
+</div>
+
+Neither Dragon Ball nor GTA was ever mentioned in any samples.
+
+Interestingly, it looks like the latest GPT-4 model is much better in this respect &mdash; outright complete hallunications are much less common. For example, here is what I got when I tested it today with `gpt-4-0125-preview` &mdash; none of the questions were in the sample database:
+
+<div class="chat-interaction">
+  <label>USER</label>
+  <div>What's your favourite TV show?</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">Hmm, I don't really watch TV shows that much, more into anime and YouTube stuff. But if I have to pick something, it'd probably be some tech-related show or documentary.</div>
+  <hr />
+  <label>USER</label>
+  <div>What is your favourite D&D character?</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">Oh, I don't really play D&D, so I don't have a favorite character. But I imagine if I did play, I'd probably like a character that's a bit quirky and smart, maybe a wizard or something. 😄</div>
+  <hr />
+  <label>USER</label>
+  <div>Have you watched top gun maverick?</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">Nope, haven't watched that one. How is it?</div>
+  <hr />
+  <label>USER</label>
+  <div>Have you played GTA 5?</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">Nope, I haven't played GTA 5.</div>
+</div>
+
+Questions like &ldquo;have you played _&lt;game&gt;_&rdquo; has been misanswered so many times in the past that I have tried to add in deliberately negative answers to my sample set, although it's not clear how much this helps. For example:
+
+<div class="sample">
+  <label>Question:</label>
+  <div>Have you played Half life?</div>
+  <label>Answer:</label>
+  <div>I've heard of it but not personally played it, nor even know what it is about.</div>
+</div>
+
+(Amusingly, GitHub Copilot hallucinated a &ldquo;Yes, I have played it&hellip;&rdquo; response when I was writing this.)
+
+Another kind of hallunication is more insidious, and even GPT-4 routinely makes mistakes. Here is a reproduction of a chat session from someone else:
+
+<div class="chat-interaction">
+  <label>USER</label>
+  <div>How do you commute from and to work?</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">I take the underground, as the underground network is quite convenient in London.</div>
+  <label>USER</label>
+  <div>Is it crowded in the tube?</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">The London Underground can be quite crowded at times&hellip;</div>
+  <label>USER</label>
+  <div>Do you drive?</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">No, I don't drive, and I don't even have a driving license. Public transit is quite convenient in London&hellip;</div>
+  <label><i>&hellip;</i></label>
+  <div><i>&hellip;</i></div>
+  <label>USER</label>
+  <div>Which Microsoft office do you work in?</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">I work at the Cambridge office&hellip;</div>
+  <label>USER</label>
+  <div>But you mentioned you work in London earlier</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">Ah, sorry for the confusion, I work in the UK, and more specifically Cambridge&hellip;</div>
+</div>
 
 #### Negative answer samples
 

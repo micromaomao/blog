@@ -23,12 +23,17 @@ async function main() {
       "skip-bundle": {
         type: "boolean",
         default: false,
-      }
+      },
+      "draft-mode": {
+        type: "boolean",
+        default: false,
+      },
     },
     allowPositionals: true,
     strict: true,
   });
   let skip_bundle = values["skip-bundle"];
+  let draft_mode = values["draft-mode"];
 
   let output_dir_stat = null;
   try {
@@ -68,7 +73,7 @@ async function main() {
     console.log(`[${Math.round(progress_current_work_done++ / progress_total_work * 100).toString().padStart(3, " ")}%] ${status_text}`.cyan);
   }
   function print_verbose(t) {
-    // console.log("       " + t.gray);
+    console.log("       " + t.gray);
   }
   function print_warn(t) {
     console.log(" Warn: " + t.yellow);
@@ -177,8 +182,7 @@ async function main() {
         if (first_language_done) {
           progress_total_work += 2;
         }
-        first_language_done = true;
-        let l = md.substr(0, md.length - 3);
+        let l = md.substring(0, md.length - 3);
         print_status(`Scanning ${codename}: ${l}`);
         let mdpath = path.resolve(cdir_path, md);
         let markdown = fs.readFileSync(mdpath, { encoding: "utf8" });
@@ -203,6 +207,11 @@ async function main() {
         } catch (e) {
           throw new Error(`${mdpath}: invalid yaml front matter: ${e.message}`);
         }
+        if (!!front_matter.draft != draft_mode) {
+          print_verbose(`Skipping ${codename}:${l}`);
+          continue;
+        }
+        first_language_done = true;
         if (!front_matter.hasOwnProperty("title")) {
           throw new Error(`${mdpath}: front matter must include a title`);
         }
@@ -421,6 +430,11 @@ async function main() {
         article.languages.push(lang_obj);
       }
 
+      if (!first_language_done) {
+        print_verbose(`Skipping ${codename} (all language skipped)`);
+        return null;
+      }
+
       for (let a of article.assets.values()) {
         tryMkdirp(path.resolve(a.output_path, ".."));
         if (!a.should_tgz) {
@@ -460,7 +474,7 @@ async function main() {
           let res = await bundler.run();
           res.bundleGraph.traverseBundles(b => {
             bundles.push({ url: b.name, type: b.type });
-            console.log(` ==>  ${b.type}: ${b.name}`);
+            print_verbose(`${b.type}: ${b.name}`);
           });
         } else {
           print_status(`parcel skipped.`.gray);
@@ -505,7 +519,10 @@ async function main() {
 
   for (let ent of dir_entires) {
     let cdir_path = path.resolve(import.meta.dirname, "content", ent);
-    articles.push(await ScannedArticle.scan_dir(cdir_path, ent));
+    let art = await ScannedArticle.scan_dir(cdir_path, ent);
+    if (art !== null) {
+      articles.push(art);
+    }
   }
 
   for (let article of articles) {

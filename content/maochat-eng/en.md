@@ -7,6 +7,7 @@ cover_alt: >-
   the center, with a glow effect.
 discuss:
   "GitHub": "https://github.com/micromaomao/chat.maowtm.org/issues?q=is%3Aissue+no%3Aproject+"
+draft: true
 ---
 
 ![cover](./cover.png)

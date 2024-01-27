@@ -16,7 +16,7 @@ html(lang=lang_obj.id)
       -if (b.type == "css")
         link(rel="stylesheet", href=b.url)
       -else if (b.type == "js")
-        script(type="text/javascript", src=b.url)
+        script(type="text/javascript", src=b.url, async)
   body
     a.blogtitle(href="../index.html")
       | <img src="../title.svg" alt="mw casual engineering">

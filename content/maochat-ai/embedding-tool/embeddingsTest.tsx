@@ -1,6 +1,13 @@
 import React from "react";
-import { Link, Button, Combobox, Field, Option, Skeleton, SkeletonItem, Textarea, Body2, ProgressBar } from "@fluentui/react-components";
-import { Alert } from "@fluentui/react-components/unstable";
+import { Link } from "@fluentui/react-link";
+import { Button } from "@fluentui/react-button";
+import { Combobox, Option } from "@fluentui/react-combobox";
+import { Field } from "@fluentui/react-field";
+import { Skeleton, SkeletonItem } from "@fluentui/react-skeleton";
+import { Textarea } from "@fluentui/react-textarea";
+import { Body2 } from "@fluentui/react-text";
+import { ProgressBar } from "@fluentui/react-progress";
+import { MessageBar, MessageBarBody, MessageBarTitle, MessageBarActions } from "@fluentui/react-message-bar";
 import { DeleteRegular, AddCircleRegular } from "@fluentui/react-icons";
 import { PureComponent, RefObject, createContext, createRef, useContext, useEffect, useState } from "react";
 
@@ -233,9 +240,16 @@ function EmbeddingsResult({ inputs, model }: {
         <ProgressBar as="div" value={undefined} thickness="medium" />
       ) : null}
       {error ? (
-        <Alert intent="error" action={isLoading ? undefined : (<Link onClick={retry}>Retry</Link>)}>
-          {error.toString()}
-        </Alert>
+        <MessageBar intent="error">
+          <MessageBarBody>
+            <MessageBarTitle>Error getting embeddings</MessageBarTitle>
+            {error.toString()}
+          </MessageBarBody>
+          <MessageBarActions containerAction={
+            isLoading ? undefined : (<Link onClick={retry}>Retry</Link>)
+          }>
+          </MessageBarActions>
+        </MessageBar>
       ) : null}
       {data ? (
         <EmbeddingsResultMaps data={data} />

@@ -11,6 +11,7 @@ import mathjax from "mathjax-node";
 import hljs from "highlight.js";
 import { Parcel } from "@parcel/core";
 import { parseArgs } from "util";
+import { fileURLToPath } from "url";
 
 process.chdir(import.meta.dirname);
 
@@ -28,12 +29,17 @@ async function main() {
         type: "boolean",
         default: false,
       },
+      "parcel-bundle-analyzer": {
+        type: "boolean",
+        default: false,
+      },
     },
     allowPositionals: true,
     strict: true,
   });
   let skip_bundle = values["skip-bundle"];
   let draft_mode = values["draft-mode"];
+  let parcel_bundle_analyzer = values["parcel-bundle-analyzer"];
 
   let output_dir_stat = null;
   try {
@@ -134,11 +140,11 @@ async function main() {
       article.languages = [];
       article.assets = new Map();
       article.codename = codename;
-      let dist_dict_path = path.resolve(output_dir, codename);
+      let dist_dir_path = path.resolve(output_dir, codename);
       let article_base_url = "https://blog.maowtm.org/" + codename;
       article.base_url = article_base_url;
-      article.output_path = dist_dict_path;
-      tryMkdirp(dist_dict_path);
+      article.output_path = dist_dir_path;
+      tryMkdirp(dist_dir_path);
       function transform_local_asset_href(href) {
         if (/^[a-zA-Z]+:\/\//.test(href) || /^(\/|\.\.\/)/.test(href)) {
           return href;
@@ -161,7 +167,7 @@ async function main() {
         }
         let asset_obj = {
           canon_path,
-          output_path: path.resolve(dist_dict_path, canon_path),
+          output_path: path.resolve(dist_dir_path, canon_path),
           source: local_path,
           should_tgz: false
         };
@@ -416,7 +422,7 @@ async function main() {
         lang_obj.html = html;
 
         if (cover_image_file && cover_image_file.endsWith(".svg")) {
-          let png_output = path.resolve(dist_dict_path, cover_image_file + ".png");
+          let png_output = path.resolve(dist_dir_path, cover_image_file + ".png");
           print_status(`rsvg-convert ${png_output}`);
           child_process.execSync(`rsvg-convert -d 300 -p 300 -o ${JSON.stringify(png_output)} ${JSON.stringify(path.resolve(cdir_path, cover_image_file))}`);
           lang_obj.cover_image_og = cover_image_file + ".png";
@@ -455,28 +461,46 @@ async function main() {
         if (!skip_bundle) {
           print_status(`parcel ${script_path} > ...`);
           let production = process.env.NODE_ENV === "production";
+          let reporters = [
+            {
+              packageName: '@parcel/reporter-cli',
+              resolveFrom: fileURLToPath(import.meta.url)
+            }
+          ];
+          if (parcel_bundle_analyzer) {
+            reporters.push({
+              packageName: "@parcel/reporter-bundle-analyzer",
+              resolveFrom: fileURLToPath(import.meta.url)
+            });
+          }
           let bundler = new Parcel({
             entries: script_path,
             defaultConfig: "@parcel/config-default",
             mode: production ? "production" : "development",
             targets: {
               default: {
-                distDir: dist_dict_path,
+                distDir: dist_dir_path,
+                outputFormat: "global",
                 optimize: production,
-                distEntry: "script.js",
-                // sourceMap: true,
-                sourceMap: !production, // Source map too large for Cloudflare pages, cause deployment errors
+                sourceMap: !production, // They are a bit too large
+                context: "browser",
                 engines: {
-                  browsers: ["> 0.5%, last 2 versions, not dead"]
+                  browsers: [">0.5% and last 2 years and not dead"]
                 }
               }
-            }
+            },
+            additionalReporters: reporters
           });
           let res = await bundler.run();
-          res.bundleGraph.traverseBundles(b => {
-            bundles.push({ url: b.name, type: b.type });
-            print_verbose(`${b.type}: ${b.name}`);
-          });
+          let bs = res.bundleGraph.getBundles();
+          for (let b of bs) {
+            if (!res.bundleGraph.getBundleGroupsContainingBundle(b).some(bg => res.bundleGraph.isEntryBundleGroup(bg))) {
+              continue;
+            }
+            let file_name = path.relative(dist_dir_path, b.filePath);
+            bundles.push({ url: file_name, type: b.type });
+            print_verbose(`${b.type}: ${file_name}`);
+          }
         } else {
           print_status(`parcel skipped.`.gray);
         }

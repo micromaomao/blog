@@ -49,7 +49,7 @@ r.post("/v1/embeddings", async function (req, res, next) {
       res.status(400).send("Bad Request");
       return;
     }
-    const allowed_models = ["text-embedding-ada-002"];
+    const allowed_models = ["text-embedding-ada-002", "text-embedding-3-small", "text-embedding-3-large"];
     if (!allowed_models.includes(req.body.model)) {
       res.status(400).send(`Model not allowed. Allowed values: ${allowed_models.join(", ")}`);
       return;

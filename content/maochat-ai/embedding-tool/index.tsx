@@ -33,7 +33,7 @@ export function Component() {
     <React.StrictMode>
       <FluentProvider theme={lightTheme}>
         <Suspense fallback={<Skeleton><SkeletonItem /></Skeleton>}>
-          <EmbeddingsTest available_models={["text-embedding-ada-002"]} />
+          <EmbeddingsTest available_models={["text-embedding-ada-002", "text-embedding-3-small", "text-embedding-3-large"]} />
         </Suspense>
       </FluentProvider>
     </React.StrictMode>

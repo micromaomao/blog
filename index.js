@@ -476,20 +476,23 @@ async function main() {
           let bundler = new Parcel({
             entries: script_path,
             defaultConfig: "@parcel/config-default",
+            config: path.resolve(import.meta.dirname, ".parcelrc"),
             mode: production ? "production" : "development",
             targets: {
               default: {
                 distDir: dist_dir_path,
-                outputFormat: "global",
+                outputFormat: "commonjs",
+                isLibrary: false,
                 optimize: production,
                 sourceMap: !production, // They are a bit too large
                 context: "browser",
                 engines: {
-                  browsers: [">0.5% and last 2 years and not dead"]
+                  // browsers: [">0.5% and last 2 years and not dead"]
                 }
               }
             },
-            additionalReporters: reporters
+            logLevel: "verbose",
+            additionalReporters: reporters,
           });
           let res = await bundler.run();
           let bs = res.bundleGraph.getBundles();

@@ -17,6 +17,7 @@
 		"allowJs": true,
 		"moduleResolution": "Bundler",
 		"esModuleInterop": true,
+		"verbatimModuleSyntax": true,
 		"jsx": "preserve",
 		"paths": {
 			"js/*": [

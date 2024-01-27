@@ -1,4 +1,7 @@
 {
+	"include": [
+		"./js/modules.d.ts",
+	],
 	"compilerOptions": {
 		"strict": false,
 		"sourceMap": true,
@@ -17,12 +20,12 @@
 		"allowJs": true,
 		"moduleResolution": "Bundler",
 		"esModuleInterop": true,
-		"verbatimModuleSyntax": true,
+		"isolatedModules": true,
 		"jsx": "preserve",
 		"paths": {
 			"js/*": [
 				"./js/*"
-			],
+			]
 		}
 	}
 }

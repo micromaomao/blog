@@ -9,9 +9,10 @@ import { Body2 } from "@fluentui/react-text";
 import { ProgressBar } from "@fluentui/react-progress";
 import { MessageBar, MessageBarBody, MessageBarTitle, MessageBarActions } from "@fluentui/react-message-bar";
 import { DeleteRegular, AddCircleRegular } from "@fluentui/react-icons";
-import { PureComponent, RefObject, createContext, createRef, useContext, useEffect, useState } from "react";
+import { PureComponent, createContext, createRef, useContext, useEffect, useState } from "react";
+import type { RefObject } from "react";
 
-import * as styles from "./embeddings.module.css";
+import styles from "./embeddings.module.css";
 import { norm, dot } from "./vectools";
 
 import precached_results from "./precached_results.json";

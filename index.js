@@ -9,9 +9,8 @@ import sass from "sass";
 import cheerio from "cheerio";
 import mathjax from "mathjax-node";
 import hljs from "highlight.js";
-import { Parcel } from "@parcel/core";
+import webpack from "webpack";
 import { parseArgs } from "util";
-import { fileURLToPath } from "url";
 
 process.chdir(import.meta.dirname);
 
@@ -28,18 +27,13 @@ async function main() {
       "draft-mode": {
         type: "boolean",
         default: false,
-      },
-      "parcel-bundle-analyzer": {
-        type: "boolean",
-        default: false,
-      },
+      }
     },
     allowPositionals: true,
     strict: true,
   });
   let skip_bundle = values["skip-bundle"];
   let draft_mode = values["draft-mode"];
-  let parcel_bundle_analyzer = values["parcel-bundle-analyzer"];
 
   let output_dir_stat = null;
   try {
@@ -459,53 +453,85 @@ async function main() {
       let bundles = [];
       if (fs.existsSync(script_path)) {
         if (!skip_bundle) {
-          print_status(`parcel ${script_path} > ...`);
+          print_status(`webpack ${script_path} > ...`);
           let production = process.env.NODE_ENV === "production";
-          let reporters = [
-            {
-              packageName: '@parcel/reporter-cli',
-              resolveFrom: fileURLToPath(import.meta.url)
+          let _bundle_path = path.resolve(dist_dir_path, "script.js");
+          const babel_loader = {
+            loader: "babel-loader",
+            options: {
+              presets: ["@babel/preset-react"]
             }
-          ];
-          if (parcel_bundle_analyzer) {
-            reporters.push({
-              packageName: "@parcel/reporter-bundle-analyzer",
-              resolveFrom: fileURLToPath(import.meta.url)
-            });
-          }
-          let bundler = new Parcel({
-            entries: script_path,
-            defaultConfig: "@parcel/config-default",
-            config: path.resolve(import.meta.dirname, ".parcelrc"),
-            mode: production ? "production" : "development",
-            targets: {
-              default: {
-                distDir: dist_dir_path,
-                outputFormat: "commonjs",
-                isLibrary: false,
-                optimize: production,
-                sourceMap: !production, // They are a bit too large
-                context: "browser",
-                engines: {
-                  // browsers: [">0.5% and last 2 years and not dead"]
+          };
+          await new Promise((resolve, reject) => {
+            let webpack_config = {
+              entry: script_path,
+              devtool: "source-map",
+              module: {
+                rules: [
+                  {
+                    test: /\.module\.css$/,
+                    use: [
+                      "style-loader",
+                      {
+                        loader: "css-loader",
+                        options: {
+                          modules: {
+                            localIdentName: '[local]--[hash:base64:5]',
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    test: /\.ts$/,
+                    use: "ts-loader",
+                    exclude: "/node_modules/"
+                  },
+                  {
+                    test: /\.jsx$/,
+                    use: [babel_loader]
+                  },
+                  {
+                    test: /\.tsx$/,
+                    use: [babel_loader, "ts-loader"]
+                  },
+                ]
+              },
+              resolve: {
+                extensions: [".ts", ".js", ".jsx", ".tsx", ".css"],
+                modules: [path.resolve(import.meta.dirname, "node_modules"), path.resolve(import.meta.dirname, ".")]
+              },
+              output: {
+                filename: "[name].[chunkhash].js",
+                path: dist_dir_path,
+              },
+              mode: production ? "production" : "development",
+              plugins: [
+                new webpack.DefinePlugin({
+                  "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV),
+                  "process.env.BACKEND_ENDPOINT": JSON.stringify(process.env.BACKEND_ENDPOINT),
+                })
+              ]
+            };
+            webpack(webpack_config, (err, stats) => {
+              if (err || stats.hasErrors()) {
+                console.error(stats.toString());
+                reject(new Error(err || `Webpack failed to build`));
+              } else {
+                console.log(stats.toString());
+                for (let asset of stats.toJson().assets) {
+                  if (asset.chunkNames && asset.chunkNames.includes("main")) {
+                    let f = asset.name;
+                      bundles.push({type: "js", url: f})
+                      print_verbose(`Including ${f}`);
+                  }
                 }
+                resolve();
               }
-            },
-            logLevel: "verbose",
-            additionalReporters: reporters,
+            })
           });
-          let res = await bundler.run();
-          let bs = res.bundleGraph.getBundles();
-          for (let b of bs) {
-            if (!res.bundleGraph.getBundleGroupsContainingBundle(b).some(bg => res.bundleGraph.isEntryBundleGroup(bg))) {
-              continue;
-            }
-            let file_name = path.relative(dist_dir_path, b.filePath);
-            bundles.push({ url: file_name, type: b.type });
-            print_verbose(`${b.type}: ${file_name}`);
-          }
         } else {
-          print_status(`parcel skipped.`.gray);
+          print_status(`webpack skipped.`.gray);
         }
       } else {
         progress_current_work_done++;

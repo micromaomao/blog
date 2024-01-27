@@ -1,8 +1,7 @@
 import React, { Suspense } from "react";
 const EmbeddingsTest = React.lazy(() => import("./embeddingsTest"));
-// import { BrandVariants, FluentProvider, Skeleton, SkeletonItem, Theme, createLightTheme } from "@fluentui/react-components";
-// Import from separate modules otherwise the bundle end up ginormous
-import { BrandVariants, Theme, createLightTheme } from "@fluentui/react-theme";
+import type { BrandVariants, Theme } from "@fluentui/react-theme";
+import { createLightTheme } from "@fluentui/react-theme";
 import { FluentProvider } from "@fluentui/react-provider";
 import { Skeleton, SkeletonItem } from "@fluentui/react-skeleton";
 

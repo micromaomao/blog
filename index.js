@@ -146,7 +146,7 @@ async function main() {
       article.output_path = dist_dict_path;
       tryMkdirp(dist_dict_path);
       function transform_local_asset_href(href) {
-        if (/^[a-zA-Z]+:\/\//.test(href)) {
+        if (/^[a-zA-Z]+:\/\//.test(href) || /^(\/|\.\.\/)/.test(href)) {
           return href;
         }
         let local_path = path.resolve(cdir_path, href);

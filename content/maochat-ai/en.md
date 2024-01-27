@@ -1,7 +1,7 @@
 ---
 title: "I made an AI impression of myself"
 tags: ["AI", "LLM", "Text Embeddings", "OpenAI"]
-time: "2024-01-14T16:30:35+00:00"
+time: "2024-01-27T12:00:00+00:00"
 cover_alt: >-
   A screenshot of a new chat session on Maochat, showing a welcome banner with ideas for questions like
   "Who is best girl in anime?", "If you can wish for anything, what would it be?", "Do you enjoy your work?"
@@ -48,29 +48,7 @@ Why did I want to make this? Honestly, it's mostly just for fun. I did not think
 
 Overall, I think it was quite successful: it's actually fun and human-like to talk to (unlike ChatGPT), and it also gave me an excuse to do a lot of self-introspection through writing answers to personal questions. I also made the application itself generic, so I (or anyone else) could use the same project to quickly spin up another bot (like <a href="https://yuki.maowtm.org" target="_blank">Yuki</a>).
 
-The rest of this post will go into two different directions: The &ldquo;AI tuning&rdquo; side of the project, and the architectural / software-engineering side. There is a lot to learn from both, and in the end I will come back and talk a bit more about how I feel about the project as a whole.
-
-<style>
-  .dramatic-title {
-    text-align: center;
-    font-size: 30px;
-    margin-top: 50px;
-  }
-
-  .dramatic-title:before {
-    display: none;
-    content: '';
-    width: 0;
-    margin: 0;
-    padding: 0;
-  }
-
-  .dramatic-title .numeral {
-    opacity: 0.5;
-  }
-</style>
-
-<h2 class="dramatic-title"><span class="numeral">I. </span>AI wrangling</h2>
+This article will go over the &ldquo;AI tuning&rdquo; side of the project. If you're interested in knowing about the architectural / software-engineering side of this, check out this other article on Maochat: [“Actual” Engineering behind Maochat](../maochat-eng/en.html). There is a lot to learn from both, and in the end of this article I will also talk a bit more about how I feel about the project as a whole.
 
 <style>
   .llm-interaction, .chat-interaction, .sample {
@@ -157,7 +135,7 @@ The rest of this post will go into two different directions: The &ldquo;AI tunin
 
 For this project I decided to just use OpenAI (since I obviously do not have the capacity to build my own LLM, or even run an open source one). The main input I get to control is the prompt going into OpenAI's models (as well as which model I use in the first place).
 
-### Prompt format
+## Prompt format
 
 My initial attempt were very different from the final approach I ended up using. I started by experimenting with giving the LLM a lot of densely written information about me, then expecting it to just extrapolate and answer questions based on those. Here is a sample of what I did:
 
@@ -247,9 +225,9 @@ Not an exact response, but good enough for me. This does changes with different 
 
 This also makes it easy to see how I can continuously improve the output of this AI &mdash; I just need to add more and more examples to the database, and it will talk more and more like me! It's not obvious that this would have been possible if I've continued with the &lsquo;notes&rsquo; approach. Plus, when I have a large enough dataset, such a format allows me to easily do [model fine-tuning](https://platform.openai.com/docs/guides/fine-tuning), or skip the LLM entirely in a significant number of cases &mdash; neither of which would have been possible with just a set of knowledge notes, even if it's a large set.
 
-### Moving to the [Chat Completions API](https://platform.openai.com/docs/guides/text-generation/chat-completions-api)
+## Moving to the [Chat Completions API](https://platform.openai.com/docs/guides/text-generation/chat-completions-api)
 
-#### Quick introduction
+### Quick introduction
 
 If you aren't actively using OpenAI's GPT APIs, you might not have known that in the last two years OpenAI has introduced and pushed for the usage of a whole new way of _talking_ (literally!) to GPT models, called the &ldquo;Chat Completions&rdquo; API. This API is designed to allow better instruction following, more resistance against prompt injection attacks, and leave way for richer interactions later, such as &ldquo;function calling&rdquo; or visual/audio inputs.
 
@@ -279,7 +257,7 @@ This does not mean that you can only use GPT as a chatbot. For example, for text
   <div class="generated-textcolor">嗨，我是一名喜欢写博客的软件工程师。</div>
 </div>
 
-#### Chatbot or chat*Bot*?
+### Chatbot or chat*Bot*?
 
 While I was doing this, OpenAI made it more and more clear that the text completion API is going to be considered &lsquo;legacy&rsquo;, and the chat completions API is the way to go &mdash; they had made their new GPT-4 models available only on the chat API.<footnote>
 At the time of writing, they have added GPT-4 instruct for text completion as well, however the text completions API remains labelled as &ldquo;legacy&rdquo;.</footnote>
@@ -330,11 +308,11 @@ Ok, maybe it's still not how I would talk and a bit rambly, plus I don't work in
   <div>I'm doing great, thanks for asking!</div>
 </div>
 
-### Using [Embeddings](https://platform.openai.com/docs/guides/embeddings)
+## Using [Embeddings](https://platform.openai.com/docs/guides/embeddings)
 
 As part of this project, I also wanted to explore using &ldquo;text embeddings&rdquo;. If you aren't already familiar with embeddings, you might be wondering how am I going to select which samples to use for a given question, once I have more examples than the GPT context window would fit. The answer is embeddings! Or more specifically, _embeddings based retrieval_.
 
-#### Quick introduction
+### Quick introduction
 
 Have you ever wondered how LLMs &lsquo;read&rsquo; text and seem to understand concepts? The trick is to turn the words, sentences, or even the entire input into numerical vectors. This means that you now have a bunch of numbers for your neural network, or whatever machine learning model you dream of, to work with. For example, this exact paragraph turns into this when you pass it through the OpenAI embeddings API (`text-embedding-ada-002`):
 
@@ -395,7 +373,7 @@ It's worth saying that while useful as a demo, comparing the similarity of sente
   <div style="color: #777; font-size: 14px;">Requests are logged to prevent abuse.</div>
 </div>
 
-#### Selecting samples
+### Selecting samples
 
 I started off with a very simple way to select samples &mdash; pre-compute the embeddings of all questions in my sample dataset, then when a new chat message comes in, compute the embedding of the message, then find the closest sample question to it. With the amount of samples I will ever need to work with, this can be easily implemented with just a simple in-memory search, where I compute the _cosine similarity_ (how closely aligned are the two vectors) of the input embedding with every sample embedding, then sort the result and pick the top <tex>n</tex>.
 
@@ -476,7 +454,7 @@ You: <span class="ws">                                                          
   <div class="generated-textcolor">Outside of my job I also work on side projects - one of them was&hellip;</div>
 </div>
 
-### Improving _Context-Awareness_
+## Improving _Context-Awareness_
 
 While this approach mostly works, and does especially well when you stick to topics I've thought about and put in the bot, it can go wrong in several different ways. Let's explore some of the bad cases.
 
@@ -555,7 +533,7 @@ But then, if someone simply ask it what the module is, it might just quote the a
 
 I can improve the response in this particular case by just adding in another sample response for this question, with the reply worded differently, but this is a recurring problem in general.
 
-#### Sample ranking
+### Sample ranking
 
 You might have noticed that I've decided to put the closest matching sample at the top. This was just an arbitrary choice I made initially, but turned out to be very sensible, because the model seem to much more closely follow examples at the top than at the bottom, for reasons that I won't pretend I understand.
 
@@ -600,7 +578,7 @@ You: <span class="ws">                                                          
 
 I suspect questions which are even further away from any of the samples will get even more &ldquo;ad-hoc&rdquo; responses (which might sometime be a good thing, if the LLM would otherwise just quote the sample blindly, not answering the question).
 
-#### Storing follow-up questions
+### Storing follow-up questions
 
 You might have noticed that in the above example, some of the samples were &lsquo;follow-up&rsquo; of an earlier question. For example, &ldquo;What are some of your personal projects?&rdquo; followed by &ldquo;Have you collaborated with others on any of your side projects?&rdquo;. There is no reason why we can't write samples for these follow-up questions as well, especially if we want the bot to be conversational, rather than just a Q&amp;A machine.
 
@@ -717,7 +695,7 @@ or
 
 This approach doesn't mean that the user _has_ to ask the parent question first. For example, if they ask &ldquo;What is Chuunibyou about?&rdquo; or &ldquo;What syntax from Rust do you wish other programming language had?&rdquo; from the beginning directly, as long as their question still has some similarity with the &lsquo;root&rsquo; question according to the embeddings (like both being about anime, or programming languages), the relevant samples will still be selected and ranked appropriately, whereas if they ask &ldquo;What are some modern features of x86 CPUs?&rdquo;, because it has nothing to do with programming languages, the &ldquo;What do you mean by &lsquo;modern features&rsquo;?&rdquo; sample above will hopefully be ranked lower or not be selected to include in the prompt, avoiding a potential strange response.
 
-### Combating hallucinations
+## Combating hallucinations
 
 GPT models, as well as other LLMs, are infamous for hallucinating no matter how nicely we ask it not to, and this project has to deal with hallucinations as well.
 
@@ -814,10 +792,8 @@ I also once saw it hallucinate a Discord user discriminator (the old username<b>
 
 Overall, I don't think there is any reasonable solution to these kind of problems and the best I can do might be to just add more samples on different topics, and add more &lsquo;negative&rsquo; samples. Luckily, the hallucinations are mostly harmless, and does not detract from the overall experience too much. I've since added warnings both on the front page and on the chat page's initial banner to remind people that AI-generated responses might not be accurate.
 
-### Unnecessary continuation; or, &ldquo;can you just shut the f**k up?&rdquo;
+## Unnecessary continuation; or, &ldquo;can't you just shut the f**k up?&rdquo;
 
 One of the most unexpectedly challenging problem turned out to be getting the LLM to _stop talking_. Here is what I mean:
 
-<h2 class="dramatic-title"><span class="numeral">II. </span>Architecture</h2>
-
-<h2 class="dramatic-title">Conclusion</h2>
+## Conclusion, feelings, etc

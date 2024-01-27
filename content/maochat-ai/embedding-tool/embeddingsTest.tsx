@@ -235,13 +235,33 @@ function EmbeddingsResult({ inputs, model }: {
       </Skeleton>
     );
   }
+
+  function handleExportJSON() {
+    let objs: any[] = [];
+    for (let i = 0; i < inputs.length; i += 1) {
+      let text = inputs[i];
+      let embedding = data.embeddings[i];
+      objs.push({ text, model, embedding });
+    }
+    const json = JSON.stringify(objs);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.target = "_blank";
+    a.click();
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 1000)
+  }
+
   return (
     <>
       {isLoading ? (
         <ProgressBar as="div" value={undefined} thickness="medium" />
       ) : null}
       {error ? (
-        <MessageBar intent="error">
+        <MessageBar intent="error" layout="multiline">
           <MessageBarBody>
             <MessageBarTitle>Error getting embeddings</MessageBarTitle>
             {error.toString()}
@@ -253,7 +273,10 @@ function EmbeddingsResult({ inputs, model }: {
         </MessageBar>
       ) : null}
       {data ? (
-        <EmbeddingsResultMaps data={data} />
+        <>
+          <EmbeddingsResultMaps data={data} /><br />
+          <Link appearance="subtle" onClick={handleExportJSON}>Export as JSON</Link>
+        </>
       ) : null}
     </>
   );

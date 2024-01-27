@@ -1,6 +1,6 @@
-import React from "react";
-import EmbeddingsTest from "./embeddingsTest";
-import { BrandVariants, FluentProvider, Theme, createLightTheme } from "@fluentui/react-components";
+import React, { Suspense } from "react";
+const EmbeddingsTest = React.lazy(() => import("./embeddingsTest"));
+import { BrandVariants, FluentProvider, Skeleton, SkeletonItem, Theme, createLightTheme } from "@fluentui/react-components";
 
 const maochatTheme: BrandVariants = {
   10: "#050109",
@@ -29,7 +29,9 @@ export function Component() {
   return (
     <React.StrictMode>
       <FluentProvider theme={lightTheme}>
-        <EmbeddingsTest available_models={["text-embedding-ada-002"]} />
+        <Suspense fallback={<Skeleton><SkeletonItem /></Skeleton>}>
+          <EmbeddingsTest available_models={["text-embedding-ada-002"]} />
+        </Suspense>
       </FluentProvider>
     </React.StrictMode>
   );

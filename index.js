@@ -464,7 +464,8 @@ async function main() {
                 distDir: dist_dict_path,
                 optimize: production,
                 distEntry: "script.js",
-                sourceMap: true,
+                // sourceMap: true,
+                sourceMap: !production, // Source map too large for Cloudflare pages, cause deployment errors
                 engines: {
                   browsers: ["> 0.5%, last 2 versions, not dead"]
                 }

@@ -10,36 +10,25 @@ import cheerio from "cheerio";
 import mathjax from "mathjax-node";
 import hljs from "highlight.js";
 import { Parcel } from "@parcel/core";
+import { parseArgs } from "util";
 
 process.chdir(import.meta.dirname);
 
 let output_dir = path.resolve(import.meta.dirname, "dist");
-let skip_webpack = false;
 
 async function main() {
-  let filter;
-  switch (process.argv.length) {
-    // first 2 args are "node" and "index.js"
-    case 0:
-    case 1:
-      throw new Error("Expected one or no arguments.");
-    case 2:
-      filter = null;
-      break;
-    case 3:
-    default:
-      filter = process.argv[2];
-      for (let arg of process.argv.slice(3)) {
-        switch (arg) {
-          case "--skip-webpack":
-            skip_webpack = true;
-            break;
-          default:
-            throw new Error("Unexpected argument " + arg);
-        }
+  const { positionals: filters, values } = parseArgs({
+    args: process.argv.slice(2),
+    options: {
+      "skip-bundle": {
+        type: "boolean",
+        default: false,
       }
-      break;
-  }
+    },
+    allowPositionals: true,
+    strict: true,
+  });
+  let skip_bundle = values["skip-bundle"];
 
   let output_dir_stat = null;
   try {
@@ -68,9 +57,9 @@ async function main() {
   } catch (e) {
     throw new Error(`Error readdiring content/: ${e.message}`);
   }
-  if (filter !== null) {
-    console.log(` ==>  Only building ${filter}...`.gray);
-    dir_entires = dir_entires.filter(x => x == filter);
+  if (filters.length > 0) {
+    console.log(` ==>  Only building ${filters.join(", ")}...`.gray);
+    dir_entires = dir_entires.filter(x => filters.includes(x));
   }
   console.log(`       (${dir_entires.length} articles to build)`.gray);
   let progress_total_work = dir_entires.length * 4 + 10;
@@ -449,7 +438,7 @@ async function main() {
       let script_path = path.resolve(cdir_path, "script.ts");
       let bundles = [];
       if (fs.existsSync(script_path)) {
-        if (!skip_webpack) {
+        if (!skip_bundle) {
           print_status(`parcel ${script_path} > ...`);
           let production = process.env.NODE_ENV === "production";
           let bundler = new Parcel({
@@ -474,7 +463,7 @@ async function main() {
             console.log(` ==>  ${b.type}: ${b.name}`);
           });
         } else {
-          print_status(`tsc skipped.`.gray);
+          print_status(`parcel skipped.`.gray);
         }
       } else {
         progress_current_work_done++;

@@ -1,19 +1,19 @@
-require("colors");
-const fs = require("fs");
-const path = require("path");
-const { marked } = require('marked');
-const jsyaml = require('js-yaml');
-const child_process = require('child_process');
-const pug = require('pug');
-const sass = require('sass');
-const cheerio = require('cheerio');
-const mathjax = require("mathjax-node");
-const hljs = require("highlight.js");
-const { default: Parcel } = require("@parcel/core");
+import "colors";
+import fs from "fs";
+import path from "path";
+import { marked } from "marked";
+import jsyaml from "js-yaml";
+import child_process from "child_process";
+import pug from "pug";
+import sass from "sass";
+import cheerio from "cheerio";
+import mathjax from "mathjax-node";
+import hljs from "highlight.js";
+import { Parcel } from "@parcel/core";
 
-process.chdir(__dirname);
+process.chdir(import.meta.dirname);
 
-let output_dir = path.resolve(__dirname, "dist");
+let output_dir = path.resolve(import.meta.dirname, "dist");
 let skip_webpack = false;
 
 async function main() {
@@ -86,7 +86,7 @@ async function main() {
   }
 
   function get_template(fp) {
-    let file_path = path.resolve(__dirname, fp);
+    let file_path = path.resolve(import.meta.dirname, fp);
     print_status(`Compile template: ${file_path}`);
     let fn;
     try {
@@ -94,14 +94,14 @@ async function main() {
     } catch (e) {
       throw new Error(`Error compiling ${file_path}: ${e.message}`);
     }
-    let sass_path = path.resolve(__dirname, fp.replace(/\.pug$/, ".sass"));
+    let sass_path = path.resolve(import.meta.dirname, fp.replace(/\.pug$/, ".sass"));
     print_status(`Compile sass: ${sass_path}`);
     let css;
     try {
       css = sass.renderSync({
         file: sass_path,
         outputStyle: 'expanded',
-        includePaths: [path.resolve(__dirname, fp, "..")],
+        includePaths: [path.resolve(import.meta.dirname, fp, "..")],
       }).css;
     } catch (e) {
       throw new Error(`Error compiling ${sass_path}: ${e.message}`);
@@ -515,7 +515,7 @@ async function main() {
   }
 
   for (let ent of dir_entires) {
-    let cdir_path = path.resolve(__dirname, "content", ent);
+    let cdir_path = path.resolve(import.meta.dirname, "content", ent);
     articles.push(await ScannedArticle.scan_dir(cdir_path, ent));
   }
 
@@ -561,7 +561,7 @@ async function main() {
   let titlesvg_outpath = path.resolve(output_dir, "title.svg");
   print_status("svgo " + titlesvg_outpath);
   try {
-    child_process.execSync(`svgo -i ${path.resolve(__dirname, "design_files/title.svg")} -o ${titlesvg_outpath}`);
+    child_process.execSync(`svgo -i ${path.resolve(import.meta.dirname, "design_files/title.svg")} -o ${titlesvg_outpath}`);
   } catch (e) {
     throw new Error(`Error running svgo: ${e.message}`);
   }

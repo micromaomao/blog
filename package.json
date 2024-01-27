@@ -4,6 +4,7 @@
   "private": true,
   "description": "",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "watch": "env NODE_ENV=development BACKEND_ENDPOINT=http://localhost:3000 nodemon -e '*.*' -i .git -i node_modules -i server -i dist -i .parcel-cache index.js",
     "build": "env NODE_ENV=production node index.js",

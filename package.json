@@ -4,12 +4,11 @@
   "private": true,
   "description": "",
   "main": "index.js",
-  "type": "module",
   "scripts": {
-    "watch": "env NODE_ENV=development BACKEND_ENDPOINT=http://localhost:3000 nodemon -e '*.*' -i .git -i node_modules -i server -i dist -i .parcel-cache -i parcel-bundle-reports index.js",
+    "watch": "env NODE_ENV=development BACKEND_ENDPOINT=http://localhost:3000 nodemon -e '*.*' -i .git -i node_modules -i server -i dist -i .parcel-cache -i parcel-bundle-reports index.mjs",
     "watch-draft": "npm run watch -- -- --draft-mode",
-    "build": "env NODE_ENV=production node index.js",
-    "build-draft": "env NODE_ENV=production node index.js --draft-mode",
+    "build": "env NODE_ENV=production node index.mjs",
+    "build-draft": "env NODE_ENV=production node index.mjs --draft-mode",
     "dev:server": "cd server && env NODE_ENV=development nodemon -w . -e '*.js' -e '*.ts' -x 'ts-node index.ts'",
     "start:server": "cd server && env NODE_ENV=production ts-node index.ts"
   },

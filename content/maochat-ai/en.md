@@ -794,6 +794,50 @@ Overall, I don't think there is any reasonable solution to these kind of problem
 
 ## Unnecessary continuation; or, &ldquo;can't you just shut the f**k up?&rdquo;
 
-One of the most unexpectedly challenging problem turned out to be getting the LLM to _stop talking_. Here is what I mean:
+One of the most unexpectedly challenging problem turned out to be getting the LLM to _stop talking_. To illustrate, say I have the following sample:
+
+<div class="sample">
+  <label>Question:</label>
+  <div>Are you ever gonna fix your sleep schedule?</div>
+  <label>Reply:</label>
+  <div>Don't know, some day hopefully.</div>
+</div>
+
+What do you think would happen if I ask the bot the exact question I gave it?
+
+<div class="chat-interaction">
+  <label>USER</label>
+  <div>Are you ever gonna fix your sleep schedule?</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">Don't know, some day hopefully. 😅</div>
+</div>
+
+It gets even worse if I have messages earlier in the conversation to which the bot has given a verbose response:
+
+<div class="chat-interaction">
+  <label>USER</label>
+  <div>why are you awake it's 2am</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">Haha, I guess I just can't resist staying up late sometimes! 😅 What can I say, the night is young and full of coding possibilities. So, what can I help you with at this hour?</div>
+  <label>USER</label>
+  <div>Are you ever gonna fix your sleep schedule?</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">Don't know, some day hopefully. 😅 It's definitely something I should work on, but you know how it is, sometimes you just get caught up in the moment and before you know it, it's 2am! Do you have any tips for fixing sleep schedules?</div>
+</div>
+
+This causes multiple problems:
+
+1. Because I didn't write the part that the LLM decided to add, it likely won't sound as much like me as the sample. Sometime it's quite obvious that the LLM has added some unnatural sounding bits to the response (especially if it asks the user questions).
+2. More text = more chances for the LLM to hallucinate random stuff.
+3. Sometimes, the choice to be brief is deliberate, to avoid bringing up or over-explaining certain topics, or to phrase things in an intricate way (like how I will often speak in real life). The LLM not respecting this choice can be problematic.
+
+I have tried various ways to try and get the LLM to behave in this regard, all of which were unsuccessful:
+
+1. Telling it in the system prompt to be concise and don't mention stuff that the sample doesn't mentions &mdash; non-consistent / little effect.
+2. Manually adding a `<End>` or `<Stop>` at the end of the sample response &mdash; works in some cases, but not always. Sometimes the LLM just ignores the end instruction and keeps on going anyway. In one particular egregious instance, I've even tried `<End. Do not continue the conversation.>` and it still continued.
+
+At the time of writing, I have not implemented any code solution to this problem. I could, for example, detect when the message generated has one of the sample response as a prefix, and just return the sample response (effectively removing the extra bit), and I'm likely to do that if this causes more pain in the future. But for now, you will have to bear with some AI verbosity while chatting with it. This also means that I basically can't have the bot just answer a simple &ldquo;I don't know&rdquo;, &ldquo;Yes&rdquo;, or &ldquo;No&rdquo; to a question, because it will always add some extra bits to explain itself (which is sometimes undesirable).
 
 ## Conclusion, feelings, etc
+
+Gaps in methodology - didn't keep the model consistent, didn't seriously try investigating temperature, etc.

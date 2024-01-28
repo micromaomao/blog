@@ -8,7 +8,7 @@ html(lang=lang)
     meta(name="viewport",content="width=device-width, initial-scale=1.0")
     style(type="text/css")!= "\n" + css
     block head
-  body
+  body(class=(draft_mode ? "draft-mode" : ""))
     -if (draft_mode)
       .draftmode-warn
         | This is the DRAFT branch of this blog. Articles already published will not appear here.

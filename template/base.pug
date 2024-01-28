@@ -11,9 +11,9 @@ html(lang=lang)
   body
     -if (draft_mode)
       .draftmode-warn
-        | DRAFT VERSION
+        | This is the DRAFT branch of this blog. Articles already published will not appear here.
         br
-        | <a href="https://blog.maowtm.org">Go to public site</a>
+        | <a href="https://blog.maowtm.org">Go to the main site</a>
     block title-link
       a.blogtitle(href="/")
         | <img src="/title.svg" alt="mw casual engineering">

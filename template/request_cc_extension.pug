@@ -1,25 +1,21 @@
-doctype html
-html(lang="en")
-  head
-    meta(charset="utf-8")
-    title= "Request CC extension - mw casual engineering"
-    meta(name="viewport",content="width=device-width, initial-scale=1.0")
-    style(type="text/css")!= "\n" + css
-  body
-    a.blogtitle(href="index.html")
-      | <img src="title.svg" alt="mw casual engineering">
-    h1 Request CC extension
+extends base
 
-    p
-      | The CC-BY-SA 4 license should be enough for most use cases. Commercial reuse is allowed
-      | without contacting me if the conditions of the license is followed. For attribution, a hyperlink to either the original URL
-      | of the article or to this site (<code>blog.maowtm.org</code>) is enough.
+block head
+  title= "Request CC extension - mw casual engineering"
 
-    p
-      | If you would like to discuss more, feel free to email <code>m@maowtm.org</code>.
+block body
+  h1 Request CC extension
 
-    p
-      | If you translate an article here, you can choose to contribute back so that your translation could be shown here as another
-      | language the article is available in. Contact me for details.
+  p
+    | The CC-BY-SA 4 license should be enough for most use cases. Commercial reuse is allowed
+    | without contacting me if the conditions of the license is followed. For attribution, a hyperlink to either the original URL
+    | of the article or to this site (<code>blog.maowtm.org</code>) is enough.
 
-    a.home(href="index.html") « home
+  p
+    | If you would like to discuss more, feel free to email <code>m@maowtm.org</code>.
+
+  p
+    | If you translate an article here, you can choose to contribute back so that your translation could be shown here as another
+    | language the article is available in. Contact me for details.
+
+  a.home(href="index.html") « home

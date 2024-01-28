@@ -1,16 +1,29 @@
+import { load as cheerio_load } from "cheerio";
+import child_process from "child_process";
 import "colors";
 import fs from "fs";
-import path from "path";
-import { marked } from "marked";
-import jsyaml from "js-yaml";
-import child_process from "child_process";
-import pug from "pug";
-import sass from "sass";
-import cheerio from "cheerio";
-import mathjax from "mathjax-node";
 import hljs from "highlight.js";
-import webpack from "webpack";
+import jsyaml from "js-yaml";
+import { marked } from "marked";
+import { gfmHeadingId } from "marked-gfm-heading-id";
+import { markedHighlight } from "marked-highlight";
+import mathjax from "mathjax-node";
+import path from "path";
+import pug from "pug";
+import * as sass from "sass";
 import { parseArgs } from "util";
+import webpack from "webpack";
+
+marked.use(gfmHeadingId())
+marked.use(markedHighlight({
+  highlight(code, lang) {
+    if (lang === "") {
+      return code;
+    } else {
+      return hljs.highlight(code, { language: lang }).value;
+    }
+  }
+}));
 
 process.chdir(import.meta.dirname);
 
@@ -92,16 +105,15 @@ async function main() {
     print_status(`Compile sass: ${sass_path}`);
     let css;
     try {
-      css = sass.renderSync({
-        file: sass_path,
-        outputStyle: 'expanded',
-        includePaths: [path.resolve(import.meta.dirname, fp, "..")],
+      css = sass.compile(sass_path, {
+        style: 'expanded',
+        loadPaths: [path.resolve(import.meta.dirname, fp, "..")],
       }).css;
     } catch (e) {
       throw new Error(`Error compiling ${sass_path}: ${e.message}`);
     }
     return function (obj) {
-      Object.assign(obj, { css });
+      Object.assign(obj, { css, draft_mode });
       return fn(obj);
     };
   }
@@ -112,9 +124,7 @@ async function main() {
   const cc_ext_template = get_template("template/request_cc_extension.pug");
 
   let articles = [];
-  let orig_renderer = new marked.Renderer({
-    headerIds: true
-  });
+  let orig_renderer = new marked.Renderer();
 
   function tryMkdirp(path) {
     fs.mkdirSync(path, { recursive: true });
@@ -234,9 +244,7 @@ async function main() {
           lang_obj.discuss = front_matter.discuss;
         }
         print_verbose(`Processing ${l}`);
-        let md_renderer = new marked.Renderer({
-          headerIds: true
-        });
+        let md_renderer = new marked.Renderer();
         md_renderer.link = function (href, title, text) {
           return orig_renderer.link(transform_local_asset_href(href), title, text);
         }
@@ -246,7 +254,7 @@ async function main() {
         async function process_html(html) {
           let mathjax_style_included = false;
 
-          let $ = cheerio.load(html);
+          let $ = cheerio_load(html);
 
           $("img").each((_, e) => {
             let node = $(e);
@@ -391,22 +399,8 @@ async function main() {
 
         let html;
         try {
-          html = await new Promise((resolve, reject) => {
-            marked(markdown, {
-              headerIds: true, renderer: md_renderer, highlight: (code, lang, cb) => {
-                if (lang === "") {
-                  cb(null, code);
-                } else {
-                  cb(null, hljs.highlight(code, { language: lang }).value);
-                }
-              }
-            }, (err, output) => {
-              if (err) {
-                reject(new Error(`Error highlighting: ${err.message}`));
-              } else {
-                resolve(output);
-              }
-            });
+          html = await marked.parse(markdown, {
+            renderer: md_renderer
           });
           html = await process_html(html);
         } catch (e) {
@@ -522,8 +516,8 @@ async function main() {
                 for (let asset of stats.toJson().assets) {
                   if (asset.chunkNames && asset.chunkNames.includes("main")) {
                     let f = asset.name;
-                      bundles.push({type: "js", url: f})
-                      print_verbose(`Including ${f}`);
+                    bundles.push({ type: "js", url: f })
+                    print_verbose(`Including ${f}`);
                   }
                 }
                 resolve();

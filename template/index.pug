@@ -1,16 +1,16 @@
+extends base
 include utils.pug
-doctype html
-html(lang="en")
-  head
-    meta(charset="utf-8")
-    title mw casual engineering
-    meta(name="viewport",content="width=device-width, initial-scale=1.0")
-    style(type="text/css")!= "\n" + css
-  body
-    a.blogtitle
-      | <img src="title.svg" alt="mw casual engineering">
-      | <br>
-      span.note (index)
-    -let pick_language = article => article.languages.find(x => x.id == "en") || article.languages[0];
-    -let ordered_articles = articles.slice().sort((a, b) => Math.sign(pick_language(b).time - pick_language(a).time));
-    +list_articles(ordered_articles, pick_language, false)
+
+block head
+  title mw casual engineering
+
+block title-link
+  a.blogtitle
+    | <img src="title.svg" alt="mw casual engineering">
+    | <br>
+    span.note (index)
+
+block body
+  -let pick_language = article => article.languages.find(x => x.id == "en") || article.languages[0];
+  -let ordered_articles = articles.slice().sort((a, b) => Math.sign(pick_language(b).time - pick_language(a).time));
+  +list_articles(ordered_articles, pick_language, false)

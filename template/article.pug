@@ -1,48 +1,43 @@
-doctype html
-html(lang=lang_obj.id)
-  head
-    meta(charset="utf-8")
-    title= lang_obj.title + " - mw casual engineering"
-    meta(name="keywords",content=lang_obj.tags.join(','))
-    meta(name="viewport",content="width=device-width, initial-scale=1.0")
-    meta(property="og:url",content=`${article.base_url}/${lang_obj.id}.html`)
-    meta(property="og:title",content=lang_obj.title)
-    -if (lang_obj.cover_image_og)
-      meta(property="og:image",content=`${article.base_url}/${lang_obj.cover_image_og}`)
-    meta(property="og:type",content="article")
-    style(type="text/css")!= "\n" + css
-    link(rel="stylesheet", href="https://unpkg.com/highlight.js@9.16.2/styles/idea.css")
-    each b in article.bundles
-      -if (b.type == "css")
-        link(rel="stylesheet", href=b.url)
-      -else if (b.type == "js")
-        script(type="text/javascript", src=b.url, async)
-  body
-    a.blogtitle(href="../index.html")
-      | <img src="../title.svg" alt="mw casual engineering">
-    -if (lang_obj.cover_image)
-      img(src=lang_obj.cover_image, alt=(lang_obj.cover_alt || "cover image"), class="coverimg")
-    h1= lang_obj.title
-    -if (lang_obj.tags.length > 0)
-      .tags
-        each t, i in lang_obj.tags
-          -if (i != 0)
-            | #{" "}
-          a.tag(href="../tagindex/" + encodeURIComponent(t.toLowerCase()) + ".html")= t
+extends base
+block head
+  title= lang_obj.title + " - mw casual engineering"
+  meta(name="keywords",content=lang_obj.tags.join(','))
+  meta(property="og:url",content=`${article.base_url}/${lang_obj.id}.html`)
+  meta(property="og:title",content=lang_obj.title)
+  -if (lang_obj.cover_image_og)
+    meta(property="og:image",content=`${article.base_url}/${lang_obj.cover_image_og}`)
+  meta(property="og:type",content="article")
+  style(type="text/css")!= "\n" + css
+  link(rel="stylesheet", href="https://unpkg.com/highlight.js@9.16.2/styles/idea.css")
+  each b in article.bundles
+    -if (b.type == "css")
+      link(rel="stylesheet", href=b.url)
+    -else if (b.type == "js")
+      script(type="text/javascript", src=b.url, defer, async)
+block body
+  -if (lang_obj.cover_image)
+    img(src=lang_obj.cover_image, alt=(lang_obj.cover_alt || "cover image"), class="coverimg")
+  h1= lang_obj.title
+  -if (lang_obj.tags.length > 0)
+    .tags
+      each t, i in lang_obj.tags
+        -if (i != 0)
+          | #{" "}
+        a.tag(href="../tagindex/" + encodeURIComponent(t.toLowerCase()) + ".html")= t
 
-    != lang_obj.html
+  != lang_obj.html
 
-    p.footer
-      | Published
-      |
-      span.time(title=lang_obj.time.toUTCString())= "on " + lang_obj.time.toDateString()
-      | .<br>
-      | Authored by <a href="https://maowtm.org">maowtm (Tingmao Wang)</a> &lt;m@maowtm.org&gt;.<br>
-      |
-      | Content <a href="https://github.com/micromaomao/blog/blob/draft/LICENSE.md">licensed under a Creative Commons Attribution-ShareAlike 4.0 International License</a>.<br>
-      |
-      | For permissions beyond the scope of this license, see <a href="../request_cc_extension.html">https://blog.maowtm.org/request_cc_extension.html</a>.<br>
-      |
-      | If you see something wrong please <a href="https://github.com/micromaomao/blog/issues">report on GitHub</a>.
+  p.footer
+    | Published
+    |
+    span.time(title=lang_obj.time.toUTCString())= "on " + lang_obj.time.toDateString()
+    | .<br>
+    | Authored by <a href="https://maowtm.org">maowtm (Tingmao Wang)</a> &lt;m@maowtm.org&gt;.<br>
+    |
+    | Content <a href="https://github.com/micromaomao/blog/blob/draft/LICENSE.md">licensed under a Creative Commons Attribution-ShareAlike 4.0 International License</a>.<br>
+    |
+    | For permissions beyond the scope of this license, see <a href="../request_cc_extension.html">https://blog.maowtm.org/request_cc_extension.html</a>.<br>
+    |
+    | If you see something wrong please <a href="https://github.com/micromaomao/blog/issues">report on GitHub</a>.
 
-    a.home(href="../index.html") « home
+  a.home(href="../index.html") « home

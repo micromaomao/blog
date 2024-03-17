@@ -1,7 +1,7 @@
 ---
 title: "An elusive coin-flipping problem"
 tags: ["math", "probability", "algorithm", "dynamic programming"]
-time: "2024-03-16T23:56:04+00:00"
+time: "2024-03-17T21:41:10+00:00"
 draft: true
 ---
 
@@ -19,8 +19,8 @@ Enable javascript to edit code and re-run.
 const seq_len = 1000000;
 
 let sequence = Array.from({ length: seq_len }, () => Math.random() > 0.5 ? 'H' : 'T');
-let a_score = sequence.filter((_, i) => i < seq_len - 1 && sequence[i] === 'H' && sequence[i + 1] === 'H').length;
-let b_score = sequence.filter((_, i) => i < seq_len - 1 && sequence[i] === 'H' && sequence[i + 1] === 'T').length;
+let a_score = sequence.filter((_, i) => i < seq_len - 1 && sequence[i] == 'H' && sequence[i + 1] == 'H').length;
+let b_score = sequence.filter((_, i) => i < seq_len - 1 && sequence[i] == 'H' && sequence[i + 1] == 'T').length;
 
 console.log(`Alice: ${a_score}, Bob: ${b_score}, ratio = ${a_score / b_score}`);
 ```
@@ -40,8 +40,8 @@ let b_score_sum = 0;
 
 function run() {
   let sequence = Array.from({ length: seq_len }, () => Math.random() > 0.5 ? 'H' : 'T');
-  let a_score = sequence.filter((_, i) => i < seq_len - 1 && sequence[i] === 'H' && sequence[i + 1] === 'H').length;
-  let b_score = sequence.filter((_, i) => i < seq_len - 1 && sequence[i] === 'H' && sequence[i + 1] === 'T').length;
+  let a_score = sequence.filter((_, i) => i < seq_len - 1 && sequence[i] == 'H' && sequence[i + 1] == 'H').length;
+  let b_score = sequence.filter((_, i) => i < seq_len - 1 && sequence[i] == 'H' && sequence[i + 1] == 'T').length;
 
   a_score_sum += a_score;
   b_score_sum += b_score;
@@ -75,8 +75,8 @@ let b_wins = 0;
 
 function run() {
   let sequence = Array.from({ length: seq_len }, () => Math.random() > 0.5 ? 'H' : 'T');
-  let a_score = sequence.filter((_, i) => i < seq_len - 1 && sequence[i] === 'H' && sequence[i + 1] === 'H').length;
-  let b_score = sequence.filter((_, i) => i < seq_len - 1 && sequence[i] === 'H' && sequence[i + 1] === 'T').length;
+  let a_score = sequence.filter((_, i) => i < seq_len - 1 && sequence[i] == 'H' && sequence[i + 1] == 'H').length;
+  let b_score = sequence.filter((_, i) => i < seq_len - 1 && sequence[i] == 'H' && sequence[i + 1] == 'T').length;
 
   if (a_score > b_score) {
     a_wins++;
@@ -163,6 +163,177 @@ Does Alice gain a point here? What if we have:
 
 Does Bob gain a point here? It seems like we will be forced to &lsquo;inspect&rsquo; the last coin in the preceding sequence to determine what we should do, which renders our approach unusable, because we have already rolled the previous state into just a count <tex>Q</tex>.
 
-However, all hope is not lost for dynamic programming. What if we simply force ourselves to always end the sequence with a _T_? In other words, we can define a slightly different function <tex>\tilde{Q}</tex>, such that <tex>\tilde{Q}(n, s_A, s_B)</tex> is the number of distinct <tex>n</tex>-length coin-flip sequences **which ends in a tail**, and such that Alice scores <tex>s_A</tex> and Bob scores <tex>s_B</tex>.
+However, all hope is not lost for dynamic programming. What if we simply define two functions &mdash; <tex>Q_{*H}</tex> and <tex>Q_{*T}</tex>, such that <tex>Q_{*H}(n, s_A, s_B)</tex> is the number of distinct <tex>n</tex>-length coin-flip sequences **which ends in a head**, and have a score of <tex>s_A</tex> and <tex>s_B</tex> for Alice and Bob, and similarly for <tex>Q_{*T}(n, s_A, s_B)</tex>, except it counts sequences that end in a tail?
 
-The choice of which letter to ends the sequence with is somewhat arbitrary, but choosing <tex>\tilde{Q}</tex> to only count _\*T_ sequences is slightly easier to reason about, as _T_ makes a nice &lsquo;stopping point&rsquo; &mdash; what happens after that _T_ is completely separate from it or what comes before it.
+This way, it become clearer how to write <tex>Q_{\ldots}</tex> in terms of itself. Let's consider <tex>Q_{*H}</tex> first:
+
+<center><tex>\underbrace{\ldots \ldots\ c}_{n - 1\text{ coins}}\ \textit{H}</tex></center>
+
+At this point, there are two possible outcomes: either Alice gains 1 point because <tex>c = \textit{H}</tex>, or nothing interesting happens because <tex>c = \textit{T}</tex> (and _TH_ does not gain anyone points). This means that:
+
+<center><tex>
+Q_{*H}(n, s_A, s_B) = Q_{*H}(n - 1, s_A - 1, s_B) + Q_{*T}(n - 1, s_A, s_B)
+</tex></center>
+
+Now consider if the sequence ends in a tail:
+
+<center><tex>\underbrace{\ldots \ldots\ c}_{n - 1\text{ coins}}\ \textit{T}</tex></center>
+
+Again, there are two possible outcomes: either Bob gains 1 point because <tex>c = \textit{H}</tex>, or nothing interesting happens because <tex>c = \textit{T}</tex> (and _TT_ does not gain anyone points). This means that:
+
+<center><tex>
+Q_{*T}(n, s_A, s_B) = Q_{*H}(n - 1, s_A, s_B - 1) + Q_{*T}(n - 1, s_A, s_B)
+</tex></center>
+
+Now that we have both <tex>Q_{*H}</tex> and <tex>Q_{*T}</tex>, <tex>Q</tex> is just:
+
+<center><tex>
+Q(n, s_A, s_B) = Q_{*H}(n, s_A, s_B) + Q_{*T}(n, s_A, s_B)
+</tex></center>
+
+As always in dynamic programming or recursion, we need to define the base cases. For this problem we will start from <tex>n = 2</tex>:
+
+<center><tex>
+Q_{*H}(2, s_A, s_B) = \begin{cases}
+  1 & \text{if } s_A = 1 \text{ and } s_B = 0 \text{ (HH)} \\
+  1 & \text{if } s_A = 0 \text{ and } s_B = 0 \text{ (TH)} \\
+  0 & \text{otherwise}
+\end{cases}</tex><br><br><tex>
+Q_{*T}(2, s_A, s_B) = \begin{cases}
+  1 & \text{if } s_A = 0 \text{ and } s_B = 1 \text{ (HT)} \\
+  1 & \text{if } s_A = 0 \text{ and } s_B = 0 \text{ (TT)} \\
+  0 & \text{otherwise}
+\end{cases}
+</tex></center>
+
+At this point we have all we need to turn this into code. But before we do that, let's quickly check that what we're doing here is actually practical. We have two functions we're DP-ing over, which has input space <tex>n \in \{2,\ldots,100\}, s_A \in \{0,\ldots,99\}, s_B \in \{0,\ldots,50\}</tex>, and so fully computing <tex>Q</tex> will require at most <tex>98 \times 100 \times 51 = 499800</tex> function calls. Once we have <tex>Q</tex>, the summation to calculate <tex>P(s_A > s_B)</tex> and <tex>P(s_B > s_A)</tex> will require <tex>99 \times 98 + 50 \times 49 = 12152</tex> lookups to <tex>Q</tex>. Both numbers are very reasonable, and vastly better than the brute-force search of <tex>2^{100}</tex> sequences.
+
+```javascript
+function memorize(f) {
+  let cache = new Map();
+  return function(...args) {
+    let key = JSON.stringify(args);
+    if (cache.has(key)) {
+      return cache.get(key);
+    }
+    let result = f(...args);
+    cache.set(key, result);
+    return result;
+  };
+}
+
+// BigInt used here because the number involved is on the order of 2^100
+
+const Q_H = memorize((n, s_A, s_B) => {
+  if (n < 2) {
+    throw new Error('n must be at least 2');
+  }
+  if (n == 2) {
+    return ((s_A == 1 && s_B == 0) || (s_A == 0 && s_B == 0)) ? 1n : 0n;
+  }
+  return Q_H(n - 1, s_A - 1, s_B) + Q_T(n - 1, s_A, s_B);
+});
+
+const Q_T = memorize((n, s_A, s_B) => {
+  if (n < 2) {
+    throw new Error('n must be at least 2');
+  }
+  if (n == 2) {
+    return ((s_A == 0 && s_B == 1) || (s_A == 0 && s_B == 0)) ? 1n : 0n;
+  }
+  return Q_H(n - 1, s_A, s_B - 1) + Q_T(n - 1, s_A, s_B);
+});
+
+const Q = (n, s_A, s_B) => Q_H(n, s_A, s_B) + Q_T(n, s_A, s_B);
+
+// Some test cases
+function assert_eq(a, b) {
+  if (a !== b) {
+    throw new Error(`Expected ${a} to equal ${b}`);
+  }
+}
+
+assert_eq(Q(2, 1, 0), 1n);
+assert_eq(Q(2, 0, 1), 1n);
+
+// HHH, HHT, HTH, HTT, THH, THT, TTH, TTT
+// A:2    1    0    0    1    0    0    0
+// B:0    1    1    1    0    1    0    0
+
+assert_eq(Q(3, 0, 0), 2n);
+assert_eq(Q(3, 0, 1), 3n);
+assert_eq(Q(3, 1, 0), 1n);
+assert_eq(Q(3, 1, 1), 1n);
+assert_eq(Q(3, 2, 0), 1n);
+assert_eq(Q(3, 2, 1), 0n);
+
+function sum(bottom, top, f) {
+  let sum = 0n;
+  for (let i = bottom; i <= top; i++) {
+    sum += f(i);
+  }
+  return sum;
+}
+
+function div_by_2_100(bigint) {
+  const PERCISION = 10000n;
+  return Number((bigint * PERCISION) / (2n ** 100n)) / Number(PERCISION);
+}
+
+const P_sA_gt_sB = div_by_2_100(sum(1, 99, s_A => sum(0, s_A - 1, s_B => Q(100, s_A, s_B))));
+const P_sB_gt_sA = div_by_2_100(sum(1, 50, s_B => sum(0, s_B - 1, s_A => Q(100, s_A, s_B))));
+
+console.log(`Alice wins ${P_sA_gt_sB * 100}% of the time`);
+console.log(`Bob wins ${P_sB_gt_sA * 100}% of the time`);
+```
+
+<pre class="output-for-code-above">
+Alice wins 45.76% of the time
+Bob wins 48.58% of the time
+</pre>
+
+We can verify our solution by running the initial simulation again, but this time using much more iterations:
+
+```javascript
+const seq_len = 100;
+const n_runs = 10000000;
+
+let a_wins = 0;
+let b_wins = 0;
+
+function run() {
+  let sequence = Array.from({ length: seq_len }, () => Math.random() > 0.5 ? 'H' : 'T');
+  let a_score = sequence.filter((_, i) => i < seq_len - 1 && sequence[i] == 'H' && sequence[i + 1] == 'H').length;
+  let b_score = sequence.filter((_, i) => i < seq_len - 1 && sequence[i] == 'H' && sequence[i + 1] == 'T').length;
+
+  if (a_score > b_score) {
+    a_wins++;
+  } else if (b_score > a_score) {
+    b_wins++;
+  }
+}
+
+for (let i = 0; i < n_runs; i++) {
+  run();
+  if (i % 200000 == 0) {
+    console.log(`Progress: ${i / n_runs * 100}%`);
+  }
+}
+console.log(`Alice wins: ${a_wins}, Bob wins: ${b_wins}`);
+console.log(`Alice wins ${a_wins / n_runs * 100}% of the time`);
+console.log(`Bob wins ${b_wins / n_runs * 100}% of the time`);
+```
+
+<pre class="output-for-code-above">
+Alice wins: 4579510, Bob wins: 4854191
+Alice wins 45.7951% of the time
+Bob wins 48.54191% of the time
+</pre>
+
+I think that's pretty close.
+
+## Actual distribution visualisation
+
+The <tex>Q(n, s_A, s_B)</tex> code above can be easily changed to give us a graph of the distribution by suming over one of <tex>s_A</tex> or <tex>s_B</tex>, although now we're viewing them as separate distributions again.
+
+<iframe src="https://www.desmos.com/calculator/lljzj1fvip?embed" height="300" style="border: 1px solid #ccc; width: 100%;" frameborder=0></iframe>

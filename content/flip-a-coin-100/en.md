@@ -46,22 +46,20 @@ function run() {
 for (let i = 0; i < n_runs; i++) {
   run();
 }
-console.log(`Average Alice: ${a_score_sum / n_runs}, Bob: ${b_score_sum / n_runs}`);
+console.log(`Average Alice: ${a_score_sum / n_runs}, Bob: ${b_score_sum / n_runs}, Ratio: ${a_score_sum / b_score_sum}`);
 ```
 
 <pre class="output-for-code-above">
-Average Alice: 24.74265, Bob: 24.755
+Average Alice: 24.76017, Bob: 24.75328, Ratio: 1.000278346950384
 </pre>
 
 Interesting. The difference is quite small, although it's not obviously equal. Running it with a larger iteration results in the following:
 
 ```text
-Average Alice: 24.7513877, Bob: 24.74990066
+TODO
 ```
 
-Not conclusive, but it seems reasonable to assume for now that the expectation are equal.
-
-So does this mean that Alice is more likely to win?
+It seems reasonable to assume for now that the expectation are equal. So does this mean that Alice is more likely to win?
 
 ```javascript
 const seq_len = 100;

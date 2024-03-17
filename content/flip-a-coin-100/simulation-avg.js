@@ -16,7 +16,7 @@ function run() {
 for (let i = 0; i < n_runs; i++) {
   run();
   if (i % 100000 === 0) {
-    console.log(`${i / n_runs}: Average Alice: ${a_score_sum / (i + 1)}, Bob: ${b_score_sum / (i + 1)}`);
+    console.log(`${i / n_runs}: Average Alice: ${a_score_sum / (i + 1)}, Bob: ${b_score_sum / (i + 1)}, Ratio: ${a_score_sum / b_score_sum}`);
   }
 }
-console.log(`Average Alice: ${a_score_sum / n_runs}, Bob: ${b_score_sum / n_runs}`);
+console.log(`Average Alice: ${a_score_sum / n_runs}, Bob: ${b_score_sum / n_runs}, Ratio: ${a_score_sum / b_score_sum}`);

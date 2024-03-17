@@ -97,6 +97,7 @@ function initEditor(code_block: HTMLPreElement, output_block: HTMLPreElement) {
     let has_any_output = false;
     current_run.addEventListener("message", e => {
       if (e.data.type == "done") {
+        current_run?.terminate()
         current_run = null;
         if (!has_any_output) {
           let no_output_span = document.createElement("span");

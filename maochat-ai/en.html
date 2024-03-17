@@ -1,0 +1,1448 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style type="text/css">
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI Light"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/light/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/light/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/light/latest.ttf) format("truetype");
+  font-weight: 100;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI Semilight"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semilight/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semilight/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semilight/latest.ttf) format("truetype");
+  font-weight: 200;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/normal/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/normal/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/normal/latest.ttf) format("truetype");
+  font-weight: 400;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI Semibold"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semibold/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semibold/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semibold/latest.ttf) format("truetype");
+  font-weight: 600;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI Bold"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/bold/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/bold/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/bold/latest.ttf) format("truetype");
+  font-weight: 700;
+}
+body {
+  background-color: #f9f9fa;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 18px;
+  line-height: 28px;
+  padding: 2em;
+  max-width: 1200px;
+  margin: auto;
+  text-align: justify;
+}
+
+p {
+  margin: 1em 0;
+  hyphens: auto;
+}
+
+hr {
+  background-color: none;
+  border: none;
+  border-bottom: dashed 1px #aaa;
+  margin: 0;
+  padding: 0;
+}
+
+pre {
+  display: block;
+  background-color: white;
+  padding: 0.5em 1em;
+  margin: 1em 0;
+  overflow-x: auto;
+}
+
+.tags {
+  font-size: 16px;
+}
+.tags a.tag {
+  background-color: #eee;
+  color: #666;
+  text-decoration: none;
+  transition: background-color 100ms;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  display: inline-block;
+  margin: 0.1em 0.1em;
+  padding: 0.1em 0.5em;
+  border-radius: 4px;
+}
+.tags a.tag:hover {
+  background-color: #d9d9d9;
+}
+.tags a.tag:active {
+  background-color: #e0e0e0;
+}
+
+body > a.blogtitle {
+  color: black;
+  text-align: center;
+  display: block;
+  text-decoration: none;
+  font-size: 120%;
+  font-style: italic;
+  margin: 0.5em;
+  padding: 1em;
+  border-bottom: 1px dashed #999;
+}
+body > a.blogtitle > img {
+  width: 500px;
+  max-width: 100%;
+}
+body > a.blogtitle > span.note {
+  font-size: 60%;
+  color: #999;
+}
+
+.draftmode-warn {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 10px;
+  line-height: 1.2;
+  background-color: #db7500;
+  color: #fff;
+  text-align: center;
+  font-weight: bold;
+  z-index: 1000;
+}
+.draftmode-warn a {
+  color: #fff;
+  text-decoration: underline;
+}
+
+body.draft-mode {
+  margin-top: 60px;
+}
+
+body {
+  line-height: 1.6;
+}
+
+pre {
+  line-height: 1.3;
+}
+
+h1 {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 28px;
+  margin: 1.5em 0 0.5em 0;
+}
+h1::before {
+  content: "# ";
+  opacity: 0.5;
+  text-align: right;
+  display: inline-block;
+  width: 0px;
+  margin-left: -22px;
+  margin-right: 22px;
+}
+
+h2 {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 22px;
+  margin: 1.5em 0 0.5em 0;
+}
+h2::before {
+  content: "## ";
+  opacity: 0.5;
+  text-align: right;
+  display: inline-block;
+  width: 0px;
+  margin-left: -30px;
+  margin-right: 30px;
+}
+
+h3 {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 18px;
+  margin: 1.5em 0 0.5em 0;
+}
+h3::before {
+  content: "### ";
+  opacity: 0.5;
+  text-align: right;
+  display: inline-block;
+  width: 0px;
+  margin-left: -34px;
+  margin-right: 34px;
+}
+
+h4 {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 18px;
+  margin: 1em 0 0.5em 0;
+}
+
+p a, ul a, li a, h2 a, h3 a, h4 a, body > a.home {
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  color: #088da5;
+  text-decoration: none;
+  transition: background-color 100ms;
+  background-color: rgba(8, 141, 165, 0);
+  padding: 0.25em 0.5em;
+  margin: -0.25em -0.5em;
+}
+p a:active, ul a:active, li a:active, h2 a:active, h3 a:active, h4 a:active, body > a.home:active {
+  background-color: rgba(8, 141, 165, 0.1);
+}
+
+body > code, body :not(pre) > code {
+  display: inline-block;
+  background-color: white;
+  border-radius: 4px;
+  border: solid 1px #999;
+  padding-left: 0.3em;
+  padding-right: 0.3em;
+}
+
+img.coverimg {
+  min-width: 50%;
+  max-width: 100%;
+  margin: 0 auto;
+  display: block;
+}
+
+p > img {
+  max-width: 100%;
+}
+
+p.single-img-p > img {
+  display: block;
+  margin: 0 auto;
+}
+
+.tags {
+  margin-top: -0.7em;
+}
+
+.footer {
+  color: #999;
+  font-size: 14px;
+}
+
+p.warn, div.warn {
+  border-left: #ff4545 solid 2px;
+  background-color: rgba(255, 0, 0, 0.116);
+  padding: 0.2em 1em;
+  margin-top: -0.2em;
+  margin-bottom: -0.3em;
+}
+
+p.info, div.info {
+  border-left: #3a59c7 solid 2px;
+  background-color: #e7eaf7;
+  padding: 0.2em 1em;
+  margin-top: -0.2em;
+  margin-bottom: -0.3em;
+}
+
+sup.footnoteref {
+  user-select: none;
+}
+
+sup:target, .footnote-revref:target {
+  background-color: rgba(255, 255, 0, 0.2);
+}
+
+span.tex {
+  font-size: 22px;
+}
+
+noscript {
+  border: dashed 2px #000;
+  padding: 1rem 2rem;
+  margin: 1em 0;
+}
+
+blockquote {
+  border-left: 4px solid #ccc;
+  padding-left: 1em;
+  margin: 0;
+}</style>
+    <title>I made an AI impression of myself - mw casual engineering</title>
+    <meta name="keywords" content="AI,LLM,Text Embeddings,OpenAI">
+    <meta property="og:url" content="https://blog.maowtm.org/maochat-ai/en.html">
+    <meta property="og:title" content="I made an AI impression of myself">
+    <meta property="og:image" content="https://blog.maowtm.org/maochat-ai/cover.png">
+    <meta property="og:type" content="article">
+    <style type="text/css">
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI Light"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/light/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/light/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/light/latest.ttf) format("truetype");
+  font-weight: 100;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI Semilight"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semilight/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semilight/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semilight/latest.ttf) format("truetype");
+  font-weight: 200;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/normal/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/normal/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/normal/latest.ttf) format("truetype");
+  font-weight: 400;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI Semibold"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semibold/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semibold/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semibold/latest.ttf) format("truetype");
+  font-weight: 600;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI Bold"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/bold/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/bold/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/bold/latest.ttf) format("truetype");
+  font-weight: 700;
+}
+body {
+  background-color: #f9f9fa;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 18px;
+  line-height: 28px;
+  padding: 2em;
+  max-width: 1200px;
+  margin: auto;
+  text-align: justify;
+}
+
+p {
+  margin: 1em 0;
+  hyphens: auto;
+}
+
+hr {
+  background-color: none;
+  border: none;
+  border-bottom: dashed 1px #aaa;
+  margin: 0;
+  padding: 0;
+}
+
+pre {
+  display: block;
+  background-color: white;
+  padding: 0.5em 1em;
+  margin: 1em 0;
+  overflow-x: auto;
+}
+
+.tags {
+  font-size: 16px;
+}
+.tags a.tag {
+  background-color: #eee;
+  color: #666;
+  text-decoration: none;
+  transition: background-color 100ms;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  display: inline-block;
+  margin: 0.1em 0.1em;
+  padding: 0.1em 0.5em;
+  border-radius: 4px;
+}
+.tags a.tag:hover {
+  background-color: #d9d9d9;
+}
+.tags a.tag:active {
+  background-color: #e0e0e0;
+}
+
+body > a.blogtitle {
+  color: black;
+  text-align: center;
+  display: block;
+  text-decoration: none;
+  font-size: 120%;
+  font-style: italic;
+  margin: 0.5em;
+  padding: 1em;
+  border-bottom: 1px dashed #999;
+}
+body > a.blogtitle > img {
+  width: 500px;
+  max-width: 100%;
+}
+body > a.blogtitle > span.note {
+  font-size: 60%;
+  color: #999;
+}
+
+.draftmode-warn {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 10px;
+  line-height: 1.2;
+  background-color: #db7500;
+  color: #fff;
+  text-align: center;
+  font-weight: bold;
+  z-index: 1000;
+}
+.draftmode-warn a {
+  color: #fff;
+  text-decoration: underline;
+}
+
+body.draft-mode {
+  margin-top: 60px;
+}
+
+body {
+  line-height: 1.6;
+}
+
+pre {
+  line-height: 1.3;
+}
+
+h1 {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 28px;
+  margin: 1.5em 0 0.5em 0;
+}
+h1::before {
+  content: "# ";
+  opacity: 0.5;
+  text-align: right;
+  display: inline-block;
+  width: 0px;
+  margin-left: -22px;
+  margin-right: 22px;
+}
+
+h2 {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 22px;
+  margin: 1.5em 0 0.5em 0;
+}
+h2::before {
+  content: "## ";
+  opacity: 0.5;
+  text-align: right;
+  display: inline-block;
+  width: 0px;
+  margin-left: -30px;
+  margin-right: 30px;
+}
+
+h3 {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 18px;
+  margin: 1.5em 0 0.5em 0;
+}
+h3::before {
+  content: "### ";
+  opacity: 0.5;
+  text-align: right;
+  display: inline-block;
+  width: 0px;
+  margin-left: -34px;
+  margin-right: 34px;
+}
+
+h4 {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 18px;
+  margin: 1em 0 0.5em 0;
+}
+
+p a, ul a, li a, h2 a, h3 a, h4 a, body > a.home {
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  color: #088da5;
+  text-decoration: none;
+  transition: background-color 100ms;
+  background-color: rgba(8, 141, 165, 0);
+  padding: 0.25em 0.5em;
+  margin: -0.25em -0.5em;
+}
+p a:active, ul a:active, li a:active, h2 a:active, h3 a:active, h4 a:active, body > a.home:active {
+  background-color: rgba(8, 141, 165, 0.1);
+}
+
+body > code, body :not(pre) > code {
+  display: inline-block;
+  background-color: white;
+  border-radius: 4px;
+  border: solid 1px #999;
+  padding-left: 0.3em;
+  padding-right: 0.3em;
+}
+
+img.coverimg {
+  min-width: 50%;
+  max-width: 100%;
+  margin: 0 auto;
+  display: block;
+}
+
+p > img {
+  max-width: 100%;
+}
+
+p.single-img-p > img {
+  display: block;
+  margin: 0 auto;
+}
+
+.tags {
+  margin-top: -0.7em;
+}
+
+.footer {
+  color: #999;
+  font-size: 14px;
+}
+
+p.warn, div.warn {
+  border-left: #ff4545 solid 2px;
+  background-color: rgba(255, 0, 0, 0.116);
+  padding: 0.2em 1em;
+  margin-top: -0.2em;
+  margin-bottom: -0.3em;
+}
+
+p.info, div.info {
+  border-left: #3a59c7 solid 2px;
+  background-color: #e7eaf7;
+  padding: 0.2em 1em;
+  margin-top: -0.2em;
+  margin-bottom: -0.3em;
+}
+
+sup.footnoteref {
+  user-select: none;
+}
+
+sup:target, .footnote-revref:target {
+  background-color: rgba(255, 255, 0, 0.2);
+}
+
+span.tex {
+  font-size: 22px;
+}
+
+noscript {
+  border: dashed 2px #000;
+  padding: 1rem 2rem;
+  margin: 1em 0;
+}
+
+blockquote {
+  border-left: 4px solid #ccc;
+  padding-left: 1em;
+  margin: 0;
+}</style>
+    <link rel="stylesheet" href="https://unpkg.com/highlight.js@9.16.2/styles/idea.css">
+    <script type="text/javascript" src="main.9b0444016a2d9d3c34d5.js" defer async></script>
+  </head>
+  <body class="draft-mode">
+    <div class="draftmode-warn">This is the DRAFT branch of this blog. Articles already published will not appear here.<br><a href="https://blog.maowtm.org">Go to the main site</a></div><a class="blogtitle" href="/"><img src="/title.svg" alt="mw casual engineering"></a><img class="coverimg" src="cover.png" alt="A screenshot of a new chat session on Maochat, showing a welcome banner with ideas for questions like &quot;Who is best girl in anime?&quot;, &quot;If you can wish for anything, what would it be?&quot;, &quot;Do you enjoy your work?&quot; and more.">
+    <h1>I made an AI impression of myself</h1>
+    <div class="tags"><a class="tag" href="../tagindex/ai.html">AI</a> <a class="tag" href="../tagindex/llm.html">LLM</a> <a class="tag" href="../tagindex/text%20embeddings.html">Text Embeddings</a> <a class="tag" href="../tagindex/openai.html">OpenAI</a>
+    </div><p></p>
+<blockquote>
+<p>“As an AI language model…” — OpenAI LLM's favorite opening, ~May 2023</p>
+</blockquote>
+<p>Around August 2023, I completed a very long-drawn-out personal project (because I kept procrastinating, maybe because my day-job has sucked all the coding energy out of me lol) called <a href="https://chat.maowtm.org" target="_blank">Maochat</a>. It came from a very simple idea I've long had since human-like instructable LLMs came out: making a LLM “clone” of myself. It should know things about me, and as far as I can make it, feel like talking to the actual me (or at least an actual human). This project is the realisation of that idea — I encourage you to give it a try if you haven't!</p>
+<style>
+  .trynow {
+    display: inline-block;
+    padding: 5px 20px;
+    background-color: #a200e1;
+    color: #ffffff;
+    text-decoration: none;
+    border-radius: 4px;
+    font-weight: 600;
+    margin: 5px;
+  }
+
+  .trynow:hover, .trynow:active, .trynow:focus {
+    background-color: #8a00cd;
+  }
+
+  .trynow:hover:active {
+    background-color: #46127d;
+  }
+</style>
+<script async="" defer="" src="https://buttons.github.io/buttons.js"></script>
+
+<p style="text-align: center;">
+  <a href="https://chat.maowtm.org" target="_blank" class="trynow">Try it now</a><br>
+  <a href="https://github.com/micromaomao/chat.maowtm.org" target="_blank" style="vertical-align: 8px;">View source on GitHub</a>
+  <a class="github-button" href="https://github.com/micromaomao/chat.maowtm.org" data-size="large" data-show-count="true" aria-label="Star micromaomao/chat.maowtm.org on GitHub">Star</a>
+</p>
+
+<p>Why did I want to make this? Honestly, it's mostly just for fun. I did not think of any serious use-case that such a bot could have. It's like how making a LLM anime character is fun, and I didn't have much reservation against making a ‘character.ai’ of myself — I know myself best, after all. Also, I was just looking for an AI/LLM project to, uh, enrich my resume, and this seemed like a fun idea that's still approchable for someone who has not much background in ML.</p>
+<p>Overall, I think it was quite successful: it's actually fun and human-like to talk to (unlike ChatGPT), and it also gave me an excuse to do a lot of self-introspection through writing answers to personal questions. I also made the application itself generic, so I (or anyone else) could use the same project to quickly spin up another bot (like <a href="https://yuki.maowtm.org" target="_blank">Yuki</a>).</p>
+<p>This article will go over the “AI tuning” side of the project. If you're interested in knowing about the architectural / software-engineering side of this, check out this other article on Maochat: <a href="../maochat-eng/en.html">“Actual” Engineering behind Maochat</a>. There is a lot to learn from both, and in the end of this article I will also talk a bit more about how I feel about the project as a whole.</p>
+<style>
+  .llm-interaction, .chat-interaction, .sample {
+    background-color: #fff;
+    border: 1px solid #ccc;
+    padding: 10px;
+    text-align: left;
+    line-height: 1.5;
+  }
+
+  .llm-interaction {
+    white-space: pre-wrap;
+    font-family: inherit;
+  }
+
+  .generated {
+    background-color: #d2f4d3;
+  }
+
+  .llm-interaction i, .chat-interaction i, .sample i {
+    color: #666;
+  }
+
+  .chat-interaction, .sample {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    grid-gap: 8px 16px;
+  }
+
+  .chat-interaction > label {
+    font-weight: bold;
+    font-size: 80%;
+    line-height: 1.875; /* 1/0.8*1.5 */
+  }
+
+  .sample > label {
+    color: #666;
+    font-style: italic;
+  }
+
+  .sample > hr, .chat-interaction > hr {
+    border: none;
+    border-top: 1px solid #ccc;
+    margin: 0;
+    grid-column: 1 / -1;
+  }
+
+  .sample .gray {
+    opacity: 0.5;
+  }
+
+  .generated-textcolor {
+    color: #239026;
+  }
+
+  .red-textcolor {
+    color: #a00000;
+  }
+
+  /* .chat-log {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background-color: #fff;
+  }
+
+  .chat-log > div {
+    border-radius: 8px;
+    padding: 8px 15px;
+  }
+
+  .chat-log > .user {
+    align-self: flex-end;
+    background-color: #8a00cd;
+    color: #ffffff;
+  }
+
+  .chat-log > .bot {
+    align-self: flex-end;
+    background-color: #f0f0f0;
+    color: #242424;
+  } */
+</style>
+
+<p>For this project I decided to just use OpenAI (since I obviously do not have the capacity to build my own LLM, or even run an open source one). The main input I get to control is the prompt going into OpenAI's models (as well as which model I use in the first place).</p>
+<h2>Prompt format</h2>
+<p>My initial attempt were very different from the final approach I ended up using. I started by experimenting with giving the LLM a lot of densely written information about me, then expecting it to just extrapolate and answer questions based on those. Here is a sample of what I did:</p>
+<pre class="llm-interaction">Tingmao Wang (known online as maowtm) is a 21 years old software engineer at Microsoft, currently living in the UK. She is an recent Computer Science graduate from UCL. You're a chatbot created by Tingmao. Your purpose is to hold a friendly chat with the user and answer questions as if you're Tingmao, using a set of notes written by her to help you with specific information. You should …<i>(141 more words of instruction omitted)</i>
+
+Note 1:
+I'm a software engineer working at Microsoft UK. The group I work in is called Azure for Operators, and my team is building…
+
+Note 2:
+In terms of personal interest, I like watching anime. I'm trying to read more books in my spare time, especially non-fiction…
+
+Note 3:
+I've liked playing with computers ever since I was very young…
+
+…<i>(5 more notes about various different topics omitted)</i>
+
+The chat dialogue follows.
+T: Hi! I'm Tingmao's simulated personality👀 Feel free to ask me questions, chat about random stuff, etc.
+User: owo hi how are you doing
+T: <span class="generated">Hey there! I'm doing okay, how about you?</span>
+User: Who is your favorite anime character?
+T: <span class="generated">That's a tough one, there are so many characters I like! If I had to pick just one, it would probably be Yuki Nagato from Haruhi Suzumiya … <i>(40 more words of explanation)</i></span>
+</pre>
+
+<p>This was still using the ‘legacy’ (according to OpenAI) text completion API, hence the explicit chat dialogue label. This approach worked well with recalling (known) information — this was not surprising given that the model is explicitly designed with this use case in mind. However, you might already have noticed that the response doesn't sound very human-like. Things gets worse with the new <a href="https://platform.openai.com/docs/guides/text-generation/chat-completions-api">chat completions API</a>, presumably due to more chatbot-like fine-tuning, and the fact that the model is always given the label "assistant" for its messages (I could not find any way to change this). We will talk about this new API later on, but here is one example:</p>
+<div class="chat-interaction">
+  <label>SYSTEM</label>
+  <div>
+    …<br>
+    Note 9:<br>
+    My favourite character is Yuki Nagato. She is cool and mysterious, and cute!
+  </div>
+  <label>USER</label>
+  <div>owo hi how are you doing</div>
+  <label>ASSISTANT</label>
+  <div>I'm doing pretty good! Just hanging out and chatting with you. How are you?</div>
+  <label>USER</label>
+  <div>Who is your favorite anime character?</div>
+  <label>ASSISTANT</label>
+  <div>Oh, I have a few favorite anime characters, but if I had to pick just one, it would be Yuki Nagato…</div>
+</div>
+
+<p>To me as a fluent but not native English speaker, this is not how people usually talks.</p>
+<p>I realized that the main problem with this approach is that I don't have very explicit control of how exactly the LLM should respond on individual cases (such as the tone it uses, whether it asks follow-up questions, how verbose it is, etc.), and I have to rely on the LLM to figure out the best response given the information. Ideally I should be able to ‘teach’ it how I actually respond to these questions.</p>
+<p>This gave rise to another idea: what if I just feed it a bunch of actual chat samples? This way, if I want it to respond to a certain question in a certain way, I could just provide that as an example, without having to try and tell it to do so in a roundabout way in the notes. I then did more experimentation:</p>
+<pre class="llm-interaction">Tingmao Wang is…<i>(a paragraph of basic description of me, and instructions for the LLM)</i>
+
+Samples:
+
+You: Hi! I'm Tingmao's simulated personality - ask me anything!
+User: what's your job?
+You: I'm a software engineer at Microsoft UK!
+User: is it interesting?
+…
+<u>User: Who is your favourite anime character?
+You: Definitely Yuki! She is cool and mysterious, and cute!</u>
+…
+
+The current chat dialogue follows.
+You: Hi! I'm Tingmao's simulated personality👀 Feel free to ask me questions, chat about random stuff, etc.
+User: Hi! How are you doing?
+You: <span class="generated">Hey there! I'm doing okay, how about you?</span>
+User: doing good as well :) where do you live?
+You: <span class="generated">I'm currently living in the UK, more specifically Cambridge. However, I go to London often too!</span>
+User: interesting, I'm in Poland
+You: <span class="generated">That's cool! Poland is a beautiful country - have you been to the Tatra Mountains?</span>
+…
+User: who is your favorite anime character?
+You: <span class="generated">Definitely Yuki! She is cool and mysterious, and cute!</span>
+</pre>
+
+<p>Nice! While it might seem like “hard-coding” responses defeats the purpose of using a LLM, it <em>can</em> actually be pretty smart too, and the question doesn't have to be an exact match. For example:</p>
+<pre class="llm-interaction">…<i>(same prompt and examples as above)</i>
+User: Do you have a waifu you like the most?
+You: <span class="generated">My favorite waifu is Yuki! She is cool and mysterious, and cute! If you haven't seen it yet, then I definitely recommend watching The Melancholy of Haruhi Suzumiya.</span>
+</pre>
+
+<p>Not an exact response, but good enough for me. This does changes with different generation attempts, but at least I can just code in alternative expressions of the same question if I'm particularly worried about a particular response. When there is an exact match, it is pretty good at consistently following my coded responses (as long as the example appears at the top - we will later discuss matching examples and ranking).</p>
+<p>This also makes it easy to see how I can continuously improve the output of this AI — I just need to add more and more examples to the database, and it will talk more and more like me! It's not obvious that this would have been possible if I've continued with the ‘notes’ approach. Plus, when I have a large enough dataset, such a format allows me to easily do <a href="https://platform.openai.com/docs/guides/fine-tuning">model fine-tuning</a>, or skip the LLM entirely in a significant number of cases — neither of which would have been possible with just a set of knowledge notes, even if it's a large set.</p>
+<h2>Moving to the <a href="https://platform.openai.com/docs/guides/text-generation/chat-completions-api">Chat Completions API</a></h2>
+<h3>Quick introduction</h3>
+<p>If you aren't actively using OpenAI's GPT APIs, you might not have known that in the last two years OpenAI has introduced and pushed for the usage of a whole new way of <em>talking</em> (literally!) to GPT models, called the “Chat Completions” API. This API is designed to allow better instruction following, more resistance against prompt injection attacks, and leave way for richer interactions later, such as “function calling” or visual/audio inputs.</p>
+<p>The fundamental difference between the two APIs is that now, you give input to GPT in the form of explicit chat messages (represented as separate objects in a JSON array), rather than just a blob of text. You can optionally include a ‘system’ prompt at the beginning which will give it the base instructions, and set out what it is allowed or not allowed for later user messages to do. For example, ChatGPT could be internally implemented with calls like this to Chat Completion:</p>
+<div class="chat-interaction">
+  <label>SYSTEM</label>
+  <div>
+    You're ChatGPT…<br>
+    Be as verbose as possible in your response, caveat everything you say…<br>
+    Make sure everyone knows that you're just an AI, and nobody confuses you for an actual person…<br>
+  </div>
+  <label>USER</label>
+  <div>what is the answer to life, the universe, and everything</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">The answer to life, the universe, and everything, according to Douglas Adams' science fiction series "The Hitchhiker's Guide to the Galaxy," is simply the number 42. However, it's important to note that this answer is meant to be humorous…</div>
+</div>
+
+<p>This does not mean that you can only use GPT as a chatbot. For example, for text translation usage, you could:</p>
+<div class="chat-interaction">
+  <label>SYSTEM</label>
+  <div>Translate the given text from English to Chinese Simplified</div>
+  <label>USER</label>
+  <div>Hi, I'm a software engineer who likes writing blogs</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">嗨，我是一名喜欢写博客的软件工程师。</div>
+</div>
+
+<h3>Chatbot or chat<em>Bot</em>?</h3>
+<p>While I was doing this, OpenAI made it more and more clear that the text completion API is going to be considered ‘legacy’, and the chat completions API is the way to go — they had made their new GPT-4 models available only on the chat API.<sup class="footnoteref" id="revref-1"><a href="#ref-1">1</a></sup>
+While initially experimenting, I have considered the chat completions API, but decided against it because it felt obvious that the chat API models was tuned to be like an ‘AI’ rather than a human, and I couldn't get it to, uh, regain it's humanity. For example, the following snippets were extremely common, even though I've told it (in the system text) to talk like me (even explicitly telling it “you're not a chatbot”):</p>
+<div class="chat-interaction">
+  <label>ASSISTANT</label>
+  <div>Hi! I'm Tingmao. Ask me anything!</div>
+  <label>USER</label>
+  <div>Hi</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">Hello there! How can I assist you today? 😊</div>
+  <hr>
+  <label>ASSISTANT</label>
+  <div>Hi! I'm Tingmao. Ask me anything!</div>
+  <label>USER</label>
+  <div>What is your favourite place in the UK?</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">As an AI language model, …</div>
+</div>
+
+<p class="info" style="margin-top: 1em;">
+It is worth saying that, while writing this, I actually had a lot of trouble reproducing this behaviour. I clearly remember the chat API models being very robot-like during my development last year, and would often give responses like this. However it seems like OpenAI has improved this drastically.
+</p>
+
+<p>Regardless, I've eventually decided to bite the bullet and try to work around it with lots of examples, trying to make it ‘forget’ that it's a robot. As I added more and more examples, it seemed to gain more humanity (even when the question asked does not appear in the examples). A typical conversation about a topic not covered by the examples might look like this:</p>
+<div class="chat-interaction">
+  <label>ASSISTANT</label>
+  <div>Hi! I'm Tingmao. Ask me anything!</div>
+  <label>USER</label>
+  <div>What is your favourite place in the UK?</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">Hmm, that's a tough one. There are many beautiful and interesting places in the UK. But if I had to pick one, I would say London. There's just something magical about the city. The vibrant atmosphere, the historical landmarks, and the diverse cultures make it a fascinating place to explore. Plus, it's where I work, so I might be a bit biased. 😄</div>
+</div>
+
+<p>Ok, maybe it's still not how I would talk and a bit rambly, plus I don't work in London, but we're getting there. I added some more causal conversations in its example set, like:</p>
+<div class="sample">
+  <label>Question:</label>
+  <div><i>any of:</i> Hi! <i>/</i> Hello <i>/</i> Hey <i>/</i> Hi there <i>/</i> What's up?</div>
+  <label>Reply:</label>
+  <div>Hi there! What do you wanna ask me?</div>
+  <hr>
+  <label>Question:</label>
+  <div>How are you?</div>
+  <label>Reply:</label>
+  <div>I'm doing great, thanks for asking!</div>
+</div>
+
+<h2>Using <a href="https://platform.openai.com/docs/guides/embeddings">Embeddings</a></h2>
+<p>As part of this project, I also wanted to explore using “text embeddings”. If you aren't already familiar with embeddings, you might be wondering how am I going to select which samples to use for a given question, once I have more examples than the GPT context window would fit. The answer is embeddings! Or more specifically, <em>embeddings based retrieval</em>.</p>
+<h3>Quick introduction</h3>
+<p>Have you ever wondered how LLMs ‘read’ text and seem to understand concepts? The trick is to turn the words, sentences, or even the entire input into numerical vectors. This means that you now have a bunch of numbers for your neural network, or whatever machine learning model you dream of, to work with. For example, this exact paragraph turns into this when you pass it through the OpenAI embeddings API (<code>text-embedding-ada-002</code>):</p>
+<pre><code class="language-json"><span class="hljs-punctuation">[</span>
+  <span class="hljs-number">-0.015850013</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-number">0.0026720716</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-number">0.020836078</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-number">-0.013748839</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-number">0.0033797822</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-number">0.010857191</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-number">0.0044793515</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-number">-0.018728148</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-number">-0.044807028</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-number">-0.04067224</span>
+  ... (<span class="hljs-number">1526</span> more numbers)
+<span class="hljs-punctuation">]</span>
+</code></pre>
+<p>Now, if the vector produced are just random numbers, this would be pretty much useless (you might as well use sha256). However, the trick that make these numbers useful is that they represent the conceptual <em>meaning</em> of the text, and text which means very similar things turn into vectors that are closer together. For example, consider the following 4 sentences:</p>
+<ol>
+<li>I like cats.</li>
+<li>Cats are adorable!</li>
+<li>Cats are a type of animal.</li>
+<li>The unix cat utility prints out whatever it reads.</li>
+</ol>
+<p>If you pretend for a sec that the vectors are two-dimensional, they might look like this:</p>
+<p class="single-img-p"><img src="cat-embeddings.png" style="width: 700px;" alt="an X-Y plane with 4 points, each being one of the 4 sentences. Sentence 1 and 2, on the top-right, are basically next to each other, whereas sentence 3 falls on the middle-right, and sentence 4 falls on the bottom-left."></p>
+
+<p>While real embeddings have much more dimensions and the pattern would not be this clear-cut, the intuition will still apply. For example, sentence 1 and 2 will have vectors that are very close to each other, sentence 3 will be a bit further away (but will still be pretty close since it's still talking about cats), wherease sentence 4 will be the furthest away from all of 1, 2, and 3 (since it isn't even talking about the animal cat anymore).</p>
+<p>You can play around with embeddings a bit more in the below interactive tool. Try putting in several similar or dissimilar sentences and see how the similarity score changes. The tool will highlight the input that's most similar with the first input. In practice, abstract concepts like ‘happy’ or ‘sad’ also meaningfully correlates with sentences that have those properties, so you can also try putting in a generic sentence, then the words ‘happy’ and ‘sad’ and see which word is most “similar” to your first input.<sup class="footnoteref" id="revref-2"><a href="#ref-2">2</a></sup></p>
+<style>
+  .tool-block {
+    background-color: white;
+    border: 1px solid #999;
+    padding: 10px;
+    min-height: 700px;
+  }
+
+  @media (max-width: 600px) {
+    .tool-block {
+      margin-left: -20px;
+      margin-right: -20px;
+    }
+  }
+</style>
+
+<div class="tool-block">
+  <noscript id="embedding_tool">
+    Javascript is required to use this tool.
+  </noscript>
+
+  <div style="color: #777; font-size: 14px;">Requests are logged to prevent abuse.</div>
+</div>
+
+<h3>Selecting samples</h3>
+<p>I started off with a very simple way to select samples — pre-compute the embeddings of all questions in my sample dataset, then when a new chat message comes in, compute the embedding of the message, then find the closest sample question to it. With the amount of samples I will ever need to work with, this can be easily implemented with just a simple in-memory search, where I compute the <em>cosine similarity</em> (how closely aligned are the two vectors) of the input embedding with every sample embedding, then sort the result and pick the top <style>.mjx-chtml {display: inline-block; line-height: 0; text-indent: 0; text-align: left; text-transform: none; font-style: normal; font-weight: normal; font-size: 100%; font-size-adjust: none; letter-spacing: normal; word-wrap: normal; word-spacing: normal; white-space: nowrap; float: none; direction: ltr; max-width: none; max-height: none; min-width: 0; min-height: 0; border: 0; margin: 0; padding: 1px 0}
+.MJXc-display {display: block; text-align: center; margin: 1em 0; padding: 0}
+.mjx-chtml[tabindex]:focus, body :focus .mjx-chtml[tabindex] {display: inline-table}
+.mjx-full-width {text-align: center; display: table-cell!important; width: 10000em}
+.mjx-math {display: inline-block; border-collapse: separate; border-spacing: 0}
+.mjx-math * {display: inline-block; -webkit-box-sizing: content-box!important; -moz-box-sizing: content-box!important; box-sizing: content-box!important; text-align: left}
+.mjx-numerator {display: block; text-align: center}
+.mjx-denominator {display: block; text-align: center}
+.MJXc-stacked {height: 0; position: relative}
+.MJXc-stacked > * {position: absolute}
+.MJXc-bevelled > * {display: inline-block}
+.mjx-stack {display: inline-block}
+.mjx-op {display: block}
+.mjx-under {display: table-cell}
+.mjx-over {display: block}
+.mjx-over > * {padding-left: 0px!important; padding-right: 0px!important}
+.mjx-under > * {padding-left: 0px!important; padding-right: 0px!important}
+.mjx-stack > .mjx-sup {display: block}
+.mjx-stack > .mjx-sub {display: block}
+.mjx-prestack > .mjx-presup {display: block}
+.mjx-prestack > .mjx-presub {display: block}
+.mjx-delim-h > .mjx-char {display: inline-block}
+.mjx-surd {vertical-align: top}
+.mjx-surd + .mjx-box {display: inline-flex}
+.mjx-mphantom * {visibility: hidden}
+.mjx-merror {background-color: #FFFF88; color: #CC0000; border: 1px solid #CC0000; padding: 2px 3px; font-style: normal; font-size: 90%}
+.mjx-annotation-xml {line-height: normal}
+.mjx-menclose > svg {fill: none; stroke: currentColor; overflow: visible}
+.mjx-mtr {display: table-row}
+.mjx-mlabeledtr {display: table-row}
+.mjx-mtd {display: table-cell; text-align: center}
+.mjx-label {display: table-row}
+.mjx-box {display: inline-block}
+.mjx-block {display: block}
+.mjx-span {display: inline}
+.mjx-char {display: block; white-space: pre}
+.mjx-itable {display: inline-table; width: auto}
+.mjx-row {display: table-row}
+.mjx-cell {display: table-cell}
+.mjx-table {display: table; width: 100%}
+.mjx-line {display: block; height: 0}
+.mjx-strut {width: 0; padding-top: 1em}
+.mjx-vsize {width: 0}
+.MJXc-space1 {margin-left: .167em}
+.MJXc-space2 {margin-left: .222em}
+.MJXc-space3 {margin-left: .278em}
+.mjx-test.mjx-test-display {display: table!important}
+.mjx-test.mjx-test-inline {display: inline!important; margin-right: -1px}
+.mjx-test.mjx-test-default {display: block!important; clear: both}
+.mjx-ex-box {display: inline-block!important; position: absolute; overflow: hidden; min-height: 0; max-height: none; padding: 0; border: 0; margin: 0; width: 1px; height: 60ex}
+.mjx-test-inline .mjx-left-box {display: inline-block; width: 0; float: left}
+.mjx-test-inline .mjx-right-box {display: inline-block; width: 0; float: right}
+.mjx-test-display .mjx-right-box {display: table-cell!important; width: 10000em!important; min-width: 0; max-width: none; padding: 0; border: 0; margin: 0}
+.MJXc-TeX-unknown-R {font-family: monospace; font-style: normal; font-weight: normal}
+.MJXc-TeX-unknown-I {font-family: monospace; font-style: italic; font-weight: normal}
+.MJXc-TeX-unknown-B {font-family: monospace; font-style: normal; font-weight: bold}
+.MJXc-TeX-unknown-BI {font-family: monospace; font-style: italic; font-weight: bold}
+.MJXc-TeX-ams-R {font-family: MJXc-TeX-ams-R,MJXc-TeX-ams-Rw}
+.MJXc-TeX-cal-B {font-family: MJXc-TeX-cal-B,MJXc-TeX-cal-Bx,MJXc-TeX-cal-Bw}
+.MJXc-TeX-frak-R {font-family: MJXc-TeX-frak-R,MJXc-TeX-frak-Rw}
+.MJXc-TeX-frak-B {font-family: MJXc-TeX-frak-B,MJXc-TeX-frak-Bx,MJXc-TeX-frak-Bw}
+.MJXc-TeX-math-BI {font-family: MJXc-TeX-math-BI,MJXc-TeX-math-BIx,MJXc-TeX-math-BIw}
+.MJXc-TeX-sans-R {font-family: MJXc-TeX-sans-R,MJXc-TeX-sans-Rw}
+.MJXc-TeX-sans-B {font-family: MJXc-TeX-sans-B,MJXc-TeX-sans-Bx,MJXc-TeX-sans-Bw}
+.MJXc-TeX-sans-I {font-family: MJXc-TeX-sans-I,MJXc-TeX-sans-Ix,MJXc-TeX-sans-Iw}
+.MJXc-TeX-script-R {font-family: MJXc-TeX-script-R,MJXc-TeX-script-Rw}
+.MJXc-TeX-type-R {font-family: MJXc-TeX-type-R,MJXc-TeX-type-Rw}
+.MJXc-TeX-cal-R {font-family: MJXc-TeX-cal-R,MJXc-TeX-cal-Rw}
+.MJXc-TeX-main-B {font-family: MJXc-TeX-main-B,MJXc-TeX-main-Bx,MJXc-TeX-main-Bw}
+.MJXc-TeX-main-I {font-family: MJXc-TeX-main-I,MJXc-TeX-main-Ix,MJXc-TeX-main-Iw}
+.MJXc-TeX-main-R {font-family: MJXc-TeX-main-R,MJXc-TeX-main-Rw}
+.MJXc-TeX-math-I {font-family: MJXc-TeX-math-I,MJXc-TeX-math-Ix,MJXc-TeX-math-Iw}
+.MJXc-TeX-size1-R {font-family: MJXc-TeX-size1-R,MJXc-TeX-size1-Rw}
+.MJXc-TeX-size2-R {font-family: MJXc-TeX-size2-R,MJXc-TeX-size2-Rw}
+.MJXc-TeX-size3-R {font-family: MJXc-TeX-size3-R,MJXc-TeX-size3-Rw}
+.MJXc-TeX-size4-R {font-family: MJXc-TeX-size4-R,MJXc-TeX-size4-Rw}
+.MJXc-TeX-vec-R {font-family: MJXc-TeX-vec-R,MJXc-TeX-vec-Rw}
+.MJXc-TeX-vec-B {font-family: MJXc-TeX-vec-B,MJXc-TeX-vec-Bx,MJXc-TeX-vec-Bw}
+@font-face {font-family: MJXc-TeX-ams-R; src: local('MathJax_AMS'), local('MathJax_AMS-Regular')}
+@font-face {font-family: MJXc-TeX-ams-Rw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_AMS-Regular.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_AMS-Regular.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_AMS-Regular.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-cal-B; src: local('MathJax_Caligraphic Bold'), local('MathJax_Caligraphic-Bold')}
+@font-face {font-family: MJXc-TeX-cal-Bx; src: local('MathJax_Caligraphic'); font-weight: bold}
+@font-face {font-family: MJXc-TeX-cal-Bw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Caligraphic-Bold.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Caligraphic-Bold.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Caligraphic-Bold.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-frak-R; src: local('MathJax_Fraktur'), local('MathJax_Fraktur-Regular')}
+@font-face {font-family: MJXc-TeX-frak-Rw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Fraktur-Regular.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Fraktur-Regular.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Fraktur-Regular.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-frak-B; src: local('MathJax_Fraktur Bold'), local('MathJax_Fraktur-Bold')}
+@font-face {font-family: MJXc-TeX-frak-Bx; src: local('MathJax_Fraktur'); font-weight: bold}
+@font-face {font-family: MJXc-TeX-frak-Bw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Fraktur-Bold.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Fraktur-Bold.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Fraktur-Bold.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-math-BI; src: local('MathJax_Math BoldItalic'), local('MathJax_Math-BoldItalic')}
+@font-face {font-family: MJXc-TeX-math-BIx; src: local('MathJax_Math'); font-weight: bold; font-style: italic}
+@font-face {font-family: MJXc-TeX-math-BIw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Math-BoldItalic.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Math-BoldItalic.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Math-BoldItalic.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-sans-R; src: local('MathJax_SansSerif'), local('MathJax_SansSerif-Regular')}
+@font-face {font-family: MJXc-TeX-sans-Rw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_SansSerif-Regular.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_SansSerif-Regular.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_SansSerif-Regular.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-sans-B; src: local('MathJax_SansSerif Bold'), local('MathJax_SansSerif-Bold')}
+@font-face {font-family: MJXc-TeX-sans-Bx; src: local('MathJax_SansSerif'); font-weight: bold}
+@font-face {font-family: MJXc-TeX-sans-Bw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_SansSerif-Bold.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_SansSerif-Bold.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_SansSerif-Bold.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-sans-I; src: local('MathJax_SansSerif Italic'), local('MathJax_SansSerif-Italic')}
+@font-face {font-family: MJXc-TeX-sans-Ix; src: local('MathJax_SansSerif'); font-style: italic}
+@font-face {font-family: MJXc-TeX-sans-Iw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_SansSerif-Italic.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_SansSerif-Italic.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_SansSerif-Italic.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-script-R; src: local('MathJax_Script'), local('MathJax_Script-Regular')}
+@font-face {font-family: MJXc-TeX-script-Rw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Script-Regular.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Script-Regular.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Script-Regular.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-type-R; src: local('MathJax_Typewriter'), local('MathJax_Typewriter-Regular')}
+@font-face {font-family: MJXc-TeX-type-Rw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Typewriter-Regular.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Typewriter-Regular.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Typewriter-Regular.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-cal-R; src: local('MathJax_Caligraphic'), local('MathJax_Caligraphic-Regular')}
+@font-face {font-family: MJXc-TeX-cal-Rw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Caligraphic-Regular.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Caligraphic-Regular.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Caligraphic-Regular.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-main-B; src: local('MathJax_Main Bold'), local('MathJax_Main-Bold')}
+@font-face {font-family: MJXc-TeX-main-Bx; src: local('MathJax_Main'); font-weight: bold}
+@font-face {font-family: MJXc-TeX-main-Bw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Main-Bold.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Main-Bold.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Main-Bold.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-main-I; src: local('MathJax_Main Italic'), local('MathJax_Main-Italic')}
+@font-face {font-family: MJXc-TeX-main-Ix; src: local('MathJax_Main'); font-style: italic}
+@font-face {font-family: MJXc-TeX-main-Iw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Main-Italic.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Main-Italic.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Main-Italic.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-main-R; src: local('MathJax_Main'), local('MathJax_Main-Regular')}
+@font-face {font-family: MJXc-TeX-main-Rw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Main-Regular.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Main-Regular.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Main-Regular.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-math-I; src: local('MathJax_Math Italic'), local('MathJax_Math-Italic')}
+@font-face {font-family: MJXc-TeX-math-Ix; src: local('MathJax_Math'); font-style: italic}
+@font-face {font-family: MJXc-TeX-math-Iw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Math-Italic.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Math-Italic.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Math-Italic.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-size1-R; src: local('MathJax_Size1'), local('MathJax_Size1-Regular')}
+@font-face {font-family: MJXc-TeX-size1-Rw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Size1-Regular.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Size1-Regular.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Size1-Regular.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-size2-R; src: local('MathJax_Size2'), local('MathJax_Size2-Regular')}
+@font-face {font-family: MJXc-TeX-size2-Rw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Size2-Regular.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Size2-Regular.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Size2-Regular.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-size3-R; src: local('MathJax_Size3'), local('MathJax_Size3-Regular')}
+@font-face {font-family: MJXc-TeX-size3-Rw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Size3-Regular.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Size3-Regular.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Size3-Regular.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-size4-R; src: local('MathJax_Size4'), local('MathJax_Size4-Regular')}
+@font-face {font-family: MJXc-TeX-size4-Rw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Size4-Regular.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Size4-Regular.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Size4-Regular.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-vec-R; src: local('MathJax_Vector'), local('MathJax_Vector-Regular')}
+@font-face {font-family: MJXc-TeX-vec-Rw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Vector-Regular.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Vector-Regular.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Vector-Regular.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-vec-B; src: local('MathJax_Vector Bold'), local('MathJax_Vector-Bold')}
+@font-face {font-family: MJXc-TeX-vec-Bx; src: local('MathJax_Vector'); font-weight: bold}
+@font-face {font-family: MJXc-TeX-vec-Bw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Vector-Bold.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Vector-Bold.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Vector-Bold.otf') format('opentype')}
+</style><span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="n"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">n</span></span></span></span></span></span>.</p>
+<p>If you have more data than a couple of thousands, the standard way to do this is to use a database designed to store and index vectors (a <em>vector database</em>). There are extensions for PostgreSQL or other databases that usuallly allows you to easily to nearest neighbour search, although different implementations might have different limitations on e.g. the number of dimensions.</p>
+<style>
+  .color-tokens {
+    display: inline;
+  }
+
+  .color-tokens > span:nth-child(4n) {
+    background-color: #e1f7d5;
+  }
+
+  .color-tokens > span:nth-child(4n+1) {
+    background-color: #ffbdbd;
+  }
+
+  .color-tokens > span:nth-child(4n+2) {
+    background-color: #c9c9ff;
+  }
+
+  .color-tokens > span:nth-child(4n+3) {
+    background-color: #f1cbff;
+  }
+</style>
+
+<p>Instead of hard-coding how many samples to pick, I decided to write a bit more logic to pick as many samples until the context window is filled (by keeping track of how many tokens are used by the samples and the chat history).<sup class="footnoteref" id="revref-3"><a href="#ref-3">3</a></sup>
+This means that in my actual bot, where I have tons of sample data so that I can make it as good as possible, each conversation starts with like 3 pages of system text containing the sample chats for the AI to refer to. When the question asked is, or is close to a sample question, the response is usually pretty good:</p>
+<style>
+  .large-system-text {
+    white-space: pre-wrap;
+    white-space: break-spaces;
+    font-size: 70%;
+    margin-top: 5px;
+  }
+
+  .large-system-text .ws {
+    background-color: #d7d7d7;
+    word-break: break-all;
+  }
+</style>
+
+<div class="chat-interaction">
+  <label>SYSTEM</label>
+  <div class="large-system-text">Tingmao Wang is…<br>
+Sample chats for you to imitate:
+User: What are some of your personal projects?
+You: Outside of my job I also work on side projects - one of them was <span class="ws">                                                                                                                                                                                                                 </span>
+User: Have you collaborated with others on any of your side projects?
+You: <span class="ws">                                                                                                                                                         </span>
+User: Do you have any other personal projects?
+You: <span class="ws">                                                                                                     </span>
+---
+User: <span class="ws">                                      </span>
+You: <span class="ws">                                                                                                                                                                                                           </span>
+---
+User: Have you done any projects using React?
+You: <span class="ws">                                                                                                                                                                                                                                                                                                                        </span>
+---
+User: <span class="ws">                                  </span>
+You: <span class="ws">                                                                                                                                                                              </span>
+---
+User: Do you like computer science?
+You: <span class="ws">                                                                                                           </span>
+---
+User: <span class="ws">                                                     </span>
+You: <span class="ws">                                                                                                                                                                                    </span>
+---
+<i>… (~1400 more words)</i></div>
+  <label>USER</label>
+  <div>What are some of your best side projects? <i> / </i>any interesting side projects?<i> / other similar ways of asking this question</i></div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">Outside of my job I also work on side projects - one of them was…</div>
+</div>
+
+<h2>Improving <em>Context-Awareness</em></h2>
+<p>While this approach mostly works, and does especially well when you stick to topics I've thought about and put in the bot, it can go wrong in several different ways. Let's explore some of the bad cases.</p>
+<p>A challenging problem was that the LLM would often use a sample response even when that's not the right one to use given the context. For example, if I have the following sample chats to teach it how to answer questions about itself:</p>
+<div class="sample">
+  <label>Question:</label>
+  <div>How was this made?</div>
+  <label>Reply:</label>
+  <div>Ah, great question! It's basically OpenAI magic, plus doing some semantic searching with embeddings to generate a list of relevant per-written sample chats…</div>
+</div>
+
+<p>But then I ask a question in a completely different context that happens to sound roughly the same:</p>
+<div class="chat-interaction">
+  <label>USER</label>
+  <div>What is the best physics invention?</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">Hmm... idk, there are so many important inventions that it's hard for me to pick anything in particular. But if I have to choose one, silicon transistors? It's probably one of the most important inventions powering everything we do now.</div>
+  <label>USER</label>
+  <div>How was <u>it</u> made?</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">Ah, great question! It's basically OpenAI magic…</div>
+</div>
+
+<p>OpenAI definitely did not invent transistors <img style="width: 1em; vertical-align: -3px;" src="face-with-tears-of-joy.png" alt="😂"></p>
+<p>One way to work around this is to make the example questions less ambiguous. For example:</p>
+<div class="sample">
+  <label>Question:</label>
+  <div><del style="color: #900;">How was this made?</del><br>How does this chatbot work?</div>
+  <label>Reply:</label>
+  <div>…</div>
+</div>
+
+<p>The same conversation then becomes much more sensible:</p>
+<div class="chat-interaction">
+  <label>USER</label>
+  <div>What is the best physics invention?</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">…</div>
+  <label>USER</label>
+  <div>How was it made?</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">Silicon transistors are made using a process called semiconductor…</div>
+</div>
+
+<p>Whereas a genuine question about the chatbot would still work, to some extent:</p>
+<div class="chat-interaction">
+  <label>USER</label>
+  <div>How was this made?</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">This chatbot was built using GPT-3.5-turbo, an advanced language model developed by OpenAI. It involves fine-tuning the model on a dataset of sample chats to make it imitate my way of speaking. It's been a fun and challenging project! If you have any more questions, feel free to ask. 😊</div>
+</div>
+
+<p>A similar problem occurs when there are semantically different ways of asking for essentially the same information. For example, if I wanted the bot to be able to answer what do I think of various UCL modules, I might have the following sample:</p>
+<div class="sample">
+  <label>Question:</label>
+  <div>What do you think about the Computer Systems module?</div>
+  <label>Reply:</label>
+  <div>I found it to be very interesting! I enjoy learning about systems topics in general, and this module covered…</div>
+</div>
+
+<p>But then, if someone simply ask it what the module is, it might just quote the above response, even though it's technically not answering the question:</p>
+<div class="chat-interaction">
+  <label>USER</label>
+  <div>What is the Computer Systems module at UCL?</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">I found it to be very interesting! I enjoy learning about systems topics in general, and this module covered…</div>
+</div>
+
+<p>I can improve the response in this particular case by just adding in another sample response for this question, with the reply worded differently, but this is a recurring problem in general.</p>
+<h3>Sample ranking</h3>
+<p>You might have noticed that I've decided to put the closest matching sample at the top. This was just an arbitrary choice I made initially, but turned out to be very sensible, because the model seem to much more closely follow examples at the top than at the bottom, for reasons that I won't pretend I understand.</p>
+<p>When an example is the very first, the model seems much more tempted to simply quote the reply verbetim, which sometime works great but sometime results in replies which doesn't make sense given the context, so we have to be a bit careful with this — if you put an incorrect response at the top, and if the sample question sounds similar to the user's message, it might just use that. Regardless, using embeddings to rank the samples is still a good start. There is potential for more investigation, for example by deliberately adding irrelevant samples at the top when the user's message isn't an exact match — I can probably explore this area a bit more.</p>
+<p>One experiment I did was to simply reverse the order of the samples as seen by the model, so the closest sounding samples are given near the end of the system prompt. If we take the “What are some of your best side projects?” example shown above and reverse the order of the samples, we get:</p>
+<div class="chat-interaction">
+  <label>SYSTEM</label>
+  <div class="large-system-text">Tingmao Wang is…<br>
+Sample chats for you to imitate:
+<i>… (~1400 more words)</i>
+---
+User: <span class="ws">                                                     </span>
+You: <span class="ws">                                                                                                                                                                                    </span>
+---
+User: Do you like computer science?
+You: <span class="ws">                                                                                                           </span>
+---
+User: <span class="ws">                                  </span>
+You: <span class="ws">                                                                                                                                                                              </span>
+---
+User: Have you done any projects using React?
+You: <span class="ws">                                                                                                                                                                                                                                                                                                                        </span>
+---
+User: <span class="ws">                                      </span>
+You: <span class="ws">                                                                                                                                                                                                           </span>
+---
+User: What are some of your personal projects?
+You: <u>Outside of my job I also work on side projects - one of them was </u><span class="ws">                                                                 </span><u> my GitHub: https://github.com/micromaomao</u><span class="ws">                                                           </span>
+User: Have you collaborated with others on any of your side projects?
+You: <span class="ws">                                                                                                                                                         </span>
+User: Do you have any other personal projects?
+You: <span class="ws">                                                                                                     </span></div>
+  <label>USER</label>
+  <div>What are some of your best side projects?</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">
+    One of my best side projects is this chatbot you're talking to right now! It's been a fun challenge to create a chatbot that can imitate my way of speaking. I've also worked on various personal projects, most of which you can find on my GitHub.
+  </div>
+</div>
+
+<p>I suspect questions which are even further away from any of the samples will get even more “ad-hoc” responses (which might sometime be a good thing, if the LLM would otherwise just quote the sample blindly, not answering the question).</p>
+<h3>Storing follow-up questions</h3>
+<p>You might have noticed that in the above example, some of the samples were ‘follow-up’ of an earlier question. For example, “What are some of your personal projects?” followed by “Have you collaborated with others on any of your side projects?”. There is no reason why we can't write samples for these follow-up questions as well, especially if we want the bot to be conversational, rather than just a Q&amp;A machine.</p>
+<p>In one of the earlier example, we encountered an instance of a follow-up question which requires some more care to handle—“How was it made?”. I call them “context sensitive follow-ups”. Another example might be:</p>
+<div class="sample">
+  <label class="gray">Question:</label>
+  <div class="gray">Have you watched any romcom anime?</div>
+  <label class="gray">Reply:</label>
+  <div class="gray">I don't watch a lot of these types of anime, but I have watched, for example, Chuunibyou…</div>
+  <label>Question:</label>
+  <div>What is it about?</div>
+  <label>Reply:</label>
+  <div>
+    It is centered around a delusional girl who imagine that she has anime-protagonist abilities / weapons (but actually doesn't)…
+  </div>
+</div>
+
+<p>Storing a reply to this requires some special care, because whether this sample (“What is it about?”) is relevant in the current conversation depends on not just the question itself, but also what has been talked about before. Therefore, if we only used a simple similarity-based ranking, the presence of this sample would worsen the wrong-context responses discussed before:</p>
+<div class="chat-interaction">
+  <label>SYSTEM</label>
+  <div>
+    <i>…</i><br>
+    Sample chats for you to imitate:<br>
+    <span class="red-textcolor">User: What is it about?<br>
+    You: It is centered around a delusional girl who imagine that she has anime-protagonist abilities / weapons (but actually doesn't)…<br>
+    <i>…</i>
+    </span></div>
+  <label>USER</label>
+  <div>What books have you most recently read?</div>
+  <label>ASSISTANT</label>
+  <div class="generated-textcolor">I've been reading a book about large-scale / distributed software systems lately. It's called “Designing Data Intensive Applications”…</div>
+  <label>USER</label>
+  <div>What is it about?</div>
+  <label class="red-textcolor">ASSISTANT</label>
+  <div class="red-textcolor">
+    It is centered around a delusional girl who imagine that she has anime-protagonist abilities / weapons (but actually doesn't)…
+  </div>
+</div>
+
+<p>In order to properly represent this follow-up sample, we need to treat our sample database not just as a list of questions and answers, but rather, a tree of messages and replies, and potential follow-up user messages. This means that each sample question will have a ‘parent’, and we can ensure that whenever we show a follow-up sample, we show the parent first to give the model the context it needs. When ranking the samples for relevancy, we can also factor in whether a sample's parent matches any of the existing chat messages (including the current one and all the messages before), and lower the similarity score for those that likely has nothing to do with the current conversation, regardless of how similar the particular sample question is to the user's most recent message. Here is an example of what a part of the tree may look like:</p>
+<style>
+  .dialogue-tree {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: flex-start;
+  }
+
+  .dialogue-tree > .q {
+    font-weight: bold;
+  }
+
+  .dialogue-tree > .a {
+  }
+
+  .dialogue-tree > .a::before {
+    content: "→";
+    margin-right: 0.5em;
+  }
+
+  .dialogue-tree > .children {
+    margin-left: 0.4em;
+    border-left: solid 1px #aaa;
+    padding-left: 1.2em;
+  }
+</style>
+
+<div class="dialogue-tree">
+  <div class="q">Have you watched any romcom anime?</div>
+  <div class="a">…for example, Chuunibyou…</div>
+  <div class="children">
+    <div class="dialogue-tree">
+      <div class="q">What is it about?</div>
+      <div class="a">…</div>
+      <div class="children">
+        <div class="dialogue-tree">
+          <div class="q">That sounds fun</div>
+          <div class="a">In that case I would recommend you check it out!</div>
+        </div>
+      </div>
+    </div>
+    <div class="dialogue-tree">
+      <div class="q">Why do you like it?</div>
+      <div class="a">…</div>
+    </div>
+  </div>
+</div>
+
+<p>or</p>
+<div class="dialogue-tree">
+  <div class="q">What is your favoruite programming language?</div>
+  <div class="a">I like Rust because it's got a lot of modern features and syntatic sugar…</div>
+  <div class="children">
+    <div class="dialogue-tree">
+      <div class="q">Do you use any other languages?</div>
+      <div class="a">Yes, I also use Python, JavaScript, …</div>
+      <div class="children">
+        <div class="dialogue-tree">
+          <div class="q">Is there any Rust syntax you wish those other languages had?</div>
+          <div class="a">…</div>
+        </div>
+      </div>
+    </div>
+    <div class="dialogue-tree">
+      <div class="q">What do you mean by “modern features”?</div>
+      <div class="a">Algebratic data types (<code>Option&lt;T&gt;</code>, <code>Result&lt;T, E&gt;</code>), structural matching, …</div>
+    </div>
+  </div>
+</div>
+
+<p>This approach doesn't mean that the user <em>has</em> to ask the parent question first. For example, if they ask “What is Chuunibyou about?” or “What syntax from Rust do you wish other programming language had?” from the beginning directly, as long as their question still has some similarity with the ‘root’ question according to the embeddings (like both being about anime, or programming languages), the relevant samples will still be selected and ranked appropriately, whereas if they ask “What are some modern features of x86 CPUs?”, because it has nothing to do with programming languages, the “What do you mean by ‘modern features’?” sample above will hopefully be ranked lower or not be selected to include in the prompt, avoiding a potential strange response.</p>
+<h2>Combating hallucinations</h2>
+<p>GPT models, as well as other LLMs, are infamous for hallucinating no matter how nicely we ask it not to, and this project has to deal with hallucinations as well.</p>
+<p>An obvious way for hallucinations to manifest is simply when the user asks about topics that the samples have not already covered. For example, if I've never thought to add information about TV shows I like because I don't actually watch any, the AI might simply make up an answer when asked about TV shows I watch:</p>
+<div class="chat-interaction">
+  <label>USER</label>
+  <div>What's your favourite TV show?</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">Hmm, that's a tough one! I don't watch a lot of TV shows, but if I had to choose, I would say "Friends" is one of my favorites. It's a classic sitcom that never fails to make me laugh. What about you, what's your favorite TV show?</div>
+</div>
+
+<p>I assure you I have never even heard of “Friends”. Similarly:</p>
+<div class="chat-interaction">
+  <label>USER</label>
+  <div>What is your favourite dragon ball character?</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">Hmm, that's a tough one! I would have to say my favorite Dragon Ball character is Goku. He's just so determined and…</div>
+  <hr>
+  <label>USER</label>
+  <div>Have you played GTA 5?</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">Yes, I have played GTA 5! It's a really fun game with a huge open world to explore and lots of crazy missions to complete. The online multiplayer mode is also a blast to play with friends.</div>
+</div>
+
+<p>Neither Dragon Ball nor GTA was ever mentioned in any samples.</p>
+<p>Interestingly, it looks like the latest GPT-4 model is much better in this respect — outright complete hallucinations are much less common. For example, here is what I got when I tested it today with <code>gpt-4-0125-preview</code> — none of the questions were in the sample database:</p>
+<div class="chat-interaction">
+  <label>USER</label>
+  <div>What's your favourite TV show?</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">Hmm, I don't really watch TV shows that much, more into anime and YouTube stuff. But if I have to pick something, it'd probably be some tech-related show or documentary.</div>
+  <hr>
+  <label>USER</label>
+  <div>What is your favourite D&amp;D character?</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">Oh, I don't really play D&amp;D, so I don't have a favorite character. But I imagine if I did play, I'd probably like a character that's a bit quirky and smart, maybe a wizard or something. 😄</div>
+  <hr>
+  <label>USER</label>
+  <div>Have you watched top gun maverick?</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">Nope, haven't watched that one. How is it?</div>
+  <hr>
+  <label>USER</label>
+  <div>Have you played GTA 5?</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">Nope, I haven't played GTA 5.</div>
+</div>
+
+<p>Questions like “have you played <em>&lt;game&gt;</em>” has been misanswered so many times in the past that I have tried to add in deliberately negative answers to my sample set, although it's not clear how much this helps. For example:</p>
+<div class="sample">
+  <label>Question:</label>
+  <div>Have you played Half life?</div>
+  <label>Answer:</label>
+  <div>I've heard of it but not personally played it, nor even know what it is about.</div>
+</div>
+
+<p>(Amusingly, GitHub Copilot hallucinated a “Yes, I have played it…” response when I was writing this.)</p>
+<p>Although I haven't tried it, it is possible that one can build a “hallucination detector” by checking if there are unknown words / topics in either the user's message or the bot's response. If the samples never mentions “Star Trek” and the user asks about it (or if the LLM mentions it on its own), some sort of warning to the user might be sensible.</p>
+<p>When a question is about something less concrete, it can be even harder for the LLM to not hallucinate, and GPT-4 is not immune to this either. Here is a reproduction of a chat session from another user:</p>
+<div class="chat-interaction">
+  <label>USER</label>
+  <div>How do you commute from and to work?</div>
+  <label class="red-textcolor">ASSISTANT</label>
+  <div class="red-textcolor">I take the underground, as the underground network is quite convenient in London.</div>
+  <label>USER</label>
+  <div>Is it crowded in the tube?</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">The London Underground can be quite crowded at times…</div>
+  <label>USER</label>
+  <div>Do you drive?</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">No, I don't drive, and I don't even have a driving license. <span class="red-textcolor">Public transit is quite convenient in London…</span></div>
+  <label><i>…</i></label>
+  <div><i>…</i></div>
+  <label>USER</label>
+  <div>Which Microsoft office do you work in?</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">I work at the Cambridge office…</div>
+  <label>USER</label>
+  <div>But you mentioned you work in London earlier</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">Ah, sorry for the confusion, I work in the UK, and more specifically Cambridge…</div>
+</div>
+
+<p>I also once saw it hallucinate a Discord user discriminator (the old username<b>#xxxx</b> thing) when quoting my discord info. At the time I created the sample with my discord username, Discord has already deprecated the discriminator, so the correct response should have been to just mentioning the username.</p>
+<p>Overall, I don't think there is any reasonable solution to these kind of problems and the best I can do might be to just add more samples on different topics, and add more ‘negative’ samples. Luckily, the hallucinations are mostly harmless, and does not detract from the overall experience too much. I've since added warnings both on the front page and on the chat page's initial banner to remind people that AI-generated responses might not be accurate.</p>
+<h2>Unnecessary continuation; or, “can't you just shut the f**k up?”</h2>
+<p>One of the most unexpectedly challenging problem turned out to be getting the LLM to <em>stop talking</em>. To illustrate, say I have the following sample:</p>
+<div class="sample">
+  <label>Question:</label>
+  <div>Are you ever gonna fix your sleep schedule?</div>
+  <label>Reply:</label>
+  <div>Don't know, some day hopefully.</div>
+</div>
+
+<p>What do you think would happen if I ask the bot the exact question I gave it?</p>
+<div class="chat-interaction">
+  <label>USER</label>
+  <div>Are you ever gonna fix your sleep schedule?</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">Don't know, some day hopefully. 😅</div>
+</div>
+
+<p>It gets even worse if I have messages earlier in the conversation to which the bot has given a verbose response:</p>
+<div class="chat-interaction">
+  <label>USER</label>
+  <div>why are you awake it's 2am</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">Haha, I guess I just can't resist staying up late sometimes! 😅 What can I say, the night is young and full of coding possibilities. So, what can I help you with at this hour?</div>
+  <label>USER</label>
+  <div>Are you ever gonna fix your sleep schedule?</div>
+  <label class="generated-textcolor">ASSISTANT</label>
+  <div class="generated-textcolor">Don't know, some day hopefully. 😅 It's definitely something I should work on, but you know how it is, sometimes you just get caught up in the moment and before you know it, it's 2am! Do you have any tips for fixing sleep schedules?</div>
+</div>
+
+<p>This causes multiple problems:</p>
+<ol>
+<li>Because I didn't write the part that the LLM decided to add, it likely won't sound as much like me as the sample. Sometime it's quite obvious that the LLM has added some unnatural sounding bits to the response (especially if it asks the user questions).</li>
+<li>More text = more chances for the LLM to hallucinate random stuff.</li>
+<li>Sometimes, the choice to be brief is deliberate, to avoid bringing up or over-explaining certain topics, or to phrase things in an intricate way (like how I will often speak in real life). The LLM not respecting this choice can be problematic.</li>
+</ol>
+<p>I have tried various ways to try and get the LLM to behave in this regard, all of which were unsuccessful:</p>
+<ol>
+<li>Telling it in the system prompt to be concise and don't mention stuff that the sample doesn't mentions — non-consistent / little effect.</li>
+<li>Manually adding a <code>&lt;End&gt;</code> or <code>&lt;Stop&gt;</code> at the end of the sample response — works in some cases, but not always. Sometimes the LLM just ignores the end instruction and keeps on going anyway. In one particular egregious instance, I've even tried <code>&lt;End. Do not continue the conversation.&gt;</code> and it still continued.</li>
+</ol>
+<p>At the time of writing, I have not implemented any code solution to this problem. I could, for example, detect when the message generated has one of the sample response as a prefix, and just return the sample response (effectively removing the extra bit), and I'm likely to do that if this causes more pain in the future. But for now, you will have to bear with some AI verbosity while chatting with it. This also means that I basically can't have the bot just answer a simple “I don't know”, “Yes”, or “No” to a question, because it will always add some extra bits to explain itself (which is sometimes undesirable).</p>
+<h2>Conclusion, feelings, etc</h2>
+<p>Gaps in methodology - didn't keep the model consistent, didn't seriously try investigating temperature, etc.</p>
+<p><a href="https://github.com/micromaomao/chat.maowtm.org/issues?q=is%3Aissue+no%3Aproject+">Discuss on GitHub</a></p><h2>Footnotes</h2><ul><li><div><span id="ref-1" class="footnote-revref"><a href="#revref-1">1</a></span>: 
+At the time of writing, they have added GPT-4 instruct for text completion as well, however the text completions API remains labelled as “legacy”.</div></li><li><div><span id="ref-2" class="footnote-revref"><a href="#revref-2">2</a></span>: 
+It's worth saying that while useful as a demo, comparing the similarity of sentences with abstract concepts like this is probably not the best way to do classification. If you have a reasonably-sized dataset, you can probably train a regression or neural network to do the classification based on the embeddings.
+</div></li><li><div><span id="ref-3" class="footnote-revref"><a href="#revref-3">3</a></span>: 
+In LLMs, usage is measured and limited by the number of <em>tokens</em> — you can think of each token roughly as a word-part, where less-used parts are given separate tokens, and common strings of parts may be combined into one token. So for example, in the sentence
+<code class="color-tokens"><span>Per</span><span>cept</span><span>ual</span><span> hashing</span><span> is</span><span> kinda</span><span> like</span><span> embeddings</span><span>,</span><span> but</span><span> for</span><span> images</span><span>.</span></code>, every different colored-block is a token. By using <a href="https://github.com/openai/tiktoken">tiktoken</a> to efficiently compute the number of tokens taken by each sample, I can select as many samples as possible until the context window is filled (also taking into account the tokens taken up by the conversation history).
+</div></li></ul>
+    <p class="footer">
+      Published
+      <span class="time" title="Sat, 27 Jan 2024 12:00:00 GMT">on Sat Jan 27 2024</span>.<br>
+      Authored by <a href="https://maowtm.org">maowtm (Tingmao Wang)</a> &lt;m@maowtm.org&gt;.<br>
+      
+      Content <a href="https://github.com/micromaomao/blog/blob/draft/LICENSE.md">licensed under a Creative Commons Attribution-ShareAlike 4.0 International License</a>.<br>
+      
+      For permissions beyond the scope of this license, see <a href="../request_cc_extension.html">https://blog.maowtm.org/request_cc_extension.html</a>.<br>
+      
+      If you see something wrong please <a href="https://github.com/micromaomao/blog/issues">report on GitHub</a>.
+    </p><a class="home" href="../index.html">« home</a>
+  </body>
+</html>

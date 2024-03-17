@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style type="text/css">
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI Light"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/light/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/light/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/light/latest.ttf) format("truetype");
+  font-weight: 100;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI Semilight"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semilight/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semilight/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semilight/latest.ttf) format("truetype");
+  font-weight: 200;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/normal/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/normal/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/normal/latest.ttf) format("truetype");
+  font-weight: 400;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI Semibold"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semibold/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semibold/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semibold/latest.ttf) format("truetype");
+  font-weight: 600;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI Bold"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/bold/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/bold/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/bold/latest.ttf) format("truetype");
+  font-weight: 700;
+}
+body {
+  background-color: #f9f9fa;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 18px;
+  line-height: 28px;
+  padding: 2em;
+  max-width: 1200px;
+  margin: auto;
+  text-align: justify;
+}
+
+p {
+  margin: 1em 0;
+  hyphens: auto;
+}
+
+hr {
+  background-color: none;
+  border: none;
+  border-bottom: dashed 1px #aaa;
+  margin: 0;
+  padding: 0;
+}
+
+pre {
+  display: block;
+  background-color: white;
+  padding: 0.5em 1em;
+  margin: 1em 0;
+  overflow-x: auto;
+}
+
+.tags {
+  font-size: 16px;
+}
+.tags a.tag {
+  background-color: #eee;
+  color: #666;
+  text-decoration: none;
+  transition: background-color 100ms;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  display: inline-block;
+  margin: 0.1em 0.1em;
+  padding: 0.1em 0.5em;
+  border-radius: 4px;
+}
+.tags a.tag:hover {
+  background-color: #d9d9d9;
+}
+.tags a.tag:active {
+  background-color: #e0e0e0;
+}
+
+body > a.blogtitle {
+  color: black;
+  text-align: center;
+  display: block;
+  text-decoration: none;
+  font-size: 120%;
+  font-style: italic;
+  margin: 0.5em;
+  padding: 1em;
+  border-bottom: 1px dashed #999;
+}
+body > a.blogtitle > img {
+  width: 500px;
+  max-width: 100%;
+}
+body > a.blogtitle > span.note {
+  font-size: 60%;
+  color: #999;
+}
+
+.draftmode-warn {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 10px;
+  line-height: 1.2;
+  background-color: #db7500;
+  color: #fff;
+  text-align: center;
+  font-weight: bold;
+  z-index: 1000;
+}
+.draftmode-warn a {
+  color: #fff;
+  text-decoration: underline;
+}
+
+body.draft-mode {
+  margin-top: 60px;
+}
+
+body {
+  line-height: 1.6;
+}
+
+pre {
+  line-height: 1.3;
+}
+
+h1 {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 28px;
+  margin: 1.5em 0 0.5em 0;
+}
+h1::before {
+  content: "# ";
+  opacity: 0.5;
+  text-align: right;
+  display: inline-block;
+  width: 0px;
+  margin-left: -22px;
+  margin-right: 22px;
+}
+
+h2 {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 22px;
+  margin: 1.5em 0 0.5em 0;
+}
+h2::before {
+  content: "## ";
+  opacity: 0.5;
+  text-align: right;
+  display: inline-block;
+  width: 0px;
+  margin-left: -30px;
+  margin-right: 30px;
+}
+
+h3 {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 18px;
+  margin: 1.5em 0 0.5em 0;
+}
+h3::before {
+  content: "### ";
+  opacity: 0.5;
+  text-align: right;
+  display: inline-block;
+  width: 0px;
+  margin-left: -34px;
+  margin-right: 34px;
+}
+
+h4 {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 18px;
+  margin: 1em 0 0.5em 0;
+}
+
+p a, ul a, li a, h2 a, h3 a, h4 a, body > a.home {
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  color: #088da5;
+  text-decoration: none;
+  transition: background-color 100ms;
+  background-color: rgba(8, 141, 165, 0);
+  padding: 0.25em 0.5em;
+  margin: -0.25em -0.5em;
+}
+p a:active, ul a:active, li a:active, h2 a:active, h3 a:active, h4 a:active, body > a.home:active {
+  background-color: rgba(8, 141, 165, 0.1);
+}
+
+body > code, body :not(pre) > code {
+  display: inline-block;
+  background-color: white;
+  border-radius: 4px;
+  border: solid 1px #999;
+  padding-left: 0.3em;
+  padding-right: 0.3em;
+}
+
+img.coverimg {
+  min-width: 50%;
+  max-width: 100%;
+  margin: 0 auto;
+  display: block;
+}
+
+p > img {
+  max-width: 100%;
+}
+
+p.single-img-p > img {
+  display: block;
+  margin: 0 auto;
+}
+
+.tags {
+  margin-top: -0.7em;
+}
+
+.footer {
+  color: #999;
+  font-size: 14px;
+}
+
+p.warn, div.warn {
+  border-left: #ff4545 solid 2px;
+  background-color: rgba(255, 0, 0, 0.116);
+  padding: 0.2em 1em;
+  margin-top: -0.2em;
+  margin-bottom: -0.3em;
+}
+
+p.info, div.info {
+  border-left: #3a59c7 solid 2px;
+  background-color: #e7eaf7;
+  padding: 0.2em 1em;
+  margin-top: -0.2em;
+  margin-bottom: -0.3em;
+}
+
+sup.footnoteref {
+  user-select: none;
+}
+
+sup:target, .footnote-revref:target {
+  background-color: rgba(255, 255, 0, 0.2);
+}
+
+span.tex {
+  font-size: 22px;
+}
+
+noscript {
+  border: dashed 2px #000;
+  padding: 1rem 2rem;
+  margin: 1em 0;
+}
+
+blockquote {
+  border-left: 4px solid #ccc;
+  padding-left: 1em;
+  margin: 0;
+}</style>
+    <title>“Actual” Engineering behind Maochat - mw casual engineering</title>
+    <meta name="keywords" content="Architecture,Node.JS,PostgreSQL,Security">
+    <meta property="og:url" content="https://blog.maowtm.org/maochat-eng/en.html">
+    <meta property="og:title" content="“Actual” Engineering behind Maochat">
+    <meta property="og:image" content="https://blog.maowtm.org/maochat-eng/cover.png">
+    <meta property="og:type" content="article">
+    <style type="text/css">
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI Light"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/light/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/light/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/light/latest.ttf) format("truetype");
+  font-weight: 100;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI Semilight"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semilight/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semilight/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semilight/latest.ttf) format("truetype");
+  font-weight: 200;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/normal/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/normal/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/normal/latest.ttf) format("truetype");
+  font-weight: 400;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI Semibold"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semibold/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semibold/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semibold/latest.ttf) format("truetype");
+  font-weight: 600;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI Bold"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/bold/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/bold/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/bold/latest.ttf) format("truetype");
+  font-weight: 700;
+}
+body {
+  background-color: #f9f9fa;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 18px;
+  line-height: 28px;
+  padding: 2em;
+  max-width: 1200px;
+  margin: auto;
+  text-align: justify;
+}
+
+p {
+  margin: 1em 0;
+  hyphens: auto;
+}
+
+hr {
+  background-color: none;
+  border: none;
+  border-bottom: dashed 1px #aaa;
+  margin: 0;
+  padding: 0;
+}
+
+pre {
+  display: block;
+  background-color: white;
+  padding: 0.5em 1em;
+  margin: 1em 0;
+  overflow-x: auto;
+}
+
+.tags {
+  font-size: 16px;
+}
+.tags a.tag {
+  background-color: #eee;
+  color: #666;
+  text-decoration: none;
+  transition: background-color 100ms;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  display: inline-block;
+  margin: 0.1em 0.1em;
+  padding: 0.1em 0.5em;
+  border-radius: 4px;
+}
+.tags a.tag:hover {
+  background-color: #d9d9d9;
+}
+.tags a.tag:active {
+  background-color: #e0e0e0;
+}
+
+body > a.blogtitle {
+  color: black;
+  text-align: center;
+  display: block;
+  text-decoration: none;
+  font-size: 120%;
+  font-style: italic;
+  margin: 0.5em;
+  padding: 1em;
+  border-bottom: 1px dashed #999;
+}
+body > a.blogtitle > img {
+  width: 500px;
+  max-width: 100%;
+}
+body > a.blogtitle > span.note {
+  font-size: 60%;
+  color: #999;
+}
+
+.draftmode-warn {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 10px;
+  line-height: 1.2;
+  background-color: #db7500;
+  color: #fff;
+  text-align: center;
+  font-weight: bold;
+  z-index: 1000;
+}
+.draftmode-warn a {
+  color: #fff;
+  text-decoration: underline;
+}
+
+body.draft-mode {
+  margin-top: 60px;
+}
+
+body {
+  line-height: 1.6;
+}
+
+pre {
+  line-height: 1.3;
+}
+
+h1 {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 28px;
+  margin: 1.5em 0 0.5em 0;
+}
+h1::before {
+  content: "# ";
+  opacity: 0.5;
+  text-align: right;
+  display: inline-block;
+  width: 0px;
+  margin-left: -22px;
+  margin-right: 22px;
+}
+
+h2 {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 22px;
+  margin: 1.5em 0 0.5em 0;
+}
+h2::before {
+  content: "## ";
+  opacity: 0.5;
+  text-align: right;
+  display: inline-block;
+  width: 0px;
+  margin-left: -30px;
+  margin-right: 30px;
+}
+
+h3 {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 18px;
+  margin: 1.5em 0 0.5em 0;
+}
+h3::before {
+  content: "### ";
+  opacity: 0.5;
+  text-align: right;
+  display: inline-block;
+  width: 0px;
+  margin-left: -34px;
+  margin-right: 34px;
+}
+
+h4 {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 18px;
+  margin: 1em 0 0.5em 0;
+}
+
+p a, ul a, li a, h2 a, h3 a, h4 a, body > a.home {
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  color: #088da5;
+  text-decoration: none;
+  transition: background-color 100ms;
+  background-color: rgba(8, 141, 165, 0);
+  padding: 0.25em 0.5em;
+  margin: -0.25em -0.5em;
+}
+p a:active, ul a:active, li a:active, h2 a:active, h3 a:active, h4 a:active, body > a.home:active {
+  background-color: rgba(8, 141, 165, 0.1);
+}
+
+body > code, body :not(pre) > code {
+  display: inline-block;
+  background-color: white;
+  border-radius: 4px;
+  border: solid 1px #999;
+  padding-left: 0.3em;
+  padding-right: 0.3em;
+}
+
+img.coverimg {
+  min-width: 50%;
+  max-width: 100%;
+  margin: 0 auto;
+  display: block;
+}
+
+p > img {
+  max-width: 100%;
+}
+
+p.single-img-p > img {
+  display: block;
+  margin: 0 auto;
+}
+
+.tags {
+  margin-top: -0.7em;
+}
+
+.footer {
+  color: #999;
+  font-size: 14px;
+}
+
+p.warn, div.warn {
+  border-left: #ff4545 solid 2px;
+  background-color: rgba(255, 0, 0, 0.116);
+  padding: 0.2em 1em;
+  margin-top: -0.2em;
+  margin-bottom: -0.3em;
+}
+
+p.info, div.info {
+  border-left: #3a59c7 solid 2px;
+  background-color: #e7eaf7;
+  padding: 0.2em 1em;
+  margin-top: -0.2em;
+  margin-bottom: -0.3em;
+}
+
+sup.footnoteref {
+  user-select: none;
+}
+
+sup:target, .footnote-revref:target {
+  background-color: rgba(255, 255, 0, 0.2);
+}
+
+span.tex {
+  font-size: 22px;
+}
+
+noscript {
+  border: dashed 2px #000;
+  padding: 1rem 2rem;
+  margin: 1em 0;
+}
+
+blockquote {
+  border-left: 4px solid #ccc;
+  padding-left: 1em;
+  margin: 0;
+}</style>
+    <link rel="stylesheet" href="https://unpkg.com/highlight.js@9.16.2/styles/idea.css">
+  </head>
+  <body class="draft-mode">
+    <div class="draftmode-warn">This is the DRAFT branch of this blog. Articles already published will not appear here.<br><a href="https://blog.maowtm.org">Go to the main site</a></div><a class="blogtitle" href="/"><img src="/title.svg" alt="mw casual engineering"></a><img class="coverimg" src="cover.png" alt="A screenshot of some code from addChatMessage in app/src/lib/chat.ts, with the logo for Maochat overlaid in the center, with a glow effect.">
+    <h1>“Actual” Engineering behind Maochat</h1>
+    <div class="tags"><a class="tag" href="../tagindex/architecture.html">Architecture</a> <a class="tag" href="../tagindex/node.js.html">Node.JS</a> <a class="tag" href="../tagindex/postgresql.html">PostgreSQL</a> <a class="tag" href="../tagindex/security.html">Security</a>
+    </div><p></p>
+<style>
+  .coverimg {
+    max-height: 600px;
+  }
+</style>
+
+<p>This is a follow-on article from the previous one on Maochat: <a href="../maochat-ai/en.html">I made an AI impression of myself</a>. In this article, I want to go over some of the thinking behind the non-AI bits of the project, including architectural decisions, some implementation details, etc. I encourage you to read <a href="../maochat-ai/en.html">the previous article</a> first if you're interested in learning about how this project make uses of GPT. If you haven't tried it, I also encourage you to try out <a href="https://chat.maowtm.org/" target="_blank">Maochat</a>.</p>
+<style>
+  .trynow {
+    display: inline-block;
+    padding: 5px 20px;
+    background-color: #a200e1;
+    color: #ffffff;
+    text-decoration: none;
+    border-radius: 4px;
+    font-weight: 600;
+    margin: 5px;
+  }
+
+  .trynow:hover, .trynow:active, .trynow:focus {
+    background-color: #8a00cd;
+  }
+
+  .trynow:hover:active {
+    background-color: #46127d;
+  }
+</style>
+<script async="" defer="" src="https://buttons.github.io/buttons.js"></script>
+
+<p style="text-align: center;">
+  <a href="https://chat.maowtm.org" target="_blank" class="trynow">Try it now</a><br>
+  <a href="https://github.com/micromaomao/chat.maowtm.org" target="_blank" style="vertical-align: 8px;">View source on GitHub</a>
+  <a class="github-button" href="https://github.com/micromaomao/chat.maowtm.org" data-size="large" data-show-count="true" aria-label="Star micromaomao/chat.maowtm.org on GitHub">Star</a>
+</p>
+<p><a href="https://github.com/micromaomao/chat.maowtm.org/issues?q=is%3Aissue+no%3Aproject+">Discuss on GitHub</a></p>
+    <p class="footer">
+      Published
+      <span class="time" title="Sat, 27 Jan 2024 12:00:01 GMT">on Sat Jan 27 2024</span>.<br>
+      Authored by <a href="https://maowtm.org">maowtm (Tingmao Wang)</a> &lt;m@maowtm.org&gt;.<br>
+      
+      Content <a href="https://github.com/micromaomao/blog/blob/draft/LICENSE.md">licensed under a Creative Commons Attribution-ShareAlike 4.0 International License</a>.<br>
+      
+      For permissions beyond the scope of this license, see <a href="../request_cc_extension.html">https://blog.maowtm.org/request_cc_extension.html</a>.<br>
+      
+      If you see something wrong please <a href="https://github.com/micromaomao/blog/issues">report on GitHub</a>.
+    </p><a class="home" href="../index.html">« home</a>
+  </body>
+</html>

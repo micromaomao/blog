@@ -75,9 +75,20 @@ const P_sB_gt_sA = div_by_2_100(sum(1, 50, s_B => sum(0, s_B - 1, s_A => Q(100, 
 console.log(`Alice wins ${P_sA_gt_sB * 100}% of the time`);
 console.log(`Bob wins ${P_sB_gt_sA * 100}% of the time`);
 
+let a_avg = 0n;
+let b_avg = 0n;
+let total_sum = 0n;
+
 console.log("score,a_prob,b_prob")
 for (let score = 0; score <= 99; score += 1) {
-  let a_val = div_by_2_100(sum(0, 99, s_B => Q(100, score, s_B)));
-  let b_val = div_by_2_100(sum(0, 99, s_A => Q(100, s_A, score)));
-  console.log(`${score},${a_val},${b_val}`);
+  let a_sum = sum(0, 99, s_B => Q(100, score, s_B));
+  let b_sum = sum(0, 99, s_A => Q(100, s_A, score));
+  a_avg += BigInt(score) * a_sum;
+  b_avg += BigInt(score) * b_sum;
+  total_sum += a_sum + b_sum;
+  console.log(`${score},${div_by_2_100(a_sum)},${div_by_2_100(b_sum)}`);
 }
+a_avg = div_by_2_100(a_avg);
+b_avg = div_by_2_100(b_avg);
+console.log(`Average score for Alice: ${a_avg}, Bob: ${b_avg}`);
+assert_eq(total_sum, 2n ** 100n * 2n);

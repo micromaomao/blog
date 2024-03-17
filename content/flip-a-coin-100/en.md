@@ -2,7 +2,12 @@
 title: "An elusive coin-flipping problem"
 tags: ["math", "probability", "algorithm", "dynamic programming"]
 time: "2024-03-17T21:41:10+00:00"
+discuss:
+  "GitHub": "https://github.com/micromaomao/blog/issues"
+cover_alt: "5 coins, showing THHHT"
 ---
+
+![cover](./cover.svg)
 
 I was asked the following question by a friend today (he got the question from a financial analysis test):
 
@@ -333,6 +338,38 @@ I think that's pretty close.
 
 ## Actual distribution visualisation
 
-The <tex>Q(n, s_A, s_B)</tex> code above can be easily changed to give us a graph of the distribution by suming over one of <tex>s_A</tex> or <tex>s_B</tex>, although now we're viewing them as separate distributions again.
+The <tex>Q(n, s_A, s_B)</tex> code above can be easily changed to give us a graph of the distribution by summing over one of <tex>s_A</tex> or <tex>s_B</tex>, although now we're viewing them as separate distributions again.
+
+```javascript
+console.log("score,a_prob,b_prob")
+for (let score = 0; score <= 99; score += 1) {
+  let a_val = div_by_2_100(sum(0, 99, s_B => Q(100, score, s_B)));
+  let b_val = div_by_2_100(sum(0, 99, s_A => Q(100, s_A, score)));
+  console.log(`${score},${a_val},${b_val}`);
+}
+```
 
 <iframe src="https://www.desmos.com/calculator/lljzj1fvip?embed" height="300" style="border: 1px solid #ccc; width: 100%;" frameborder=0></iframe>
+
+We can also now answer our initial question of whether the expectation of the scores are equal:
+
+```javascript
+let a_avg = 0n;
+let b_avg = 0n;
+
+for (let score = 0; score <= 99; score += 1) {
+  let a_sum = sum(0, 99, s_B => Q(100, score, s_B));
+  let b_sum = sum(0, 99, s_A => Q(100, s_A, score));
+  a_avg += BigInt(score) * a_sum;
+  b_avg += BigInt(score) * b_sum;
+}
+a_avg = div_by_2_100(a_avg);
+b_avg = div_by_2_100(b_avg);
+console.log(`Average score for Alice: ${a_avg}, Bob: ${b_avg}`);
+```
+
+```text
+Average score for Alice: 24.75, Bob: 24.75
+```
+
+Turns out they are indeed equal.

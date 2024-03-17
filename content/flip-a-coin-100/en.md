@@ -1,6 +1,6 @@
 ---
 title: "An elusive coin-flipping problem"
-tags: ["math", "probability", "probability distributions"]
+tags: ["math", "probability", "algorithm", "dynamic programming"]
 time: "2024-03-16T23:56:04+00:00"
 draft: true
 ---
@@ -124,3 +124,45 @@ As we just showed, this is not always the case. An intuitive explanation for thi
 ![A sketch of Alice and Bob's score distributions](./distributions-sketck.excalidraw.png)
 
 And therefore, even if the two score distributions have the same mean, it might be that Alice actually more often gets a lower score, but has the _potential_ to earn vastly higher scores _occasionally_. And when the only thing that matters is who wins, earning higher scores doesn't matter once you've won.
+
+There is actually another erroneous assumption here that is more subtle &mdash; note that in the question setup, the scores for Alice and Bob are derived from the same sequence of coin flips. This means that the scores are not independent, and we can't treat the two scores as two separate, independent distribution. So even if we managed to find the distribution for Alice's score and Bob's score, the answer we get may not be correct if we treat them separately.
+
+## So what is the actual score distribution?
+
+Let's try and deduce the full score distribution algorithmically. A sensible approach might be to find some way of expressing some distribution function <tex>Q</tex> in terms of smaller versions of the problem. This pattern is commonly known as &ldquo;dynamic programming&rdquo;.
+
+We define the distribution function <tex>Q(n, s_A, s_B)</tex> to be the _number of_ distinct <tex>n</tex>-length coin-flip sequences such that Alice scores <tex>s_A</tex> and Bob scores <tex>s_B</tex>. In other word, the sequence contains <tex>s_A</tex> _HH_ and <tex>s_B</tex> _HT_. Defining it this way allow us to avoid having to think about actual probability, which is simply <tex>\frac{1}{2^n} Q(n, s_A, s_B)</tex>. Later on, it will be easiest for us to not have to re-scale <tex>Q</tex> for different <tex>n</tex> and just work with the raw count instead.
+
+Assuming we have <tex>Q(n, s_A, s_B)</tex> for <tex>n = 100</tex>, we will then be able to answer the original question by computing the probability of each person winning. This can be done by counting how many sequences result in winning condition for each person:
+
+<center>
+<p>
+<tex>
+\displaystyle
+P(s_A > s_B) = \frac{1}{2^{100}}\sum_{s_A = 1}^{99} \sum_{s_B = 0}^{s_A - 1} Q(100, s_A, s_B)
+</tex>
+</p>
+<p>and similarly</p>
+<p>
+<tex>
+\displaystyle
+P(s_B > s_A) = \frac{1}{2^{100}}\sum_{s_B = 1}^{50} \sum_{s_A = 0}^{s_B - 1} Q(100, s_A, s_B)
+</tex>
+</p>
+</center>
+
+Ok, that is all fine and dandy, but how do we actually compute <tex>Q</tex>?
+
+It is not obvious at first how we can possibly write <tex>Q(n, \ldots)</tex> in terms of <tex>Q(n - 1, \ldots)</tex> or smaller <tex>n</tex>. Let's imagine we're currently at some particular <tex>n</tex>-length sequence:
+
+<center><tex>\underbrace{\ldots \ldots \ldots}_{n - 1\text{ coins}}\ \textit{H}</tex></center>
+
+Does Alice gain a point here? What if we have:
+
+<center><tex>\underbrace{\ldots \ldots \ldots}_{n - 1\text{ coins}}\ \textit{T}</tex></center>
+
+Does Bob gain a point here? It seems like we will be forced to &lsquo;inspect&rsquo; the last coin in the preceding sequence to determine what we should do, which renders our approach unusable, because we have already rolled the previous state into just a count <tex>Q</tex>.
+
+However, all hope is not lost for dynamic programming. What if we simply force ourselves to always end the sequence with a _T_? In other words, we can define a slightly different function <tex>\tilde{Q}</tex>, such that <tex>\tilde{Q}(n, s_A, s_B)</tex> is the number of distinct <tex>n</tex>-length coin-flip sequences **which ends in a tail**, and such that Alice scores <tex>s_A</tex> and Bob scores <tex>s_B</tex>.
+
+The choice of which letter to ends the sequence with is somewhat arbitrary, but choosing <tex>\tilde{Q}</tex> to only count _\*T_ sequences is slightly easier to reason about, as _T_ makes a nice &lsquo;stopping point&rsquo; &mdash; what happens after that _T_ is completely separate from it or what comes before it.

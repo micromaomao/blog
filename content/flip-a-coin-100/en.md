@@ -1,6 +1,6 @@
 ---
-title: "An elusive coin-flipping problem that I got wrong multiple times"
-tags: ["math", "probability"]
+title: "An elusive coin-flipping problem"
+tags: ["math", "probability", "probability distributions"]
 time: "2024-03-16T23:56:04+00:00"
 draft: true
 ---
@@ -25,7 +25,7 @@ console.log(`Alice: ${a_score}, Bob: ${b_score}, ratio = ${a_score / b_score}`);
 
 At this point I was pretty comfortable to declare that both players are equally likely to win. However, that would obviously be too easy, and my friend quickly told me I was wrong. He also told me the correct answer, albeit without what I consider a good explanation. Let's explore this a bit more.
 
-In the above code, I have increased the sequence length because I didn't think the particular case of 100 mattered, and I just wanted more "samples". **This was my first mistake** &mdash; the question explicitly said 100, so there is no reason for me to arbitrarily increase the sequence. In the limit of an infinite sequence length (like we simulated above), Alice and Bob would score the same number of points, but let's actually do the simulation properly:
+In the above code, I have increased the sequence length because I didn't think the particular case of 100 mattered, and I just wanted more "samples". **This was my first mistake** &mdash; the question explicitly said 100, so there is no reason for me to arbitrarily increase the sequence. In the limit of an infinite sequence length (like we simulated above), Alice and Bob would score the same number of points, but perhaps things are more complicated with a finite sequence length? Let's actually do the simulation properly:
 
 ```javascript
 const seq_len = 100;
@@ -53,13 +53,14 @@ console.log(`Average Alice: ${a_score_sum / n_runs}, Bob: ${b_score_sum / n_runs
 Average Alice: 24.76017, Bob: 24.75328, Ratio: 1.000278346950384
 </pre>
 
-Interesting. The difference is quite small, although it's not obviously equal. Running it with a larger iteration results in the following:
+Interesting. The difference is quite small, although it's not obviously equal. Running it with a vastly larger iteration count, with statistical analysis, results in the following ([source code](./simulation-avg.js)):
 
 ```text
-TODO
+Average Alice: 24.749331868750865 +- 0.011238525490417558, Bob: 24.749518982975573 +- 0.0023019322652421182
+No significant difference with p = 0.01
 ```
 
-It seems reasonable to assume for now that the expectation are equal. So does this mean that Alice is more likely to win?
+It seems reasonable to assume for now that the expectation are equal (we will prove this formally later) &mdash; wouldn't this mean that the game is fair? Let's do it slightly differently:
 
 ```javascript
 const seq_len = 100;
@@ -98,7 +99,7 @@ Running the simulation more times shows that Bob wins approximately 2.7% more of
 
 <img src="./thonk.png" alt="Thonk" style="max-width: 200px; width: 100%; display: block; margin: auto;">
 
-Ok, **at this point I have to admit that I have made a second mistake**, which was also present in my original reasoning for concluding that the game is fair to both &mdash; assuming that simply comparing the _expectation_ of the score will answer the question. However, note what the question is asking:
+Ok, at this point I have to admit that **I had actually made a second mistake** in my original reasoning for concluding that the game is fair to both &mdash; assuming that simply comparing the _expectation_ of the score will answer the question. However, note what the question is asking:
 
 > Who is most likely to win?
 
@@ -110,6 +111,12 @@ An important lesson here is to use accurate simulations &mdash; simulate the thi
 
 But wait&hellip;
 
-## Why can we not compare expectations?
+## Why?
 
-A fundamental realisation from this is that when faced with a question like &ldquo;who is most likely to win&rdquo;, it is very tempting to simply try to prove some pair of expectations are equal, then conclude that the game is fair. As we just showed, this is not always the case. An intuitive explanation for this is that, even when two distributions have the same mean, they might have different skew, which means that the probability of one being greater than the other is not necessarily 50%. In the question above, the theoretical maximum score Alice can earn is 99, with the sequence _HHHHH_&hellip;_HHHHH_, whereas for Bob, it is 50 (_HTHT_&hellip;_HTHT_). This means that the probability distribution of Alice's score has a long tail to the right.
+A fundamental realisation from this is that when faced with a question like &ldquo;who is most likely to win&rdquo;, it is very tempting to simply jump to conclusion based on the observation that the expectations are equal. For example, if we set the score for Alice to simply be the number of heads, and for Bob to be the number of tails, it seems logical to conclude that, because we expect to get the same number of heads and tails, the game is fair.
+
+As we just showed, this is not always the case. An intuitive explanation for this is that, even when two distributions have the same mean, they might have different _skew_, which means that the probability of one being greater than the other is not necessarily 50%. In the question above, the theoretical maximum score Alice can earn is 99, with the sequence _HHHHH_&hellip;_HHHHH_, whereas for Bob, it is 50 (_HTHT_&hellip;_HTHT_). This means that the probability distribution of Alice's score has a longer tail to the right, perhaps something like (not to scale):
+
+![A sketch of Alice and Bob's score distributions](./distributions-sketck.excalidraw.png)
+
+And therefore, even if the two score distributions have the same mean, it might be that Alice actually more often gets a lower score, but has the _potential_ to earn vastly higher scores _occasionally_. And when the only thing that matters is who wins, earning higher scores doesn't matter once you've won.

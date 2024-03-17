@@ -2,7 +2,6 @@
 title: "An elusive coin-flipping problem"
 tags: ["math", "probability", "algorithm", "dynamic programming"]
 time: "2024-03-17T21:41:10+00:00"
-draft: true
 ---
 
 I was asked the following question by a friend today (he got the question from a financial analysis test):

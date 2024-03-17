@@ -1,0 +1,63 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+}
+
+.editor {
+  flex-grow: 1;
+  flex-shrink: 1;
+  height: 100px;
+}
+
+.buttons {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: stretch;
+  background-color: #fff;
+  font-size: 80%;
+}
+
+.buttons > button {
+  width: fit-content;
+  margin: 0;
+  background-color: transparent;
+  border: hidden;
+  font: inherit;
+  padding: 6px 14px;
+}
+
+.buttons > button:not(:disabled):hover {
+  background-color: #eee;
+}
+
+.buttons > button:not(:disabled):hover:active {
+  background-color: #ddd;
+}
+
+.buttons > button:disabled {
+  color: #999;
+}
+
+.buttons > .warning {
+  margin-left: 10px;
+  color: #700;
+  align-self: center;
+}
+
+.output {
+  flex-grow: 1;
+  flex-shrink: 1;
+  margin: 0;
+}
+
+.error {
+  color: red;
+}
+
+.no_output {
+  color: #999;
+  font-style: italic;
+}

@@ -13,6 +13,7 @@ import pug from "pug";
 import * as sass from "sass";
 import { parseArgs } from "util";
 import webpack from "webpack";
+import MonacoWebpackPlugin from "monaco-editor-webpack-plugin";
 
 marked.use(gfmHeadingId())
 marked.use(markedHighlight({
@@ -40,13 +41,18 @@ async function main() {
       "draft-mode": {
         type: "boolean",
         default: false,
-      }
+      },
+      "webpack-watch": {
+        type: "boolean",
+        default: false,
+      },
     },
     allowPositionals: true,
     strict: true,
   });
   let skip_bundle = values["skip-bundle"];
   let draft_mode = values["draft-mode"];
+  let webpack_watch = values["webpack-watch"];
 
   let output_dir_stat = null;
   try {
@@ -458,6 +464,7 @@ async function main() {
           };
           await new Promise((resolve, reject) => {
             let webpack_config = {
+              watch: webpack_watch,
               entry: script_path,
               devtool: "source-map",
               module: {
@@ -475,6 +482,10 @@ async function main() {
                         }
                       }
                     ]
+                  },
+                  {
+                    test: /(?<!\.module)\.css$/,
+                    use: [ "style-loader", "css-loader" ]
                   },
                   {
                     test: /\.ts$/,
@@ -496,7 +507,7 @@ async function main() {
                 modules: [path.resolve(import.meta.dirname, "node_modules"), path.resolve(import.meta.dirname, ".")]
               },
               output: {
-                filename: "[name].[chunkhash].js",
+                filename: webpack_watch ? "[name].js" : "[name].[chunkhash].js",
                 path: dist_dir_path,
               },
               mode: production ? "production" : "development",
@@ -504,7 +515,8 @@ async function main() {
                 new webpack.DefinePlugin({
                   "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV),
                   "process.env.BACKEND_ENDPOINT": JSON.stringify(process.env.BACKEND_ENDPOINT),
-                })
+                }),
+                new MonacoWebpackPlugin(),
               ]
             };
             webpack(webpack_config, (err, stats) => {

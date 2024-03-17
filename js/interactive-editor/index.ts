@@ -1,5 +1,7 @@
 import * as monaco from "monaco-editor";
 import styles from "./interactive-editor.module.css";
+import runIcon from "!raw-loader!./run-icon.svg";
+import stopIcon from "!raw-loader!./stop-icon.svg";
 
 function findPrevPre(elem: ChildNode): HTMLPreElement | null {
   while (true) {
@@ -33,22 +35,24 @@ function initEditor(code_block: HTMLPreElement, output_block: HTMLPreElement) {
     scrollBeyondLastLine: false,
     scrollbar: {
       alwaysConsumeMouseWheel: false,
-    }
+    },
+    tabSize: 2,
   });
 
   let buttons_container = document.createElement("div");
   buttons_container.className = styles.buttons;
   new_container.appendChild(buttons_container);
   let run_btn = document.createElement("button");
-  run_btn.innerText = "Run";
+  run_btn.innerHTML = `${runIcon} Run`;
   buttons_container.appendChild(run_btn);
   let stop_btn = document.createElement("button");
-  stop_btn.innerText = "Stop";
+  stop_btn.innerHTML = `${stopIcon} Stop`;
   buttons_container.appendChild(stop_btn);
   let warning = document.createElement("div");
   warning.innerText = "Code changes are not persisted";
   warning.className = styles.warning;
-  buttons_container.appendChild(warning)
+  buttons_container.appendChild(warning);
+  warning.style.display = "none";
 
   let output_container = document.createElement("pre");
   output_container.className = styles.output;
@@ -64,7 +68,7 @@ function initEditor(code_block: HTMLPreElement, output_block: HTMLPreElement) {
     }
     let line_count = model.getLineCount();
     let line_height = editor.getOption(monaco.editor.EditorOption.lineHeight);
-    let height = line_count * line_height;
+    let height = (line_count + 1) * line_height;
     const min_height = 100;
     if (height < min_height) {
       height = min_height;
@@ -81,6 +85,7 @@ function initEditor(code_block: HTMLPreElement, output_block: HTMLPreElement) {
     }
   }
   editor.onDidChangeModelContent(e => {
+    warning.style.display = "";
     update();
   });
   update();

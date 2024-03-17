@@ -516,7 +516,10 @@ async function main() {
                   "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV),
                   "process.env.BACKEND_ENDPOINT": JSON.stringify(process.env.BACKEND_ENDPOINT),
                 }),
-                new MonacoWebpackPlugin(),
+                new MonacoWebpackPlugin({
+                  languages: ["javascript", "typescript"],
+                  features: ["rename", "indentation", "format", "gotoSymbol", "gotoLine", "tokenization", "comment", "stickyScroll", "semanticTokens", "hover"]
+                }),
               ]
             };
             webpack(webpack_config, (err, stats) => {

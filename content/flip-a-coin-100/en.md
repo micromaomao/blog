@@ -11,6 +11,10 @@ I was asked the following question by a friend today (he got the question from a
 
 My immediate reaction was of course both would be equally likely to win. After all, in a random sequence of Hs and Ts, I _expect_ HH and HT to appear the same number of times. Let's write some code to verify this:
 
+<noscript>
+Enable javascript to edit code and re-run.
+</noscript>
+
 ```javascript
 const seq_len = 1000000;
 

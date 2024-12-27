@@ -29,10 +29,12 @@ jobs:
         if: github.ref == 'refs/heads/draft'
         run: npm run build-draft
       - name: Upload artifacts
-        uses: actions/upload-artifact@v1.0.0
+        uses: actions/upload-artifact@v4
         with:
           name: site
           path: ./dist
+          if-no-files-found: error
+          include-hidden-files: true
 
   deploy:
     runs-on: ubuntu-latest
@@ -41,16 +43,16 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - name: Download artifacts
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v4
         with:
           name: site
       - name: 🚀 (GitHub pages)
-        uses: JamesIves/github-pages-deploy-action@releases/v3
+        uses: JamesIves/github-pages-deploy-action@v4.7.2
         with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BRANCH: gh-pages
-          FOLDER: site
-          SINGLE_COMMIT: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: gh-pages
+          folder: site
+          single-commit: true
 
   deploy_draft:
     runs-on: ubuntu-latest
@@ -63,9 +65,9 @@ jobs:
         with:
           name: site
       - name: 🚀 (drafts branch)
-        uses: JamesIves/github-pages-deploy-action@releases/v3
+        uses: JamesIves/github-pages-deploy-action@v4.7.2
         with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BRANCH: draft-dist
-          FOLDER: site
-          SINGLE_COMMIT: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: draft-dist
+          folder: site
+          single-commit: true

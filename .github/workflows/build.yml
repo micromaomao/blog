@@ -46,6 +46,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: site
+          path: site
       - name: 🚀 (GitHub pages)
         uses: JamesIves/github-pages-deploy-action@v4.7.2
         with:
@@ -64,6 +65,7 @@ jobs:
         uses: actions/download-artifact@v1
         with:
           name: site
+          path: site
       - name: 🚀 (drafts branch)
         uses: JamesIves/github-pages-deploy-action@v4.7.2
         with:

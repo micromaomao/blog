@@ -1,0 +1,19 @@
+extends base
+
+block head
+  title= "Not Found - mw casual engineering"
+
+block body
+  h1 404 Not Found
+
+  p
+    | o.O the article you're looking for haz disappeared meow
+
+  p
+    | Report dead links <a href="https://github.com/micromaomao/blog/issues">on GitHub</a>!
+
+  -if (draft_mode)
+    p
+      | This site was built in draft mode. Note that previously unpublished articles might have been published since and moved to the <a href="https://blog.maowtm.org">main site</a>, or deleted (if I didn't like them).
+
+  a.home(href="index.html") « home

@@ -86,7 +86,7 @@ async function main() {
     dir_entires = dir_entires.filter(x => filters.includes(x));
   }
   console.log(`       (${dir_entires.length} articles to build)`.gray);
-  let progress_total_work = dir_entires.length * 4 + 11;
+  let progress_total_work = dir_entires.length * 4 + 12;
   let progress_current_work_done = 0;
   function print_status(status_text) {
     console.log(`[${Math.round(progress_current_work_done++ / progress_total_work * 100).toString().padStart(3, " ")}%] ${status_text}`.cyan);
@@ -128,6 +128,7 @@ async function main() {
   const tagindex_template = get_template("template/tagindex.pug");
   const index_template = get_template("template/index.pug");
   const cc_ext_template = get_template("template/request_cc_extension.pug");
+  const not_found_template = get_template("template/404.pug");
 
   let articles = [];
   let orig_renderer = new marked.Renderer();
@@ -672,6 +673,9 @@ async function main() {
     });
   }
   fs.writeFileSync(path.resolve(output_dir, "feed.json"), JSON.stringify(feed_json, null, 2));
+
+  print_status("emit 404.html");
+  fs.writeFileSync(path.resolve(output_dir, "404.html"), not_found_template({ draft_mode }));
 }
 
 const start_time = Date.now();

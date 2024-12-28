@@ -1,6 +1,6 @@
 ---
 title: "An elusive coin-flipping problem"
-tags: ["math", "probability", "algorithm", "dynamic programming"]
+tags: ["math", "probability", "algorithm", "dynamic programming", "interactive"]
 time: "2024-03-17T21:41:10+00:00"
 discuss:
   "GitHub": "https://github.com/micromaomao/blog/issues"

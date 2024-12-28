@@ -1,6 +1,6 @@
 ---
 title: "How Certificate Transparency works, exactly"
-tags: ["security", "web security", "cryptography", "TLS", "RFC", "PKI", "Rust"]
+tags: ["security", "web security", "cryptography", "TLS", "RFC", "PKI", "Rust", "interactive"]
 time: "2020-07-12T19:44:04Z"
 discuss:
 	"Twitter": "https://twitter.com/WtmMao/status/1282403397887578115"

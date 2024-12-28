@@ -86,7 +86,7 @@ async function main() {
     dir_entires = dir_entires.filter(x => filters.includes(x));
   }
   console.log(`       (${dir_entires.length} articles to build)`.gray);
-  let progress_total_work = dir_entires.length * 4 + 10;
+  let progress_total_work = dir_entires.length * 4 + 11;
   let progress_current_work_done = 0;
   function print_status(status_text) {
     console.log(`[${Math.round(progress_current_work_done++ / progress_total_work * 100).toString().padStart(3, " ")}%] ${status_text}`.cyan);
@@ -245,7 +245,7 @@ async function main() {
             throw new Error(`${mdpath}: front matter: invalid tags array`);
           }
         }
-        let lang_obj = { id: l, cover_image: null, title: front_matter.title, time, tags, markdown, discuss: null };
+        let lang_obj = { id: l, cover_image: null, title: front_matter.title, time, tags, markdown, discuss: null, text: null, html: null };
         if (front_matter.hasOwnProperty("discuss")) {
           lang_obj.discuss = front_matter.discuss;
         }
@@ -323,7 +323,7 @@ async function main() {
           $("span").each((_, e) => {
             let node = $(e);
             if ((node.attr("class") || "").startsWith("make-")) {
-              let tagname = node.attr("class").substr(5);
+              let tagname = node.attr("class").substring(5);
               e.tagName = tagname;
               node.removeClass("make-" + tagname);
             }
@@ -400,20 +400,19 @@ async function main() {
             $("body").append(`<h2>Footnote${footnotes.length > 1 ? "s" : ""}</h2>`, footnote_sec);
           }
 
-          return $("body").html();
+          lang_obj.text = $("body").text();
+          lang_obj.html = $("body").html();
         }
 
-        let html;
         try {
-          html = await marked.parse(markdown, {
+          let html = await marked.parse(markdown, {
             renderer: md_renderer
           });
-          html = await process_html(html);
+          await process_html(html);
         } catch (e) {
           console.error(e);
           throw new Error(`Error rendering ${mdpath}: ${e.message}`);
         }
-        lang_obj.html = html;
 
         if (cover_image_file && cover_image_file.endsWith(".svg")) {
           let png_output = path.resolve(dist_dir_path, cover_image_file + ".png");
@@ -642,6 +641,37 @@ async function main() {
   } catch (e) {
     throw new Error(`Error running svgo: ${e.message}`);
   }
+
+  let feed_json = [];
+  print_status("emit feed.json");
+
+  function make_snippet(text) {
+    let words = text.split(/\s+/).filter(x => x.length > 0);
+    let snippet = "";
+    let i = 0;
+    while (snippet.length < 300 && i < words.length) {
+      snippet += words[i] + " ";
+      i++;
+    }
+    snippet = snippet.trim();
+    if (i < words.length) {
+      snippet += "...";
+    }
+    return snippet;
+  }
+
+  for (let article of sort_articles(articles)) {
+    let default_lang = article.default_language;
+    feed_json.push({
+      title: default_lang.title,
+      url: article.base_url + `/${default_lang.id}.html`,
+      date: default_lang.time.toISOString(),
+      tags: default_lang.tags,
+      cover_image: default_lang.cover_image ? article.base_url + "/" + default_lang.cover_image : null,
+      snippet: make_snippet(default_lang.text),
+    });
+  }
+  fs.writeFileSync(path.resolve(output_dir, "feed.json"), JSON.stringify(feed_json, null, 2));
 }
 
 const start_time = Date.now();

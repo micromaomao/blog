@@ -8,6 +8,4 @@ block head
 block body
   a.returntoindex(href="../index.html") « see everything
   h1= tag.name
-  -let pick_language = article => article.languages.find(x => x.id == "en") || article.languages[0];
-  -let ordered_articles = tag.articles.slice().sort((a, b) => Math.sign(pick_language(b).time - pick_language(a).time));
-  +list_articles(ordered_articles, pick_language, true)
+  +list_articles(ordered_articles, true)

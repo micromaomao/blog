@@ -1,7 +1,7 @@
-mixin list_articles(articles, pick_language_fn, in_tagdir)
+mixin list_articles(ordered_articles, in_tagdir)
   ul.articles
     each article, index in ordered_articles
-      -let l = pick_language_fn(article);
+      -let l = article.default_language;
       -if (index > 0)
         hr
       li.article

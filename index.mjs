@@ -485,7 +485,7 @@ async function main() {
                   },
                   {
                     test: /(?<!\.module)\.css$/,
-                    use: [ "style-loader", "css-loader" ]
+                    use: ["style-loader", "css-loader"]
                   },
                   {
                     test: /\.ts$/,
@@ -550,6 +550,10 @@ async function main() {
       await Tag.process_article(article);
       return article;
     }
+
+    get default_language() {
+      return this.languages.find(l => l.id == "en") || this.languages[0];
+    }
   }
 
   let tags = new Map();
@@ -606,12 +610,16 @@ async function main() {
     }
   }
 
+  function sort_articles(articles) {
+    return articles.slice().sort((a, b) => Math.sign(b.default_language.time - a.default_language.time));
+  }
+
   let tagindex_dir = path.resolve(output_dir, "tagindex");
   tryMkdirp(tagindex_dir);
   for (let t of tags.values()) {
     let outhtmlfile = path.resolve(tagindex_dir, `${t.name.toLowerCase()}.html`);
     print_status("emit " + outhtmlfile);
-    let html = tagindex_template({ tag: t });
+    let html = tagindex_template({ tag: t, ordered_articles: sort_articles(t.articles) });
     try {
       fs.writeFileSync(outhtmlfile, html)
     } catch (e) {
@@ -621,7 +629,7 @@ async function main() {
 
   let index_file_path = path.resolve(output_dir, "index.html");
   print_status("emit " + index_file_path);
-  fs.writeFileSync(index_file_path, index_template({ articles }));
+  fs.writeFileSync(index_file_path, index_template({ ordered_articles: sort_articles(articles) }));
 
   let cc_ext_file_path = path.resolve(output_dir, "request_cc_extension.html");
   print_status("emit " + cc_ext_file_path);

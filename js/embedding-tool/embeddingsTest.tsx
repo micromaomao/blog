@@ -81,7 +81,7 @@ export default function EmbeddingsTest({ available_models }: { available_models:
           <div className={styles.inputRow + (idx === 0 ? (" " + styles.inputRowNoRemove) : "")} key={idx}>
             <Textarea
               resize="vertical"
-              defaultValue={input}
+              value={input}
               // style={{width: "100%"}}
               onChange={(_, data) => updateInput(idx, data.value)}
               appearance={idx === bestMatchHighlight ? "filled-lighter" : undefined}

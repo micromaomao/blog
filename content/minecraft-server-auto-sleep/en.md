@@ -4,7 +4,7 @@ tags: ["cloud", "Minecraft", "Google-Cloud", "architecture", "Java"]
 time: "2022-08-19T00:53:16Z"
 discuss: {}
 snippet: >-
-    Cloud platforms hate this! You won't believe how much money you can save via this one weird trick — turning things off when you don't use them! The idea for this project came when I realized that most of the time, no one is on the server, which means that keeping it running 24/7 is a huge waste of resources. The other day I noticed one little interesting feature in Compute Engine: suspend...
+    The idea for this project came when I realized that most of the time, no one is on my Minecraft server, which means that keeping it running 24/7 is a huge waste of resources. The other day I noticed one little interesting feature in Compute Engine: suspend...
 ---
 
 ![cover](cover.png)

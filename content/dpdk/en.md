@@ -4,6 +4,8 @@ tags: ["networking", "DPDK", "performance", "Azure", "Linux", "Rust"]
 time: "2023-04-07T00:40:20.004Z"
 discuss:
   "GitHub": "https://github.com/micromaomao/dpdk-project/issues"
+snippet: >-
+  Recently at work I have been learning about this fancy framework we are using in a product with high-performance networking requirement — the Data Plane Development Kit (DPDK). It is a set of user-space NIC drivers and related utility libraries (like fast buffer pools or queues) that enables an application to bypass the Linux kernel's networking stack, and directly send and receive packets from the hardware...
 ---
 
 ![cover](cover.png)

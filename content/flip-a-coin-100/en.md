@@ -5,6 +5,8 @@ time: "2024-03-17T21:41:10+00:00"
 discuss:
   "GitHub": "https://github.com/micromaomao/blog/issues"
 cover_alt: "5 coins, showing THHHT"
+snippet: >-
+  Flip a fair coin 100 times — it gives a sequence of heads (H) and tails (T). For each HH in the sequence of flips, Alice gets a point; for each HT, Bob does, so e.g. for the sequence THHHT Alice gets 2 points and Bob gets 1 point. Who is most likely to win?
 ---
 
 ![cover](./cover.svg)

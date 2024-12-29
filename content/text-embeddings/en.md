@@ -8,6 +8,8 @@ cover_alt: >-
   changing pixels draws out the sentence "YUKI BEST GIRL".
 discuss:
   "GitHub": "https://github.com/micromaomao/chat.maowtm.org/issues?q=is%3Aissue+no%3Aproject+"
+snippet: >-
+  Have you ever wondered how LLMs ‘read’ text and seem to understand concepts? Internally, these models turn their input into numerical vectors. This means that with an LLM and some text input, you can get a bunch of numbers to feed into whatever machine learning model you dream of...
 ---
 
 ![cover](cover.gif)

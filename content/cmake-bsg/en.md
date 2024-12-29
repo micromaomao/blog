@@ -3,7 +3,7 @@ title: "CMake: A build system generator for pretty much anything"
 tags: ["tooling", "building", "Linux", "CMake"]
 time: "2019-12-01T20:00:00.220Z"
 snippet: >-
-  If you have been compiling open-source programs for some time, you almost certainly have used CMake. It's a very popular Makefile generator for C/C++ projects. Recently I have been trying to use CMake for non-C projects, and I find it worked well — CMake build scripts might not be so easy to write at first, but they are very flexible and can certainly be helpful if you want a custom build system for your project.
+  If you have been compiling open-source programs for some time, you almost certainly have used CMake. It's a very popular Makefile generator for C/C++ projects. Recently I have been trying to use CMake for non-C projects, and I find it worked well — CMake build scripts might not be so easy to write at first, but they are very flexible and can certainly be helpful if you want a custom build system for your project...
 ---
 
 ![cover](cv_build_screenshot.svg)

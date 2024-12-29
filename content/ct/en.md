@@ -5,6 +5,8 @@ time: "2020-07-12T19:44:04Z"
 discuss:
 	"Twitter": "https://twitter.com/WtmMao/status/1282403397887578115"
 	"Hacker News": "https://news.ycombinator.com/item?id=23814292"
+snippet: >-
+		For TLS, We require that the public key of web servers be signed by a publicly trusted CA in the form of a certificate bound to a domain name, and we trust that those CAs would only sign certificates after they have verified the server they are signing for controls the domain. However, there is no way for the public, or the site owner, to reliably know when a CA has breached this trust. We would be much safer if every valid certificate were discoverable by the public. Can we make that happen?
 ---
 
 ![cover](cover.svg)

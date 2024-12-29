@@ -403,6 +403,23 @@ async function main() {
 
           lang_obj.text = $("body").text();
           lang_obj.html = $("body").html();
+
+          function make_snippet(text) {
+            let words = text.split(/\s+/).filter(x => x.length > 0);
+            let snippet = "";
+            let i = 0;
+            while (snippet.length < 300 && i < words.length) {
+              snippet += words[i] + " ";
+              i++;
+            }
+            snippet = snippet.trim();
+            if (i < words.length) {
+              snippet += "...";
+            }
+            return snippet;
+          }
+
+          lang_obj.snippet = make_snippet(lang_obj.text);
         }
 
         try {
@@ -646,21 +663,6 @@ async function main() {
   let feed_json = [];
   print_status("emit feed.json");
 
-  function make_snippet(text) {
-    let words = text.split(/\s+/).filter(x => x.length > 0);
-    let snippet = "";
-    let i = 0;
-    while (snippet.length < 300 && i < words.length) {
-      snippet += words[i] + " ";
-      i++;
-    }
-    snippet = snippet.trim();
-    if (i < words.length) {
-      snippet += "...";
-    }
-    return snippet;
-  }
-
   for (let article of sort_articles(articles)) {
     let default_lang = article.default_language;
     feed_json.push({
@@ -669,7 +671,7 @@ async function main() {
       date: default_lang.time.toISOString(),
       tags: default_lang.tags,
       cover_image: default_lang.cover_image ? article.base_url + "/" + default_lang.cover_image : null,
-      snippet: make_snippet(default_lang.text),
+      snippet: default_lang.snippet,
     });
   }
   fs.writeFileSync(path.resolve(output_dir, "feed.json"), JSON.stringify(feed_json, null, 2));

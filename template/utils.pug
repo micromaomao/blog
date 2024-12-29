@@ -14,3 +14,4 @@ mixin list_articles(ordered_articles, in_tagdir)
               | #{" "}
             a.tag(href=`${in_tagdir ? "" : "tagindex/"}${encodeURIComponent(t.toLowerCase())}.html`)= t
         .time= l.time.toDateString()
+        p.snippet= l.snippet

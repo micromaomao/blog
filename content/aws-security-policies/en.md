@@ -3,7 +3,7 @@ title: "Understanding AWS security policies"
 tags: ["cloud", "AWS", "security"]
 time: "2020-01-06T14:18:04.000Z"
 snippet: >-
-    Some days ago I was (again) trying to fiddle with AWS security policies trying to create a user with only the rights to upload to a specific S3 "folder". I have already attempted this earlier before but with no success, in part because there is just so little documentation about how aws policies work...
+    Some days ago I was (again) trying to fiddle with AWS security policies trying to create a user with only the rights to upload to a specific S3 "folder". I have already attempted this earlier before but with no success, in part because there is just so little documentation about how AWS policies work...
 ---
 
 ![cover](policy_editor_summary_screenshot.png)

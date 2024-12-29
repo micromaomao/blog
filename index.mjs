@@ -246,7 +246,18 @@ async function main() {
             throw new Error(`${mdpath}: front matter: invalid tags array`);
           }
         }
-        let lang_obj = { id: l, cover_image: null, title: front_matter.title, time, tags, markdown, discuss: null, text: null, html: null };
+        let lang_obj = {
+          id: l,
+          cover_image: null,
+          title: front_matter.title,
+          time,
+          tags,
+          markdown,
+          discuss: null,
+          text: null,
+          html: null,
+          snippet: front_matter.snippet || null
+        };
         if (front_matter.hasOwnProperty("discuss")) {
           lang_obj.discuss = front_matter.discuss;
         }
@@ -419,7 +430,9 @@ async function main() {
             return snippet;
           }
 
-          lang_obj.snippet = make_snippet(lang_obj.text);
+          if (!lang_obj.snippet) {
+            lang_obj.snippet = make_snippet(lang_obj.text);
+          }
         }
 
         try {

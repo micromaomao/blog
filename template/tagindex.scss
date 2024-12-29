@@ -1,0 +1,7 @@
+@use "base" as *;
+@use "utils.article_list" as *;
+
+a.returntoindex {
+  color: $color-gray-text;
+  text-decoration: none;
+}

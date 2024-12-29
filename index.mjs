@@ -107,7 +107,7 @@ async function main() {
     } catch (e) {
       throw new Error(`Error compiling ${file_path}: ${e.message}`);
     }
-    let sass_path = path.resolve(import.meta.dirname, fp.replace(/\.pug$/, ".sass"));
+    let sass_path = path.resolve(import.meta.dirname, fp.replace(/\.pug$/, ".scss"));
     print_status(`Compile sass: ${sass_path}`);
     let css;
     try {

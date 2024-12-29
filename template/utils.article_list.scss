@@ -1,0 +1,39 @@
+@use "base" as *;
+
+ul.articles {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+
+  > li.article {
+    img.cover {
+      max-width: 100%;
+      max-height: 300px;
+      display: block;
+      margin: 0 auto;
+    }
+    list-style-type: none;
+    padding: 0;
+    margin: 1em 0;
+
+    a.title {
+      color: $color-link;
+      font-size: 120%;
+      text-decoration: none;
+      font-weight: bold;
+      display: block;
+      padding: 0;
+      margin: 0;
+    }
+    .time {
+      color: $color-gray-text;
+      font-size: 75%;
+    }
+    .snippet {
+      margin: 0;
+      padding: 0;
+      color: #444;
+      font-size: 16px;
+    }
+  }
+}

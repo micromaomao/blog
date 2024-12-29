@@ -86,7 +86,7 @@ async function main() {
     dir_entires = dir_entires.filter(x => filters.includes(x));
   }
   console.log(`       (${dir_entires.length} articles to build)`.gray);
-  let progress_total_work = dir_entires.length * 4 + 12;
+  let progress_total_work = dir_entires.length * 4 + 13;
   let progress_current_work_done = 0;
   function print_status(status_text) {
     console.log(`[${Math.round(progress_current_work_done++ / progress_total_work * 100).toString().padStart(3, " ")}%] ${status_text}`.cyan);
@@ -678,6 +678,9 @@ async function main() {
 
   print_status("emit 404.html");
   fs.writeFileSync(path.resolve(output_dir, "404.html"), not_found_template({ draft_mode }));
+
+  print_status("emit layout.js");
+  fs.writeFileSync(path.resolve(output_dir, "layout.js"), fs.readFileSync(path.resolve(import.meta.dirname, "js/layout.js")));
 }
 
 const start_time = Date.now();

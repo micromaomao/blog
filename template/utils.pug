@@ -4,10 +4,11 @@ mixin list_articles(ordered_articles, in_tagdir)
       -let l = article.default_language;
       -if (index > 0)
         hr
-      li.article
+      -let article_url = `${in_tagdir ? "../" : ""}${encodeURIComponent(article.codename)}/${l.id}.html`;
+      li.article.clickable-article(data-href=article_url)
         -if (l.cover_image !== null)
           img.cover(src=`${in_tagdir ? "../" : ""}${encodeURIComponent(article.codename)}/${l.cover_image}`, alt=(l.cover_alt || "cover image"))
-        a.title(href=`${in_tagdir ? "../" : ""}${encodeURIComponent(article.codename)}/${l.id}.html`)= l.title
+        a.title(href=article_url)= l.title
         .tags
           each t, i in l.tags
             -if (i != 0)

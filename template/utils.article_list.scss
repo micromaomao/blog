@@ -6,11 +6,28 @@ ul.articles {
   margin: 0;
 
   > li.article {
+    display: grid;
+    grid-template-columns: 100%;
+
+    @media (min-width: 1200px) {
+      grid-template-columns: 40% 60%;
+      grid-template-rows: auto auto auto 1fr;
+      row-gap: 0.4em;
+      column-gap: 1em;
+    }
+
     img.cover {
       max-width: 100%;
       max-height: 300px;
       display: block;
       margin: 0 auto;
+
+      @media (min-width: 1200px) {
+        grid-column: 1 / 2;
+        grid-row: 1 / 5;
+        align-self: center;
+        justify-self: center;
+      }
     }
     list-style-type: none;
     padding: 0;

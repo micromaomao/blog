@@ -1,7 +1,7 @@
 ---
 title: "Using the Linux kernel to help me crack an executable quickly"
 tags: ["Linux", "systems programming", "reverse engineering", "performance"]
-time: "2024-12-30T18:20:27Z"
+time: "2025-01-01T23:21:38+00:00"
 discuss:
   "GitHub": "https://github.com/micromaomao/linux-dev/issues"
 snippet: >-
@@ -96,6 +96,11 @@ $ cat strace.log</span>
 
 I suspect it is detecting debuggers and potentially changing its behavior. After writing this I later found out that actually it will pretend to run as normal even when it has detected a tracer, but actually will not print the flag even with the right input. I decided to run it in my VM with a modified kernel that will always say `TracerPid` is 0. I found the code that puts that number in `/proc/self/status` by simply searching for &ldquo;TracerPid&rdquo;:
 
+<p class="info">
+  The diffs in this Markdown-rendered article had their tabs and trailing whitespaces destroyed. In order to actually apply them please use the &ldquo;Copy original diff&rdquo; buttons.
+</p>
+
+[Copy original diff TODO: IMPLEMENT](./1.patch)
 ```diff
 diff --git a/fs/proc/array.c b/fs/proc/array.c
 index 34a47fb0c57f..141121505a37 100644
@@ -246,4 +251,71 @@ Now, this might seem like massive overkill, and it probably is, but hear me out:
 - The `ptrace` API is quite difficult to use, getting syscall hooking right is not easy (recall ChatGPT failed to write the first `ptrace` solution), and so we might as well just have the kernel do what we want.
 - Hacking the kernel is fun, at least to me <img src="./init.png" alt="Small Yuki Nagato emote" style="width: 1.2em; vertical-align: -5px;">
 
-I implemented a checkpoint feature in Linux to brute force some obfuscated binary (and learned more about how memory management works)
+I will now walk through each step one by one, as laid out above. If you as the reader don't have a lot of kernel experience (I certainly don't), hopefully by going like this, this will not be too difficult to follow:
+
+<p class="info">
+  I will be using the term &lsquo;process&rsquo; and &lsquo;task&rsquo; interchangeably in this article.
+</p>
+
+The first step is to identity and mark the process we're interested in. In Linux, each process is represented by a [`struct task_struct`](https://github.com/micromaomao/linux-dev/blob/ick/include/linux/sched.h#L778), which contains things like the PID, process name, memory mappings, and a thousand other things. We can of course add our own data to this struct &ndash; for example, we can have a `bool` to indicate whether a process is our hack target, and use it to decide if we should do special things in our modified `read`/`write` syscall handlers (we don't want to break unrelated processes like the shell, for example).
+
+You probably know that when you run an executable, the shell forks a subprocess then run `exec` with the command arguments. If we assume our target binary is always named &ldquo;`hackme`&rdquo;, we can check for this in the handler for `exec`, and set the `bool` we added previously to `true`.
+
+With some searching and perhaps tracing with [ftrace](https://www.kernel.org/doc/html/latest/trace/ftrace.html) (I found `function_graph` to be particularly useful), we find that there is a common function for `execve` and `execveat` &ndash; [`do_execveat_common`](https://github.com/micromaomao/linux-dev/blob/ick/fs/exec.c#L1876), and so we can add our code there, and add the additional field to the `task_struct`:
+
+```diff
+diff --git a/fs/exec.c b/fs/exec.c
+index 6c53920795c2..f07ef9841380 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1884,6 +1884,12 @@ static int do_execveat_common(int fd, struct filename *filename,
+ 	if (IS_ERR(filename))
+ 		return PTR_ERR(filename);
+
++	if (strstr(filename->name, "hackme") != NULL) {
++		pr_info("execveat: %s[%u] to be hacked\n", filename->name, current->pid);
++		current->hack_target.hack = true;
++		current->hack_target.next_number = 1;
++	}
++
+ 	/*
+ 	* We move the actual failure in case of RLIMIT_NPROC excess from
+ 	* set*uid() to execve() because too many poorly written programs
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index bb343136ddd0..212b63789de4 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1592,6 +1592,11 @@ struct task_struct {
+ 	struct user_event_mm		*user_event_mm;
+ #endif
+
++	struct {
++		bool hack;
++		u32 next_number;
++	} hack_target;
++
+ 	/*
+ 	* New fields for task_struct should be added above here, so that
+ 	* they are included in the randomized portion of task_struct.
+diff --git a/init/init_task.c b/init/init_task.c
+index 136a8231355a..51c9b5d202f1 100644
+--- a/init/init_task.c
++++ b/init/init_task.c
+@@ -219,6 +219,8 @@ struct task_struct init_task __aligned(L1_CACHE_BYTES) = {
+ #ifdef CONFIG_SECCOMP_FILTER
+ 	.seccomp	= { .filter_count = ATOMIC_INIT(0) },
+ #endif
++
++  .hack_target = { .hack = false, .next_number = 0 },
+ };
+ EXPORT_SYMBOL(init_task);
+
+```
+
+<!--
+
+Conclusion:
+When I was a lot younger, there was this book which attempted to help the reader understand Linux by listing a bunch of source codes and make commentaries on it. It started from bootup. I couldn't even get through a chapter.
+I think you need to play with stuff to understand stuff. Use kgdb etc
+
+-->

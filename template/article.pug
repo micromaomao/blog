@@ -7,7 +7,6 @@ block head
   -if (lang_obj.cover_image_og)
     meta(property="og:image",content=`${article.base_url}/${lang_obj.cover_image_og}`)
   meta(property="og:type",content="article")
-  style(type="text/css")!= "\n" + css
   link(rel="stylesheet", href="https://unpkg.com/highlight.js@9.16.2/styles/idea.css")
   each b in article.bundles
     -if (b.type == "css")

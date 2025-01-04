@@ -1,4 +1,4 @@
-From 2b2a7250b3f63564a0e49956e1ebae6e8a1a02b5 Mon Sep 17 00:00:00 2001
+From 6429690bdfacc9ba5325e7e9880efd12bb642ce2 Mon Sep 17 00:00:00 2001
 From: Mao <m@maowtm.org>
 Date: Sat, 4 Jan 2025 20:24:48 +0000
 Subject: [PATCH 4/4] basic files for ick
@@ -8,10 +8,10 @@ Subject: [PATCH 4/4] basic files for ick
  Kconfig               |  6 ++++++
  include/linux/ick.h   | 19 +++++++++++++++++++
  include/linux/sched.h |  4 ++++
- init/init_task.c      |  4 +++-
+ init/init_task.c      |  3 +++
  kernel/Makefile       |  2 ++
  kernel/ick.c          | 19 +++++++++++++++++++
- 7 files changed, 55 insertions(+), 1 deletion(-)
+ 7 files changed, 55 insertions(+)
  create mode 100644 include/linux/ick.h
  create mode 100644 kernel/ick.c
 
@@ -80,20 +80,19 @@ index 6adc1add5288..8a631848512c 100644
  		/* This indicates whether a process is our target */
  		bool hack;
 diff --git a/init/init_task.c b/init/init_task.c
-index 51c9b5d202f1..9268dfc1300f 100644
+index 7aeb9882d171..aefe6778df78 100644
 --- a/init/init_task.c
 +++ b/init/init_task.c
-@@ -219,7 +219,9 @@ struct task_struct init_task __aligned(L1_CACHE_BYTES) = {
+@@ -218,6 +218,9 @@ struct task_struct init_task __aligned(L1_CACHE_BYTES) = {
+ #endif
  #ifdef CONFIG_SECCOMP_FILTER
  	.seccomp	= { .filter_count = ATOMIC_INIT(0) },
- #endif
--
++#endif
 +#ifdef CONFIG_ICK
 +	.ick_data = NULL,
-+#endif
-   .hack_target = { .hack = false, .next_number = 0 },
+ #endif
+ 	.hack_target = { .hack = false, .next_number = 0 },
  };
- EXPORT_SYMBOL(init_task);
 diff --git a/kernel/Makefile b/kernel/Makefile
 index 87866b037fbe..d129c357e521 100644
 --- a/kernel/Makefile

@@ -1,4 +1,4 @@
-From c333533439631cf2cf55602511c72ae0c29f5c02 Mon Sep 17 00:00:00 2001
+From ff8eb6f98538fba08f2eaa6216173eeecf8e42ce Mon Sep 17 00:00:00 2001
 From: Mao <m@maowtm.org>
 Date: Sat, 4 Jan 2025 00:05:28 +0000
 Subject: [PATCH 3/4] set hack_target
@@ -6,8 +6,8 @@ Subject: [PATCH 3/4] set hack_target
 ---
  fs/exec.c             |  6 ++++++
  include/linux/sched.h | 10 ++++++++++
- init/init_task.c      |  2 ++
- 3 files changed, 18 insertions(+)
+ init/init_task.c      |  1 +
+ 3 files changed, 17 insertions(+)
 
 diff --git a/fs/exec.c b/fs/exec.c
 index 6c53920795c2..f07ef9841380 100644
@@ -48,15 +48,14 @@ index bb343136ddd0..6adc1add5288 100644
  	 * New fields for task_struct should be added above here, so that
  	 * they are included in the randomized portion of task_struct.
 diff --git a/init/init_task.c b/init/init_task.c
-index 136a8231355a..51c9b5d202f1 100644
+index 136a8231355a..7aeb9882d171 100644
 --- a/init/init_task.c
 +++ b/init/init_task.c
-@@ -219,6 +219,8 @@ struct task_struct init_task __aligned(L1_CACHE_BYTES) = {
+@@ -219,6 +219,7 @@ struct task_struct init_task __aligned(L1_CACHE_BYTES) = {
  #ifdef CONFIG_SECCOMP_FILTER
  	.seccomp	= { .filter_count = ATOMIC_INIT(0) },
  #endif
-+
-+  .hack_target = { .hack = false, .next_number = 0 },
++	.hack_target = { .hack = false, .next_number = 0 },
  };
  EXPORT_SYMBOL(init_task);
  

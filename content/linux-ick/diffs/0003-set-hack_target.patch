@@ -1,0 +1,60 @@
+From 88548da707778b6649019c54232dd4fb2fe78bc3 Mon Sep 17 00:00:00 2001
+From: Mao <m@maowtm.org>
+Date: Sat, 4 Jan 2025 00:05:28 +0000
+Subject: [PATCH 3/3] set hack_target
+
+---
+ fs/exec.c             | 6 ++++++
+ include/linux/sched.h | 5 +++++
+ init/init_task.c      | 2 ++
+ 3 files changed, 13 insertions(+)
+
+diff --git a/fs/exec.c b/fs/exec.c
+index 6c53920795c2..f07ef9841380 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1884,6 +1884,12 @@ static int do_execveat_common(int fd, struct filename *filename,
+ 	if (IS_ERR(filename))
+ 		return PTR_ERR(filename);
+ 
++	if (strstr(filename->name, "hackme") != NULL) {
++		pr_info("execveat: %s[%u] to be hacked\n", filename->name, current->pid);
++		current->hack_target.hack = true;
++		current->hack_target.next_number = 1;
++	}
++
+ 	/*
+ 	 * We move the actual failure in case of RLIMIT_NPROC excess from
+ 	 * set*uid() to execve() because too many poorly written programs
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index bb343136ddd0..212b63789de4 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1592,6 +1592,11 @@ struct task_struct {
+ 	struct user_event_mm		*user_event_mm;
+ #endif
+ 
++	struct {
++		bool hack;
++		u32 next_number;
++	} hack_target;
++
+ 	/*
+ 	 * New fields for task_struct should be added above here, so that
+ 	 * they are included in the randomized portion of task_struct.
+diff --git a/init/init_task.c b/init/init_task.c
+index 136a8231355a..51c9b5d202f1 100644
+--- a/init/init_task.c
++++ b/init/init_task.c
+@@ -219,6 +219,8 @@ struct task_struct init_task __aligned(L1_CACHE_BYTES) = {
+ #ifdef CONFIG_SECCOMP_FILTER
+ 	.seccomp	= { .filter_count = ATOMIC_INIT(0) },
+ #endif
++
++  .hack_target = { .hack = false, .next_number = 0 },
+ };
+ EXPORT_SYMBOL(init_task);
+ 
+-- 
+2.47.1
+

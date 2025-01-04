@@ -14,6 +14,7 @@ import * as sass from "sass";
 import { parseArgs } from "util";
 import webpack from "webpack";
 import MonacoWebpackPlugin from "monaco-editor-webpack-plugin";
+import { processDiff } from "./diffs.mjs";
 
 marked.use(gfmHeadingId())
 marked.use(markedHighlight({
@@ -331,6 +332,18 @@ async function main() {
               throw new Error(`TeX rendering error: ${e}`);
             }
           }
+
+          $("a.make-diff").each((_, e) => {
+            let node = $(e);
+            let href = node.attr("href");
+            if (!href || !fs.existsSync(path.resolve(cdir_path, href))) {
+              throw new Error(`a.make-diff encountered with invalid href: ${href}`);
+            }
+            print_verbose(`Turning ${href} into diff block`);
+            let diff_content = fs.readFileSync(path.resolve(cdir_path, href), { encoding: "utf8" });
+            let elem = processDiff(diff_content, $);
+            node.replaceWith(elem);
+          });
 
           $("span").each((_, e) => {
             let node = $(e);
@@ -692,8 +705,8 @@ async function main() {
   print_status("emit 404.html");
   fs.writeFileSync(path.resolve(output_dir, "404.html"), not_found_template({ draft_mode }));
 
-  print_status("emit layout.js");
-  fs.writeFileSync(path.resolve(output_dir, "layout.js"), fs.readFileSync(path.resolve(import.meta.dirname, "js/layout.js")));
+  print_status("cp layout.js");
+  fs.copyFileSync(path.resolve(import.meta.dirname, "js/layout.js"), path.resolve(output_dir, "layout.js"));
 }
 
 const start_time = Date.now();

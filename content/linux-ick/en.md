@@ -96,26 +96,7 @@ $ cat strace.log</span>
 
 I suspect it is detecting debuggers and potentially changing its behavior. After writing this I later found out that actually it will pretend to run as normal even when it has detected a tracer, but actually will not print the flag even with the right input. I decided to run it in my VM with a modified kernel that will always say `TracerPid` is 0. I found the code that puts that number in `/proc/self/status` by simply searching for &ldquo;TracerPid&rdquo;:
 
-<p class="info">
-  The diffs in this Markdown-rendered article had their tabs and trailing whitespaces destroyed. In order to actually apply them please use the &ldquo;Copy original diff&rdquo; buttons.
-</p>
-
-[Copy original diff TODO: IMPLEMENT](./1.patch)
-```diff
-diff --git a/fs/proc/array.c b/fs/proc/array.c
-index 34a47fb0c57f..141121505a37 100644
---- a/fs/proc/array.c
-+++ b/fs/proc/array.c
-@@ -185,7 +185,7 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
-        seq_put_decimal_ull(m, "\nNgid:\t", ngid);
-        seq_put_decimal_ull(m, "\nPid:\t", pid_nr_ns(pid, ns));
-        seq_put_decimal_ull(m, "\nPPid:\t", ppid);
--       seq_put_decimal_ull(m, "\nTracerPid:\t", tpid);
-+       seq_put_decimal_ull(m, "\nTracerPid:\t", 0);
-        seq_put_decimal_ull(m, "\nUid:\t", from_kuid_munged(user_ns, cred->uid));
-        seq_put_decimal_ull(m, "\t", from_kuid_munged(user_ns, cred->euid));
-        seq_put_decimal_ull(m, "\t", from_kuid_munged(user_ns, cred->suid));
-```
+<a class="make-diff" href="./diffs/0001-hide-TracerPid.patch"></a>
 
 With the linux-dev environment I mentioned before, we can simply `make` to produce a new kernel image, then kill the old VM (with `.dev/stopvm.sh` or Ctrl-D on the console) and run `startvm.sh` again.
 
@@ -127,21 +108,7 @@ ptrace(PTRACE_TRACEME) = -1 EPERM (Operation not permitted)
 
 It is probably looking for whether this call returns a `-EPERM`, which would indicate that the process is (already) being traced, or 0. But since we're already making kernel changes, this is not difficult to work around either:
 
-```diff
-diff --git a/kernel/ptrace.c b/kernel/ptrace.c
-index d5f89f9ef29f..017d25c00fa3 100644
---- a/kernel/ptrace.c
-+++ b/kernel/ptrace.c
-@@ -486,7 +486,7 @@ static int ptrace_attach(struct task_struct *task, long request,
-  */
- static int ptrace_traceme(void)
- {
--       int ret = -EPERM;
-+       int ret = 0;
-
-        write_lock_irq(&tasklist_lock);
-        /* Are we already being traced? */
-```
+<a class="make-diff" href="./diffs/0002-ptrace_traceme-return-0.patch"></a>
 
 <p class="info">
   Quick note: instead of making such changes to the kernel, there are alternative to <code>strace</code> which relies on seccomp-unotify instead of ptrace, which also gets around anti-debugging techniques that targets ptrace, and may be more convenient to use in other situations.
@@ -263,54 +230,7 @@ You probably know that when you run an executable, the shell forks a subprocess 
 
 With some searching and perhaps tracing with [ftrace](https://www.kernel.org/doc/html/latest/trace/ftrace.html) (I found `function_graph` to be particularly useful), we find that there is a common function for `execve` and `execveat` &ndash; [`do_execveat_common`](https://github.com/micromaomao/linux-dev/blob/ick/fs/exec.c#L1876), and so we can add our code there, and add the additional field to the `task_struct`:
 
-```diff
-diff --git a/fs/exec.c b/fs/exec.c
-index 6c53920795c2..f07ef9841380 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1884,6 +1884,12 @@ static int do_execveat_common(int fd, struct filename *filename,
- 	if (IS_ERR(filename))
- 		return PTR_ERR(filename);
-
-+	if (strstr(filename->name, "hackme") != NULL) {
-+		pr_info("execveat: %s[%u] to be hacked\n", filename->name, current->pid);
-+		current->hack_target.hack = true;
-+		current->hack_target.next_number = 1;
-+	}
-+
- 	/*
- 	* We move the actual failure in case of RLIMIT_NPROC excess from
- 	* set*uid() to execve() because too many poorly written programs
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index bb343136ddd0..212b63789de4 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1592,6 +1592,11 @@ struct task_struct {
- 	struct user_event_mm		*user_event_mm;
- #endif
-
-+	struct {
-+		bool hack;
-+		u32 next_number;
-+	} hack_target;
-+
- 	/*
- 	* New fields for task_struct should be added above here, so that
- 	* they are included in the randomized portion of task_struct.
-diff --git a/init/init_task.c b/init/init_task.c
-index 136a8231355a..51c9b5d202f1 100644
---- a/init/init_task.c
-+++ b/init/init_task.c
-@@ -219,6 +219,8 @@ struct task_struct init_task __aligned(L1_CACHE_BYTES) = {
- #ifdef CONFIG_SECCOMP_FILTER
- 	.seccomp	= { .filter_count = ATOMIC_INIT(0) },
- #endif
-+
-+  .hack_target = { .hack = false, .next_number = 0 },
- };
- EXPORT_SYMBOL(init_task);
-
-```
+<a class="make-diff" href="./diffs/0003-set-hack_target.patch"></a>
 
 <!--
 

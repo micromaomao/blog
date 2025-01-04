@@ -125,3 +125,50 @@ blockquote {
   padding-left: 1em;
   margin: 0;
 }
+
+.diff-block {
+  @extend pre;
+  white-space: inherit;
+  padding: 0.5em 0;
+  margin: 1em 0;
+  overflow-x: auto;
+
+  .diff-line {
+    white-space: pre;
+    padding: 0 1em;
+  }
+
+  .diff-header, .diff-header-start {
+    color: #808080;
+  }
+
+  .diff-header-start:not(:first-child) {
+    margin-top: 0.5em;
+    border-top: solid #78baf7 3px;
+    padding-top: 0.5em;
+  }
+
+  .diff-hunk {
+    background-color: #ddf4ff;
+    margin-top: 0.2em;
+    padding-top: 0.25em;
+    padding-bottom: 0.25em;
+    margin-bottom: 0.2em;
+    .diff-hunk-lines {
+      color: #6639ba;
+      font-weight: bold;
+    }
+  }
+
+  .diff-add {
+    background-color: #dafbe1;
+  }
+
+  .diff-delete {
+    background-color: #ffebe9;
+  }
+
+  .diff-symbol {
+    color: #808080;
+  }
+}

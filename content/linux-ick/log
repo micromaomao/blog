@@ -1,0 +1,18 @@
+hackme-71      [000] .....     6.003827: ksys_read: Providing number 1745616 to hacked process hackme[71]
+hackme-71      [000] .....     6.003827: __x64_sys_write: hacked process attempted write
+hackme-71      [000] ...1.     6.003827: ick_revert_proc: Restoring CoW'd page at 0x00000000005bb000
+hackme-71      [000] ...1.     6.003828: ick_revert_proc: Restoring CoW'd page at 0x00000000005bd000
+hackme-71      [000] ...1.     6.003828: ick_revert_proc: Restoring CoW'd page at 0x00000000005c0000
+hackme-71      [000] ...1.     6.003828: ick_revert_proc: Restoring CoW'd page at 0x00000000005c5000
+hackme-71      [000] ...1.     6.003828: ick_revert_proc: Restoring CoW'd page at 0x00000000005c6000
+hackme-71      [000] ...1.     6.003828: ick_revert_proc: Restoring CoW'd page at 0x00000000005c8000
+hackme-71      [000] ...1.     6.003829: ick_revert_proc: Restoring CoW'd page at 0x00007ffcf7a91000
+hackme-71      [000] .....     6.003829: ick_revert_proc: Restored process hackme[71], ip = 000000000051a5f1, sp = 00007ffcf7a91bb8
+hackme-71      [000] .....     6.003829: ksys_read: Providing number 1745617 to hacked process hackme[71]
+hackme-71      [000] .....     6.003830: __x64_sys_write: hacked process attempted write
+hackme-71      [000] d....     6.003833: console: hack: 1745617 gave different output
+hackme-71      [000] d....     6.004585: exc_page_fault: fault from 0x7fb864957a82 on address 0x7fb864953084
+hackme-71      [000] .....     6.004595: __x64_sys_write: hacked process attempted write
+hackme-71      [000] d....     6.006585: exc_page_fault: fault from 0x4abef9 on address 0x5bf438
+hackme-71      [000] ...2.     6.006592: ick_do_wp_page: CoWing page 0x00000000005bf000 following wp fault at 0x00000000005bf000
+hackme-71      [000] .....     6.006595: ick_cleanup: Cleaning up ick data for hackme[71]

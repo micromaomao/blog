@@ -6,8 +6,18 @@ discuss:
   "GitHub": "https://github.com/micromaomao/linux-dev/issues"
 snippet: >-
   A few weeks ago I found a reverse engineering problem which basically boiled down to running a heavily obfuscated Linux binary and entering the correct number to get it to print a flag. Fortunately, the interesting bits of the program ran quite fast – after reading the input, it spends around 5us before printing out whether the guess was correct or not. This means that even a brute-force search of the possible inputs could finish in a reasonable time, and there is no need to expend much effort on actual reverse engineering if we don't have to. The only tricky part is, how do we convince it to try different inputs as fast as this?
+cover_alt: |
+  A five-panel comic featuring the Linux mascot Tux with a bandage placed above it, and a box with a question-mark.
+
+  Panel 1: The box says “Am I being traced??” and Linux says “No trust me.”
+  Panel 2: The box says “Ok now guess the number”.
+  Panel 3: Linux says “1” and the box says “lol no, now get lost”.
+  Panel 4: The background has 2 clocks in random rotation and shear, and the box is wrapped in a squiggly blue circle, and is itself distorted.
+  Panel 5: Linux says “jk i mean 2”, and the box thinks “(hmm what was that must have been the wind)” in small font, and says “nope” and “_tries to leave_”.
 draft: true
 ---
+
+![cover](./cover.png)
 
 Truth be told, I've never been really good at CTFs, but I do enjoy solving challenges at my own pace, and exploring perhaps less conventional methods, learning more about programming in the process. A few weeks ago I found a reverse engineering problem which basically boiled down to running a Linux binary and entering the correct number to get it to print a flag. The program was heavily obfuscated, has anti-debugging techniques, and potentially utilized self-modifying code, but `strace` shows that, aside from those, it did not try to do anything fancy with system calls, attempt to save files, or communicate via network.
 
@@ -145,8 +155,6 @@ $ cat strace.log
 21:01:00.554241515 exit_group(0)        = ?
 21:01:00.556739011 +++ exited with 0 +++
 </pre>
-
-<!-- strace -o strace.log --relative-timestamps=ns --syscall-times=ns ./hackme -->
 
 If we use the kernel tracing tool `trace-cmd` (which interacts with [ftrace](https://www.kernel.org/doc/html/latest/trace/ftrace.html) and related APIs designed for both kernel debugging and performance tracing), we can find out how long the program spends computing the result after reading the input, not including time spent in the actual I/O, and also without any `strace` overhead (which was actually quite significant when you're looking at sub-ms level):
 

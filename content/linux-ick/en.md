@@ -12,8 +12,8 @@ cover_alt: |
   Panel 1: The box says “Am I being traced??” and Linux says “No trust me.”
   Panel 2: The box says “Ok now guess the number”.
   Panel 3: Linux says “1” and the box says “lol no, now get lost”.
-  Panel 4: The background has 2 clocks in random rotation and shear, and the box is wrapped in a squiggly blue circle, and is itself distorted.
-  Panel 5: Linux says “jk i mean 2”, and the box thinks “(hmm what was that must have been the wind)” in small font, and says “nope” and “_tries to leave_”.
+  Panel 4: The background has 2 clocks in random rotation and shear, and also has some lines which says “ick_revert_proc: Restoring CoW'd page at 0x00000000005cxxxx”, and the box is wrapped in a squiggly blue circle, and is itself distorted.
+  Panel 5: The box thinks “(hmm what was that must have been the wind)” and Linux says “jk i mean 2”.
 draft: true
 ---
 

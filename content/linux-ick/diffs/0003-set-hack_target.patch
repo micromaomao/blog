@@ -1,13 +1,13 @@
-From 88548da707778b6649019c54232dd4fb2fe78bc3 Mon Sep 17 00:00:00 2001
+From c333533439631cf2cf55602511c72ae0c29f5c02 Mon Sep 17 00:00:00 2001
 From: Mao <m@maowtm.org>
 Date: Sat, 4 Jan 2025 00:05:28 +0000
-Subject: [PATCH 3/3] set hack_target
+Subject: [PATCH 3/4] set hack_target
 
 ---
- fs/exec.c             | 6 ++++++
- include/linux/sched.h | 5 +++++
- init/init_task.c      | 2 ++
- 3 files changed, 13 insertions(+)
+ fs/exec.c             |  6 ++++++
+ include/linux/sched.h | 10 ++++++++++
+ init/init_task.c      |  2 ++
+ 3 files changed, 18 insertions(+)
 
 diff --git a/fs/exec.c b/fs/exec.c
 index 6c53920795c2..f07ef9841380 100644
@@ -27,15 +27,20 @@ index 6c53920795c2..f07ef9841380 100644
  	 * We move the actual failure in case of RLIMIT_NPROC excess from
  	 * set*uid() to execve() because too many poorly written programs
 diff --git a/include/linux/sched.h b/include/linux/sched.h
-index bb343136ddd0..212b63789de4 100644
+index bb343136ddd0..6adc1add5288 100644
 --- a/include/linux/sched.h
 +++ b/include/linux/sched.h
-@@ -1592,6 +1592,11 @@ struct task_struct {
+@@ -1592,6 +1592,16 @@ struct task_struct {
  	struct user_event_mm		*user_event_mm;
  #endif
  
 +	struct {
++		/* This indicates whether a process is our target */
 +		bool hack;
++		/*
++		 * And if the above is true, this is the next number we will
++		 * send to it
++		 */
 +		u32 next_number;
 +	} hack_target;
 +

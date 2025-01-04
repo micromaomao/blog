@@ -1,11 +1,17 @@
 import hljs from "highlight.js";
 
 function highlight(code, language) {
+  if (language == "config") {
+    language = "sh";
+  }
+  if (!hljs.getLanguage(language)) {
+    language = "txt";
+  }
   return hljs.highlight(code, { language }).value;
 }
 
 function parseHunkLine(line) {
-  let hunk_parse = line.match(/^(@@ [^@]+ @@)( .+)$/);
+  let hunk_parse = line.match(/^(@@ [^@]+ @@)(.*)$/);
   if (!hunk_parse) {
     throw new Error("Invalid patch format: invalid hunk header");
   }

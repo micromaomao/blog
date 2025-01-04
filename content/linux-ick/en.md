@@ -206,7 +206,7 @@ Since ChatGPT already failed me once, I'm not going to try and convince it to ma
 
 Recently I have also been getting very interested in Linux kernel development (from debugging weird kernel panics at work <img src="smiling-face-with-tear.png" alt="&#x1F972;" style="width: 1em; vertical-align: -4px;">), so I decided why not turn this into a kernel programming exercise, and try to get Linux to automatically try all the possible inputs for me? The core idea is:
 
-1. We can identify the process (more precisely, task, but it doesn't matter) we're interested in from its name (&ldquo;`hackme`&rdquo;).
+1. We can identify the process we're interested in from its name (&ldquo;`hackme`&rdquo;).
 2. When a target process attempts to `read` from stdin, we: \
     a) Save off its register states; \
     b) Write-protect all its memory mappings; \
@@ -228,17 +228,27 @@ Now, this might seem like massive overkill, and it probably is, but hear me out:
 
 I will now walk through each step one by one, as laid out above. If you as the reader don't have a lot of kernel experience (I certainly don't), hopefully by going like this, this will not be too difficult to follow:
 
-<p class="info">
-  I will be using the term &lsquo;process&rsquo; and &lsquo;task&rsquo; interchangeably in this article.
-</p>
-
-The first step is to identity and mark the process we're interested in. In Linux, each process is represented by a [`struct task_struct`](https://github.com/micromaomao/linux-dev/blob/ick/include/linux/sched.h#L778), which contains things like the PID, process name, memory mappings, and a thousand other things. We can of course add our own data to this struct &ndash; for example, we can have a `bool` to indicate whether a process is our hack target, and use it to decide if we should do special things in our modified `read`/`write` syscall handlers (we don't want to break unrelated processes like the shell, for example).
+The first step (step 1) is to identity and mark the process we're interested in. In Linux, each thread is represented by a [`struct task_struct`](https://github.com/micromaomao/linux-dev/blob/ick/include/linux/sched.h#L778), which contains things like the PID, process name, memory mappings, and a thousand other things. We can of course add our own data to this struct &ndash; for example, we can have a `bool` to indicate whether a process<footnote>
+Technically, anything stored in the `task_struct` is per-thread, but in this case our target only has one thread, and so saying &lsquo;process&rsquo; is correct here. Plus, even if it has multiple threads, our marking would be copied to the other threads when it tries to `clone`.
+</footnote> is our hack target, and use it to decide if we should do special things in our modified `read`/`write` syscall handlers (we don't want to break unrelated processes like the shell, for example).
 
 You probably know that when you run an executable, the shell forks a subprocess then run `exec` with the command arguments. If we assume our target binary is always named &ldquo;`hackme`&rdquo;, we can check for this in the handler for `exec`, and set the `bool` we added previously to `true`.
 
 With some searching and perhaps tracing with [ftrace](https://www.kernel.org/doc/html/latest/trace/ftrace.html) (I found `function_graph` to be particularly useful), we find that there is a common function for `execve` and `execveat` &ndash; [`do_execveat_common`](https://github.com/micromaomao/linux-dev/blob/ick/fs/exec.c#L1876), and so we can add our code there, and add the additional field to the `task_struct`:
 
 <a class="make-diff" href="./diffs/0003-set-hack_target.patch"></a>
+
+We also add the correct initialization of `.hack_target` for unrelated threads to `init_task`, which is what every other processes are forked from. When a process `fork`s or `clone`s, the entire task struct is first `memcpy`'d across (see [`arch_dup_task_struct` (arch/x86/kernel/process.c)](https://github.com/micromaomao/linux-dev/blob/ick/arch/x86/kernel/process.c#L93)), and so there's no other place we need to initialize this (except for in `execve` when we detected a hack target).
+
+Our next step (step 2) is to figure out a way to save off the state of the target process when it calls `read` &ndash; in some sense, &lsquo;checkpoint&rsquo; it. I'm going to give my special kernel feature that does this a slick name: _ick_, which stands for Instant ChecKpoint. We will create some utility functions which we can call in our patched `read`/`write` to checkpoint and restore the process, as well as a way to clean up the saved state should the process exits unexpectedly. Let's start by creating our header and C file for this feature, and adding a basic `struct ick_checked_process*` pointer in `task_struct` for us to hold various data (like the saved off memory pages) later.
+
+While this is not really necessary, let's also add a proper config option for our silly little feature &ndash; it's not difficult to do, and follows the Linux tradition. We will then gate all ick-related code within `#ifdef CONFIG_ICK` blocks.
+
+<a class="make-diff" href="./diffs/0004-basic-files-for-ick.patch"></a>
+
+<p class="info">
+  In case you didn't know, the proper way to have a function without parameters in C is to use <code>void</code> in the parameter list, like <code>void myfunc(void)</code>.
+</p>
 
 <!--
 

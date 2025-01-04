@@ -1,4 +1,4 @@
-From e5c92c60a8043186990b2e71eaa61ab870378c96 Mon Sep 17 00:00:00 2001
+From 2b2a7250b3f63564a0e49956e1ebae6e8a1a02b5 Mon Sep 17 00:00:00 2001
 From: Mao <m@maowtm.org>
 Date: Sat, 4 Jan 2025 20:24:48 +0000
 Subject: [PATCH 4/4] basic files for ick
@@ -9,8 +9,9 @@ Subject: [PATCH 4/4] basic files for ick
  include/linux/ick.h   | 19 +++++++++++++++++++
  include/linux/sched.h |  4 ++++
  init/init_task.c      |  4 +++-
+ kernel/Makefile       |  2 ++
  kernel/ick.c          | 19 +++++++++++++++++++
- 6 files changed, 53 insertions(+), 1 deletion(-)
+ 7 files changed, 55 insertions(+), 1 deletion(-)
  create mode 100644 include/linux/ick.h
  create mode 100644 kernel/ick.c
 
@@ -93,6 +94,16 @@ index 51c9b5d202f1..9268dfc1300f 100644
    .hack_target = { .hack = false, .next_number = 0 },
  };
  EXPORT_SYMBOL(init_task);
+diff --git a/kernel/Makefile b/kernel/Makefile
+index 87866b037fbe..d129c357e521 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -159,3 +159,5 @@ $(obj)/kheaders_data.tar.xz: FORCE
+ 	$(call cmd,genikh)
+ 
+ clean-files := kheaders_data.tar.xz kheaders.md5
++
++obj-$(CONFIG_ICK) += ick.o
 diff --git a/kernel/ick.c b/kernel/ick.c
 new file mode 100644
 index 000000000000..ab3e1a6f7c14

@@ -55,6 +55,14 @@ A straightforward, first approach would be to just run it repeatedly. However, w
   .green {
     color: rgb(33, 138, 24);
   }
+  .placeholder {
+    color: rgb(33, 138, 24);
+    font-style: italic;
+  }
+  .highlight {
+    background-color: rgb(189, 253, 183);
+    font-style: bold;
+  }
 </style>
 
 <pre>
@@ -239,6 +247,26 @@ With some searching and perhaps tracing with [ftrace](https://www.kernel.org/doc
 <a class="make-diff" href="./diffs/0003-set-hack_target.patch"></a>
 
 We also add the correct initialization of `.hack_target` for unrelated threads to `init_task`, which is what every other processes are forked from. When a process `fork`s or `clone`s, the entire task struct is first `memcpy`'d across (see [`arch_dup_task_struct` (arch/x86/kernel/process.c)](https://github.com/micromaomao/linux-dev/blob/ick/arch/x86/kernel/process.c#L93)), and so there's no other place we need to initialize this (except for in `execve` when we detected a hack target).
+
+Let's test this out:
+
+<pre>
+<span class="irrelevant">&gt; make -j$(nproc)
+...
+&gt; ./.dev/startvm.sh
+...
+[    0.000000][    T0] Linux version 6.12.1-dev-00019-gc33353343963-dirty ...
+...</span>
+root@feef72fcd655:/# ./hackme
+<span class="highlight">[    5.050260][   T79] execveat: ./hackme[79] to be hacked</span>
+<span class="placeholder">(program prints startup message normally)</span>
+root@feef72fcd655:/# cp hackme dont-hack-me
+root@feef72fcd655:/# ./dont-hack-me
+<span class="placeholder">(program prints startup message normally)</span>
+root@feef72fcd655:/#
+</pre>
+
+Nice :)
 
 Our next step (step 2) is to figure out a way to save off the state of the target process when it calls `read` &ndash; in some sense, &lsquo;checkpoint&rsquo; it. I'm going to give my special kernel feature that does this a slick name: _ick_, which stands for Instant ChecKpoint. We will create some utility functions which we can call in our patched `read`/`write` to checkpoint and restore the process, as well as a way to clean up the saved state should the process exits unexpectedly. Let's start by creating our header and C file for this feature, and adding a basic `struct ick_checked_process*` pointer in `task_struct` for us to hold various data (like the saved off memory pages) later.
 

@@ -214,7 +214,9 @@ function makeCodeBlocksForHunk(lines, language, container, $) {
 
 export function processDiff(diff_text, cheerio_api) {
   let $ = cheerio_api;
+  let elem_container = $('<div class="diff-block-container"></div>');
   let elem = $('<div class="diff-block"></div>');
+  elem_container.append(elem);
   let parsed_diff = parseDiff(diff_text);
   for (let file of parsed_diff.body) {
     let language = "txt";
@@ -242,5 +244,5 @@ export function processDiff(diff_text, cheerio_api) {
       makeCodeBlocksForHunk(hunks.code_lines, language, elem, $);
     }
   }
-  return elem;
+  return elem_container;
 }

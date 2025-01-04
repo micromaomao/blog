@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style type="text/css">
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI Light"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/light/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/light/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/light/latest.ttf) format("truetype");
+  font-weight: 100;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI Semilight"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semilight/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semilight/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semilight/latest.ttf) format("truetype");
+  font-weight: 200;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/normal/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/normal/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/normal/latest.ttf) format("truetype");
+  font-weight: 400;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI Semibold"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semibold/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semibold/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semibold/latest.ttf) format("truetype");
+  font-weight: 600;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI Bold"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/bold/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/bold/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/bold/latest.ttf) format("truetype");
+  font-weight: 700;
+}
+body {
+  background-color: #f9f9fa;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 18px;
+  line-height: 28px;
+  padding: 2em;
+  max-width: 1200px;
+  margin: auto;
+  text-align: justify;
+}
+
+p {
+  margin: 1em 0;
+  hyphens: auto;
+}
+
+hr {
+  background-color: none;
+  border: none;
+  border-bottom: dashed 1px #aaa;
+  margin: 0;
+  padding: 0;
+}
+
+pre, .diff-block {
+  display: block;
+  font-family: monospace;
+  background-color: white;
+  padding: 0.5em 1em;
+  margin: 1em 0;
+  overflow-x: auto;
+}
+
+.tags {
+  font-size: 16px;
+}
+.tags a.tag {
+  background-color: #eee;
+  color: #666;
+  text-decoration: none;
+  transition: background-color 100ms;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  display: inline-block;
+  margin: 0.1em 0.1em;
+  padding: 0.1em 0.5em;
+  border-radius: 4px;
+}
+.tags a.tag:hover {
+  background-color: #d9d9d9;
+}
+.tags a.tag:active {
+  background-color: #e0e0e0;
+}
+
+body > a.blogtitle {
+  color: black;
+  text-align: center;
+  display: block;
+  text-decoration: none;
+  font-size: 120%;
+  font-style: italic;
+  margin: 0.5em;
+  padding: 1em;
+  border-bottom: 1px dashed #999;
+}
+body > a.blogtitle > img {
+  width: 500px;
+  max-width: 100%;
+}
+body > a.blogtitle > span.note {
+  font-size: 60%;
+  color: #999;
+}
+
+.draftmode-warn {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 10px;
+  line-height: 1.2;
+  background-color: #db7500;
+  color: #fff;
+  text-align: center;
+  font-weight: bold;
+  z-index: 1000;
+}
+.draftmode-warn a {
+  color: #fff;
+  text-decoration: underline;
+}
+
+body.draft-mode {
+  margin-top: 60px;
+}
+
+body {
+  line-height: 1.6;
+}
+
+pre, .diff-block {
+  line-height: 1.3;
+}
+
+h1 {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 28px;
+  margin: 1.5em 0 0.5em 0;
+}
+h1::before {
+  content: "# ";
+  opacity: 0.5;
+  text-align: right;
+  display: inline-block;
+  width: 0px;
+  margin-left: -22px;
+  margin-right: 22px;
+}
+
+h2 {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 22px;
+  margin: 1.5em 0 0.5em 0;
+}
+h2::before {
+  content: "## ";
+  opacity: 0.5;
+  text-align: right;
+  display: inline-block;
+  width: 0px;
+  margin-left: -30px;
+  margin-right: 30px;
+}
+
+h3 {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 18px;
+  margin: 1.5em 0 0.5em 0;
+}
+h3::before {
+  content: "### ";
+  opacity: 0.5;
+  text-align: right;
+  display: inline-block;
+  width: 0px;
+  margin-left: -34px;
+  margin-right: 34px;
+}
+
+h4 {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 18px;
+  margin: 1em 0 0.5em 0;
+}
+
+p a, ul a, li a, h2 a, h3 a, h4 a, body > a.home {
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  color: #088da5;
+  text-decoration: none;
+  transition: background-color 100ms;
+  background-color: rgba(8, 141, 165, 0);
+  padding: 0.25em 0.5em;
+  margin: -0.25em -0.5em;
+}
+p a:active, ul a:active, li a:active, h2 a:active, h3 a:active, h4 a:active, body > a.home:active {
+  background-color: rgba(8, 141, 165, 0.1);
+}
+
+body > code, body :not(pre):not(.diff-block) > code {
+  display: inline-block;
+  background-color: white;
+  border-radius: 4px;
+  border: solid 1px #999;
+  padding-left: 0.3em;
+  padding-right: 0.3em;
+}
+
+img.coverimg {
+  min-width: 50%;
+  max-width: 100%;
+  margin: 0 auto;
+  display: block;
+}
+
+p > img {
+  max-width: 100%;
+}
+
+p.single-img-p > img {
+  display: block;
+  margin: 0 auto;
+}
+
+.tags {
+  margin-top: -0.7em;
+}
+
+.footer {
+  color: #999;
+  font-size: 14px;
+}
+
+p.warn, div.warn {
+  border-left: #ff4545 solid 2px;
+  background-color: rgba(255, 0, 0, 0.116);
+  padding: 0.2em 1em;
+  margin-top: -0.2em;
+  margin-bottom: -0.3em;
+}
+
+p.info, div.info {
+  border-left: #3a59c7 solid 2px;
+  background-color: #e7eaf7;
+  padding: 0.2em 1em;
+  margin-top: -0.2em;
+  margin-bottom: -0.3em;
+}
+
+sup.footnoteref {
+  user-select: none;
+}
+
+sup:target, .footnote-revref:target {
+  background-color: rgba(255, 255, 0, 0.2);
+}
+
+span.tex {
+  font-size: 22px;
+}
+
+noscript {
+  border: dashed 2px #000;
+  padding: 1rem 2rem;
+  margin: 1em 0;
+}
+
+blockquote {
+  border-left: 4px solid #ccc;
+  padding-left: 1em;
+  margin: 0;
+}
+
+.diff-block-container {
+  overflow-x: auto;
+  margin: 1em 0;
+}
+
+.diff-block {
+  white-space: inherit;
+  padding: 0.5em 0;
+  margin: 0;
+  overflow-x: visible;
+  width: max-content;
+  min-width: 100%;
+}
+.diff-block .diff-line {
+  white-space: pre;
+  padding: 0 1em;
+}
+.diff-block .diff-header, .diff-block .diff-header-start {
+  color: #808080;
+}
+.diff-block .diff-header-start:not(:first-child) {
+  margin-top: 0.5em;
+  border-top: solid #78baf7 3px;
+  padding-top: 0.5em;
+}
+.diff-block .diff-hunk {
+  background-color: #ddf4ff;
+  margin-top: 0.2em;
+  padding-top: 0.25em;
+  padding-bottom: 0.25em;
+  margin-bottom: 0.2em;
+}
+.diff-block .diff-hunk .diff-hunk-lines {
+  color: #6639ba;
+  font-weight: bold;
+}
+.diff-block .diff-add {
+  background-color: #dafbe1;
+}
+.diff-block .diff-delete {
+  background-color: #ffebe9;
+}
+.diff-block .diff-symbol {
+  color: #808080;
+}</style>
+    <title>Using the Linux kernel to help me crack an executable quickly - mw casual engineering</title>
+    <meta name="keywords" content="Linux,systems programming,reverse engineering,performance">
+    <meta property="og:url" content="https://blog.maowtm.org/linux-ick/en.html">
+    <meta property="og:title" content="Using the Linux kernel to help me crack an executable quickly">
+    <meta property="og:type" content="article">
+    <style type="text/css">
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI Light"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/light/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/light/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/light/latest.ttf) format("truetype");
+  font-weight: 100;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI Semilight"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semilight/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semilight/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semilight/latest.ttf) format("truetype");
+  font-weight: 200;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/normal/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/normal/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/normal/latest.ttf) format("truetype");
+  font-weight: 400;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI Semibold"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semibold/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semibold/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semibold/latest.ttf) format("truetype");
+  font-weight: 600;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI Bold"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/bold/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/bold/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/bold/latest.ttf) format("truetype");
+  font-weight: 700;
+}
+body {
+  background-color: #f9f9fa;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 18px;
+  line-height: 28px;
+  padding: 2em;
+  max-width: 1200px;
+  margin: auto;
+  text-align: justify;
+}
+
+p {
+  margin: 1em 0;
+  hyphens: auto;
+}
+
+hr {
+  background-color: none;
+  border: none;
+  border-bottom: dashed 1px #aaa;
+  margin: 0;
+  padding: 0;
+}
+
+pre, .diff-block {
+  display: block;
+  font-family: monospace;
+  background-color: white;
+  padding: 0.5em 1em;
+  margin: 1em 0;
+  overflow-x: auto;
+}
+
+.tags {
+  font-size: 16px;
+}
+.tags a.tag {
+  background-color: #eee;
+  color: #666;
+  text-decoration: none;
+  transition: background-color 100ms;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  display: inline-block;
+  margin: 0.1em 0.1em;
+  padding: 0.1em 0.5em;
+  border-radius: 4px;
+}
+.tags a.tag:hover {
+  background-color: #d9d9d9;
+}
+.tags a.tag:active {
+  background-color: #e0e0e0;
+}
+
+body > a.blogtitle {
+  color: black;
+  text-align: center;
+  display: block;
+  text-decoration: none;
+  font-size: 120%;
+  font-style: italic;
+  margin: 0.5em;
+  padding: 1em;
+  border-bottom: 1px dashed #999;
+}
+body > a.blogtitle > img {
+  width: 500px;
+  max-width: 100%;
+}
+body > a.blogtitle > span.note {
+  font-size: 60%;
+  color: #999;
+}
+
+.draftmode-warn {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 10px;
+  line-height: 1.2;
+  background-color: #db7500;
+  color: #fff;
+  text-align: center;
+  font-weight: bold;
+  z-index: 1000;
+}
+.draftmode-warn a {
+  color: #fff;
+  text-decoration: underline;
+}
+
+body.draft-mode {
+  margin-top: 60px;
+}
+
+body {
+  line-height: 1.6;
+}
+
+pre, .diff-block {
+  line-height: 1.3;
+}
+
+h1 {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 28px;
+  margin: 1.5em 0 0.5em 0;
+}
+h1::before {
+  content: "# ";
+  opacity: 0.5;
+  text-align: right;
+  display: inline-block;
+  width: 0px;
+  margin-left: -22px;
+  margin-right: 22px;
+}
+
+h2 {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 22px;
+  margin: 1.5em 0 0.5em 0;
+}
+h2::before {
+  content: "## ";
+  opacity: 0.5;
+  text-align: right;
+  display: inline-block;
+  width: 0px;
+  margin-left: -30px;
+  margin-right: 30px;
+}
+
+h3 {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 18px;
+  margin: 1.5em 0 0.5em 0;
+}
+h3::before {
+  content: "### ";
+  opacity: 0.5;
+  text-align: right;
+  display: inline-block;
+  width: 0px;
+  margin-left: -34px;
+  margin-right: 34px;
+}
+
+h4 {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 18px;
+  margin: 1em 0 0.5em 0;
+}
+
+p a, ul a, li a, h2 a, h3 a, h4 a, body > a.home {
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  color: #088da5;
+  text-decoration: none;
+  transition: background-color 100ms;
+  background-color: rgba(8, 141, 165, 0);
+  padding: 0.25em 0.5em;
+  margin: -0.25em -0.5em;
+}
+p a:active, ul a:active, li a:active, h2 a:active, h3 a:active, h4 a:active, body > a.home:active {
+  background-color: rgba(8, 141, 165, 0.1);
+}
+
+body > code, body :not(pre):not(.diff-block) > code {
+  display: inline-block;
+  background-color: white;
+  border-radius: 4px;
+  border: solid 1px #999;
+  padding-left: 0.3em;
+  padding-right: 0.3em;
+}
+
+img.coverimg {
+  min-width: 50%;
+  max-width: 100%;
+  margin: 0 auto;
+  display: block;
+}
+
+p > img {
+  max-width: 100%;
+}
+
+p.single-img-p > img {
+  display: block;
+  margin: 0 auto;
+}
+
+.tags {
+  margin-top: -0.7em;
+}
+
+.footer {
+  color: #999;
+  font-size: 14px;
+}
+
+p.warn, div.warn {
+  border-left: #ff4545 solid 2px;
+  background-color: rgba(255, 0, 0, 0.116);
+  padding: 0.2em 1em;
+  margin-top: -0.2em;
+  margin-bottom: -0.3em;
+}
+
+p.info, div.info {
+  border-left: #3a59c7 solid 2px;
+  background-color: #e7eaf7;
+  padding: 0.2em 1em;
+  margin-top: -0.2em;
+  margin-bottom: -0.3em;
+}
+
+sup.footnoteref {
+  user-select: none;
+}
+
+sup:target, .footnote-revref:target {
+  background-color: rgba(255, 255, 0, 0.2);
+}
+
+span.tex {
+  font-size: 22px;
+}
+
+noscript {
+  border: dashed 2px #000;
+  padding: 1rem 2rem;
+  margin: 1em 0;
+}
+
+blockquote {
+  border-left: 4px solid #ccc;
+  padding-left: 1em;
+  margin: 0;
+}
+
+.diff-block-container {
+  overflow-x: auto;
+  margin: 1em 0;
+}
+
+.diff-block {
+  white-space: inherit;
+  padding: 0.5em 0;
+  margin: 0;
+  overflow-x: visible;
+  width: max-content;
+  min-width: 100%;
+}
+.diff-block .diff-line {
+  white-space: pre;
+  padding: 0 1em;
+}
+.diff-block .diff-header, .diff-block .diff-header-start {
+  color: #808080;
+}
+.diff-block .diff-header-start:not(:first-child) {
+  margin-top: 0.5em;
+  border-top: solid #78baf7 3px;
+  padding-top: 0.5em;
+}
+.diff-block .diff-hunk {
+  background-color: #ddf4ff;
+  margin-top: 0.2em;
+  padding-top: 0.25em;
+  padding-bottom: 0.25em;
+  margin-bottom: 0.2em;
+}
+.diff-block .diff-hunk .diff-hunk-lines {
+  color: #6639ba;
+  font-weight: bold;
+}
+.diff-block .diff-add {
+  background-color: #dafbe1;
+}
+.diff-block .diff-delete {
+  background-color: #ffebe9;
+}
+.diff-block .diff-symbol {
+  color: #808080;
+}</style>
+    <link rel="stylesheet" href="https://unpkg.com/highlight.js@9.16.2/styles/idea.css">
+  </head>
+  <body class="draft-mode">
+    <div class="draftmode-warn">This is the DRAFT branch of this blog. Articles already published will not appear here.<br><a href="https://blog.maowtm.org">Go to the main site</a></div><a class="blogtitle" href="/"><img src="/title.svg" alt="mw casual engineering"></a>
+    <h1>Using the Linux kernel to help me crack an executable quickly</h1>
+    <div class="tags"><a class="tag" href="../tagindex/linux.html">Linux</a> <a class="tag" href="../tagindex/systems%20programming.html">systems programming</a> <a class="tag" href="../tagindex/reverse%20engineering.html">reverse engineering</a> <a class="tag" href="../tagindex/performance.html">performance</a>
+    </div><p>Truth be told, I've never been really good at CTFs, but I do enjoy solving challenges at my own pace, and exploring perhaps less conventional methods, learning more about programming in the process. A few weeks ago I found a reverse engineering problem which basically boiled down to running a Linux binary and entering the correct number to get it to print a flag. The program was heavily obfuscated, has anti-debugging techniques, and potentially utilized self-modifying code, but <code>strace</code> shows that, aside from those, it did not try to do anything fancy with system calls, attempt to save files, or communicate via network.</p>
+<p>Fortunately, the <em>interesting</em> bits of the program ran quite fast – after reading the input, it spends around 5us (0.005ms) before printing out whether the guess was correct or not. The input space was also very managable – between 0 to 3,000,000. This means that even a brute-force search of the possible inputs could finish in a reasonable time, and there is no need to expend much effort on actual reverse engineering if we don't have to. The only tricky part is, how do we convince it to try different inputs as fast as this?</p>
+<h2>Environment</h2>
+<p>Before we get into more investigation, let's quickly explain what my test environment for this looks like. Since I'm not a fan of running random binaries from the Internet on my host system, we will only ever run the target binary in a VM. As you will see later in this article, there will be a good amount of kernel hacking today. Previously I made some shell scripts which comes in handy for this situation. It:</p>
+<ul>
+<li>Allows me to easily run a QEMU VM with any kernel changes I want by directly booting from a compiled vmlinux.</li>
+<li>Hooks up a serial console and 9pfs root (mapped to a separate file system on the host) for convenience.</li>
+<li>Uses a relatively minimal kernel configuration and lightweight startup script — VM boots up in 2 seconds.</li>
+<li>Builds the rootfs with Docker, pre-installing things like <code>strace</code>, <code>gdb</code>, <code>trace-cmd</code>, etc.</li>
+</ul>
+<p>You can get started with the same environment by cloning <a href="https://github.com/micromaomao/linux-dev">micromaomao/linux-dev</a>, running <code>make -j$(nproc)</code> to compile the kernel, then <code>.dev/startvm.sh</code> to build the rootfs (if not already present) and start the QEMU VM (will require qemu-system-x86_64 to be installed). If you are on ARM, remove the <code>-enable-kvm</code> and <code>-cpu host</code> flag in startvm.sh to use emulation instead.</p>
+<p class="single-img-p"><img src="startvm.png" alt="A screenshot of a terminal running the startvm.sh script. The last line is a bash prompt."></p>
+<h2>Initial investigation</h2>
+<p>A straightforward, first approach would be to just run it repeatedly. However, with such a short runtime between getting the input and printing the result, any significant overhead in either the initialization of the executable itself, or the time spent in the script used to repeatedly run it quickly starts to dominate. A quick test would be to run it under <code>strace</code> and see how long it takes from the initial <code>execve</code> to the first <code>read</code>. That would be a good starting point to understand more about the program and catch any potentially surprising behavior, so let's do that first.</p>
+<p class="warn">
+  Quick reminder again that you should not run or even interact with untrusted stuff directly on your host system. This include running them under <code>strace</code>, <code>gdb</code>, or using <code>ldd</code> on them.
+</p>
+
+<style>
+  .irrelevant {
+    color: #aaa;
+  }
+  .comment {
+    color: rgb(58, 113, 231);
+    font-weight: bold;
+  }
+  .green {
+    color: rgb(33, 138, 24);
+  }
+</style>
+
+<pre><span class="irrelevant">$ strace -o strace.log --timestamps=ns ./hackme
+...
+$ cat strace.log</span>
+21:00:00.076244725 execve("./hackme", ["./hackme"], 0x7ffc71a76088 /* 13 vars */) = 0
+21:00:00.082059770 open("/proc/self/exe", O_RDONLY) = 3
+21:00:00.085364610 mmap(NULL, 663446, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f7865402000
+<span class="comment">// mapping itself as (non-persistent) read-write</span>
+21:00:00.087883357 mmap(0x7f7865402000, 663048, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED, 3, 0) = 0x7f7865402000
+21:00:00.090062941 mprotect(0x7f78654a3000, 3990, PROT_READ|PROT_EXEC) = 0
+21:00:00.092506797 readlink("/proc/self/exe", "/hackme", 4095) = 7
+21:00:00.095318319 mmap(0x400000, 1855488, PROT_NONE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x400000
+21:00:00.097642653 mmap(0x400000, 1536, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x400000
+21:00:00.099838908 mprotect(0x400000, 1536, PROT_READ) = 0
+<span class="comment">// rwx... I later realized this executable has gone through a packer</span>
+21:00:00.102363996 mmap(0x401000, 1420157, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0x1000) = 0x401000
+<span class="comment">// ... more stuff follows which aren't too interesting for now ...</span>
+<span class="irrelevant">21:00:00.129039501 mprotect(0x401000, 1420157, PROT_READ|PROT_EXEC) = 0
+21:00:00.132023341 mmap(0x55c000, 346488, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0x15c000) = 0x55c000
+21:00:00.138600815 mprotect(0x55c000, 346488, PROT_READ) = 0
+21:00:00.141142324 mmap(0x5b1000, 49832, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0x1b1000) = 0x5b1000
+21:00:00.143710481 mprotect(0x5b1000, 49832, PROT_READ|PROT_WRITE) = 0
+21:00:00.145928557 mmap(0x5be000, 27880, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x5be000
+21:00:00.148246519 mmap(NULL, 4096, PROT_READ, MAP_PRIVATE, 3, 0) = 0x7f7865401000
+21:00:00.150516772 close(3)             = 0
+21:00:00.153247606 munmap(0x7f7865402000, 663446) = 0
+21:00:00.155881587 arch_prctl(0x3001 /* ARCH_??? */, 0x7ffce824f170) = -1 EINVAL (Invalid argument)
+21:00:00.158451970 brk(NULL)            = 0x5c5000
+21:00:00.160858466 brk(0x5c5d80)        = 0x5c5d80
+21:00:00.163373055 arch_prctl(ARCH_SET_FS, 0x5c5400) = 0
+21:00:00.165862687 set_tid_address(0x5c56d0) = 184
+21:00:00.168069772 set_robust_list(0x5c56e0, 24) = 0
+21:00:00.170348551 rseq(0x5c5d20, 0x20, 0, 0x53053053) = 0
+21:00:00.172586062 prlimit64(0, RLIMIT_STACK, NULL, {rlim_cur=8192*1024, rlim_max=RLIM64_INFINITY}) = 0
+21:00:00.174898664 readlinkat(AT_FDCWD, "/proc/self/exe", "/hackme", 4096) = 7
+21:00:00.177229490 getrandom("\xb8\xaa\xbf\x47\x80\xa4\x0a\x0e", 8, GRND_NONBLOCK) = 8
+21:00:00.179682734 brk(NULL)            = 0x5c5d80
+21:00:00.181862768 brk(0x5e6d80)        = 0x5e6d80
+21:00:00.183994583 brk(0x5e7000)        = 0x5e7000
+21:00:00.186285765 mprotect(0x5b1000, 40960, PROT_READ) = 0
+21:00:00.188569383 futex(0x5bd9dc, FUTEX_WAKE_PRIVATE, 2147483647) = 0</span>
+<span class="comment">// Detecting debugger by looking for TracerPid?</span>
+21:00:00.190868059 openat(AT_FDCWD, "/proc/self/status", O_RDONLY) = 3
+21:00:00.193172756 read(3, "Name:\thackme\nUmask:\t0022\nState:\t"..., 8191) = 1076
+<span class="comment">// ... more strace output ...</span>
+</pre>
+
+<p>I suspect it is detecting debuggers and potentially changing its behavior. After writing this I later found out that actually it will pretend to run as normal even when it has detected a tracer, but actually will not print the flag even with the right input. I decided to run it in my VM with a modified kernel that will always say <code>TracerPid</code> is 0. I found the code that puts that number in <code>/proc/self/status</code> by simply searching for “TracerPid”:</p>
+<p><div class="diff-block-container"><div class="diff-block"><div class="diff-line diff-header-start">diff --git a/fs/proc/array.c b/fs/proc/array.c</div><div class="diff-line diff-header">index 34a47fb0c57f..141121505a37 100644</div><div class="diff-line diff-header">--- a/fs/proc/array.c</div><div class="diff-line diff-header">+++ b/fs/proc/array.c</div><div class="diff-line diff-hunk"><span class="diff-hunk-lines">@@ -185,7 +185,7 @@</span><span class="diff-hunk-function"> <span class="hljs-type">static</span> <span class="hljs-keyword">inline</span> <span class="hljs-type">void</span> <span class="hljs-title function_">task_state</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> seq_file *m, <span class="hljs-keyword">struct</span> pid_namespace *ns,</span></span></div><div class="diff-line diff-context"><span class="diff-symbol"> </span><span class="diff-code">	seq_put_decimal_ull(m, <span class="hljs-string">"\nNgid:\t"</span>, ngid);</span></div><div class="diff-line diff-context"><span class="diff-symbol"> </span><span class="diff-code">	seq_put_decimal_ull(m, <span class="hljs-string">"\nPid:\t"</span>, pid_nr_ns(pid, ns));</span></div><div class="diff-line diff-context"><span class="diff-symbol"> </span><span class="diff-code">	seq_put_decimal_ull(m, <span class="hljs-string">"\nPPid:\t"</span>, ppid);</span></div><div class="diff-line diff-delete"><span class="diff-symbol">-</span><span class="diff-code">	seq_put_decimal_ull(m, <span class="hljs-string">"\nTracerPid:\t"</span>, tpid);</span></div><div class="diff-line diff-add"><span class="diff-symbol">+</span><span class="diff-code">	seq_put_decimal_ull(m, <span class="hljs-string">"\nTracerPid:\t"</span>, <span class="hljs-number">0</span>);</span></div><div class="diff-line diff-context"><span class="diff-symbol"> </span><span class="diff-code">	seq_put_decimal_ull(m, <span class="hljs-string">"\nUid:\t"</span>, from_kuid_munged(user_ns, cred-&gt;uid));</span></div><div class="diff-line diff-context"><span class="diff-symbol"> </span><span class="diff-code">	seq_put_decimal_ull(m, <span class="hljs-string">"\t"</span>, from_kuid_munged(user_ns, cred-&gt;euid));</span></div><div class="diff-line diff-context"><span class="diff-symbol"> </span><span class="diff-code">	seq_put_decimal_ull(m, <span class="hljs-string">"\t"</span>, from_kuid_munged(user_ns, cred-&gt;suid));</span></div></div></div></p>
+<p>With the linux-dev environment I mentioned before, we can simply <code>make</code> to produce a new kernel image, then kill the old VM (with <code>.dev/stopvm.sh</code> or Ctrl-D on the console) and run <code>startvm.sh</code> again.</p>
+<p>It then proceeded to do this, which I assume is a second layer of debugger detection:</p>
+<pre><code>ptrace(PTRACE_TRACEME) = -1 EPERM (Operation not permitted)
+</code></pre>
+<p>It is probably looking for whether this call returns a <code>-EPERM</code>, which would indicate that the process is (already) being traced, or 0. But since we're already making kernel changes, this is not difficult to work around either:</p>
+<p><div class="diff-block-container"><div class="diff-block"><div class="diff-line diff-header-start">diff --git a/kernel/ptrace.c b/kernel/ptrace.c</div><div class="diff-line diff-header">index d5f89f9ef29f..017d25c00fa3 100644</div><div class="diff-line diff-header">--- a/kernel/ptrace.c</div><div class="diff-line diff-header">+++ b/kernel/ptrace.c</div><div class="diff-line diff-hunk"><span class="diff-hunk-lines">@@ -486,7 +486,7 @@</span><span class="diff-hunk-function"> <span class="hljs-type">static</span> <span class="hljs-type">int</span> <span class="hljs-title function_">ptrace_attach</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> task_struct *task, <span class="hljs-type">long</span> request,</span></span></div><div class="diff-line diff-context"><span class="diff-symbol"> </span><span class="diff-code"> */</span></div><div class="diff-line diff-context"><span class="diff-symbol"> </span><span class="diff-code"><span class="hljs-type">static</span> <span class="hljs-type">int</span> <span class="hljs-title function_">ptrace_traceme</span><span class="hljs-params">(<span class="hljs-type">void</span>)</span></span></div><div class="diff-line diff-context"><span class="diff-symbol"> </span><span class="diff-code">{</span></div><div class="diff-line diff-delete"><span class="diff-symbol">-</span><span class="diff-code">	<span class="hljs-type">int</span> ret = -EPERM;</span></div><div class="diff-line diff-add"><span class="diff-symbol">+</span><span class="diff-code">	<span class="hljs-type">int</span> ret = <span class="hljs-number">0</span>;</span></div><div class="diff-line diff-context"><span class="diff-symbol"> </span><span class="diff-code"></span></div><div class="diff-line diff-context"><span class="diff-symbol"> </span><span class="diff-code">	write_lock_irq(&amp;tasklist_lock);</span></div><div class="diff-line diff-context"><span class="diff-symbol"> </span><span class="diff-code">	<span class="hljs-comment">/* Are we already being traced? */</span></span></div></div></div></p>
+<p class="info">
+  Quick note: instead of making such changes to the kernel, there are alternative to <code>strace</code> which relies on seccomp-unotify instead of ptrace, which also gets around anti-debugging techniques that targets ptrace, and may be more convenient to use in other situations.
+</p>
+
+<p>Now let's try <code>strace</code> it again:</p>
+<pre><span class="irrelevant">$ strace -o strace.log --timestamps=ns ./hackme
+...
+$ cat strace.log
+21:01:00.368065520 execve("./hackme", ["./hackme"], 0x7ffe48cd5cb8 /* 6 vars */) = 0
+...</span>
+21:01:00.486692889 openat(AT_FDCWD, "/proc/self/status", O_RDONLY) = 3
+21:01:00.489438989 read(3, "Name:\thackme\nUmask:\t0022\nState:\t"..., 8191) = 1066
+21:01:00.491976961 close(3)             = 0
+21:01:00.494425997 getrandom("\x75\x79\x93\x7f\x58\x99\xe3\x3e", 8, 0) = 8
+21:01:00.496887787 getrandom("\x21\x5f\xfa\x83\x6c\x93\xef\x97", 8, 0) = 8
+<span class="green">21:01:00.499471244 ptrace(PTRACE_TRACEME) = 0   <b>// yay</b></span>
+21:01:00.501847234 getrandom("\x32\x5b\x46\xf2\x18\x84\xee\x3e", 8, 0) = 8
+<span class="irrelevant">// ... more getrandom ...</span>
+21:01:00.530190685 getrandom("\x25\x69\xff\xa5\x61\x13\x9d\x82", 8, 0) = 8
+<span class="comment">// Detecting if stdin/stdout is a terminal before read/write...
+// Could be using this to decide if it will buffer IO, or actual anti-scripting measure?</span>
+21:01:00.532301961 newfstatat(1, "", {st_mode=S_IFCHR|0600, st_rdev=makedev(0x5, 0x1), ...}, AT_EMPTY_PATH) = 0
+21:01:00.535515472 ioctl(1, TCGETS, {c_iflag=ICRNL|IXON, c_oflag=NL0|CR0|TAB0|BS0|VT0|FF0|OPOST|ONLCR, c_cflag=B115200|CS8|CREAD|HUPCL|CLOCAL, c_lflag=ISIG|ICANON|ECHO|ECHOE|ECHOK|IEXTEN|ECHOCTL|ECHOKE, ...}) = 0
+21:01:00.539257429 write(1, <span class="irrelevant" style="font-style: italic;">startup output...</span>, 48) = 48
+<span class="irrelevant">// ...</span>
+21:01:00.544755153 newfstatat(0, "", {st_mode=S_IFCHR|0600, st_rdev=makedev(0x5, 0x1), ...}, AT_EMPTY_PATH) = 0
+21:01:00.547057135 ioctl(0, TCGETS, {c_iflag=ICRNL|IXON, c_oflag=NL0|CR0|TAB0|BS0|VT0|FF0|OPOST|ONLCR, c_cflag=B115200|CS8|CREAD|HUPCL|CLOCAL, c_lflag=ISIG|ICANON|ECHO|ECHOE|ECHOK|IEXTEN|ECHOCTL|ECHOKE, ...}) = 0
+21:01:00.549331495 read(0, "1\n", 4096) = 2
+<span class="green"><b>// Note slight pause here due to input from serial terminal.</b></span>
+21:01:00.551503575 write(1, "Nope"..., 43) = 43
+21:01:00.554241515 exit_group(0)        = ?
+21:01:00.556739011 +++ exited with 0 +++
+</pre>
+
+<!-- strace -o strace.log --relative-timestamps=ns --syscall-times=ns ./hackme -->
+
+<p>If we use the kernel tracing tool <code>trace-cmd</code> (which interacts with <a href="https://www.kernel.org/doc/html/latest/trace/ftrace.html">ftrace</a> and related APIs designed for both kernel debugging and performance tracing), we can find out how long the program spends computing the result after reading the input, not including time spent in the actual I/O, and also without any <code>strace</code> overhead (which was actually quite significant when you're looking at sub-ms level):</p>
+<pre><code class="language-sh">trace-cmd record -e syscalls/sys_exit_read -e syscalls/sys_enter_write ./hackme
+trace-cmd report
+</code></pre>
+<pre><span class="irrelevant">cpus=1
+       trace-cmd-73    [000] .....     6.140092: sys_exit_read:        0xcd
+       trace-cmd-73    [000] .....     6.140094: sys_exit_read:        0x0
+          hackme-74    [000] .....     6.170574: sys_exit_read:        0x42a
+          hackme-74    [000] .....     6.170590: sys_enter_write:      fd: 0x00000001, buf: 0x005c6920, count: 0x00000030
+          hackme-74    [000] .....     6.170597: sys_enter_write:      fd: 0x00000001, buf: 0x005c6920, count: 0x00000026</span>
+          hackme-74    [000] .....     <b>7.005362</b>: sys_exit_read:        0x2
+          hackme-74    [000] .....     <b>7.005370</b>: sys_enter_write:      fd: 0x00000001, buf: 0x005c6920, count: 0x0000002b<span class="irrelevant">
+       trace-cmd-72    [000] .....     7.006417: sys_enter_write:      fd: 0x00000003, buf: 0x565507307586, count: 0x00000001
+</span></pre>
+
+<p>That's 8us from returning from <code>read</code> to attempting <code>write</code>! On the other hand, getting to the first <code>read</code> from the start of the program took almost 200ms, and so if we have to run the whole thing repeatedly (for example, in a bash loop), it will be 200ms <style>.mjx-chtml {display: inline-block; line-height: 0; text-indent: 0; text-align: left; text-transform: none; font-style: normal; font-weight: normal; font-size: 100%; font-size-adjust: none; letter-spacing: normal; word-wrap: normal; word-spacing: normal; white-space: nowrap; float: none; direction: ltr; max-width: none; max-height: none; min-width: 0; min-height: 0; border: 0; margin: 0; padding: 1px 0}
+.MJXc-display {display: block; text-align: center; margin: 1em 0; padding: 0}
+.mjx-chtml[tabindex]:focus, body :focus .mjx-chtml[tabindex] {display: inline-table}
+.mjx-full-width {text-align: center; display: table-cell!important; width: 10000em}
+.mjx-math {display: inline-block; border-collapse: separate; border-spacing: 0}
+.mjx-math * {display: inline-block; -webkit-box-sizing: content-box!important; -moz-box-sizing: content-box!important; box-sizing: content-box!important; text-align: left}
+.mjx-numerator {display: block; text-align: center}
+.mjx-denominator {display: block; text-align: center}
+.MJXc-stacked {height: 0; position: relative}
+.MJXc-stacked > * {position: absolute}
+.MJXc-bevelled > * {display: inline-block}
+.mjx-stack {display: inline-block}
+.mjx-op {display: block}
+.mjx-under {display: table-cell}
+.mjx-over {display: block}
+.mjx-over > * {padding-left: 0px!important; padding-right: 0px!important}
+.mjx-under > * {padding-left: 0px!important; padding-right: 0px!important}
+.mjx-stack > .mjx-sup {display: block}
+.mjx-stack > .mjx-sub {display: block}
+.mjx-prestack > .mjx-presup {display: block}
+.mjx-prestack > .mjx-presub {display: block}
+.mjx-delim-h > .mjx-char {display: inline-block}
+.mjx-surd {vertical-align: top}
+.mjx-surd + .mjx-box {display: inline-flex}
+.mjx-mphantom * {visibility: hidden}
+.mjx-merror {background-color: #FFFF88; color: #CC0000; border: 1px solid #CC0000; padding: 2px 3px; font-style: normal; font-size: 90%}
+.mjx-annotation-xml {line-height: normal}
+.mjx-menclose > svg {fill: none; stroke: currentColor; overflow: visible}
+.mjx-mtr {display: table-row}
+.mjx-mlabeledtr {display: table-row}
+.mjx-mtd {display: table-cell; text-align: center}
+.mjx-label {display: table-row}
+.mjx-box {display: inline-block}
+.mjx-block {display: block}
+.mjx-span {display: inline}
+.mjx-char {display: block; white-space: pre}
+.mjx-itable {display: inline-table; width: auto}
+.mjx-row {display: table-row}
+.mjx-cell {display: table-cell}
+.mjx-table {display: table; width: 100%}
+.mjx-line {display: block; height: 0}
+.mjx-strut {width: 0; padding-top: 1em}
+.mjx-vsize {width: 0}
+.MJXc-space1 {margin-left: .167em}
+.MJXc-space2 {margin-left: .222em}
+.MJXc-space3 {margin-left: .278em}
+.mjx-test.mjx-test-display {display: table!important}
+.mjx-test.mjx-test-inline {display: inline!important; margin-right: -1px}
+.mjx-test.mjx-test-default {display: block!important; clear: both}
+.mjx-ex-box {display: inline-block!important; position: absolute; overflow: hidden; min-height: 0; max-height: none; padding: 0; border: 0; margin: 0; width: 1px; height: 60ex}
+.mjx-test-inline .mjx-left-box {display: inline-block; width: 0; float: left}
+.mjx-test-inline .mjx-right-box {display: inline-block; width: 0; float: right}
+.mjx-test-display .mjx-right-box {display: table-cell!important; width: 10000em!important; min-width: 0; max-width: none; padding: 0; border: 0; margin: 0}
+.MJXc-TeX-unknown-R {font-family: monospace; font-style: normal; font-weight: normal}
+.MJXc-TeX-unknown-I {font-family: monospace; font-style: italic; font-weight: normal}
+.MJXc-TeX-unknown-B {font-family: monospace; font-style: normal; font-weight: bold}
+.MJXc-TeX-unknown-BI {font-family: monospace; font-style: italic; font-weight: bold}
+.MJXc-TeX-ams-R {font-family: MJXc-TeX-ams-R,MJXc-TeX-ams-Rw}
+.MJXc-TeX-cal-B {font-family: MJXc-TeX-cal-B,MJXc-TeX-cal-Bx,MJXc-TeX-cal-Bw}
+.MJXc-TeX-frak-R {font-family: MJXc-TeX-frak-R,MJXc-TeX-frak-Rw}
+.MJXc-TeX-frak-B {font-family: MJXc-TeX-frak-B,MJXc-TeX-frak-Bx,MJXc-TeX-frak-Bw}
+.MJXc-TeX-math-BI {font-family: MJXc-TeX-math-BI,MJXc-TeX-math-BIx,MJXc-TeX-math-BIw}
+.MJXc-TeX-sans-R {font-family: MJXc-TeX-sans-R,MJXc-TeX-sans-Rw}
+.MJXc-TeX-sans-B {font-family: MJXc-TeX-sans-B,MJXc-TeX-sans-Bx,MJXc-TeX-sans-Bw}
+.MJXc-TeX-sans-I {font-family: MJXc-TeX-sans-I,MJXc-TeX-sans-Ix,MJXc-TeX-sans-Iw}
+.MJXc-TeX-script-R {font-family: MJXc-TeX-script-R,MJXc-TeX-script-Rw}
+.MJXc-TeX-type-R {font-family: MJXc-TeX-type-R,MJXc-TeX-type-Rw}
+.MJXc-TeX-cal-R {font-family: MJXc-TeX-cal-R,MJXc-TeX-cal-Rw}
+.MJXc-TeX-main-B {font-family: MJXc-TeX-main-B,MJXc-TeX-main-Bx,MJXc-TeX-main-Bw}
+.MJXc-TeX-main-I {font-family: MJXc-TeX-main-I,MJXc-TeX-main-Ix,MJXc-TeX-main-Iw}
+.MJXc-TeX-main-R {font-family: MJXc-TeX-main-R,MJXc-TeX-main-Rw}
+.MJXc-TeX-math-I {font-family: MJXc-TeX-math-I,MJXc-TeX-math-Ix,MJXc-TeX-math-Iw}
+.MJXc-TeX-size1-R {font-family: MJXc-TeX-size1-R,MJXc-TeX-size1-Rw}
+.MJXc-TeX-size2-R {font-family: MJXc-TeX-size2-R,MJXc-TeX-size2-Rw}
+.MJXc-TeX-size3-R {font-family: MJXc-TeX-size3-R,MJXc-TeX-size3-Rw}
+.MJXc-TeX-size4-R {font-family: MJXc-TeX-size4-R,MJXc-TeX-size4-Rw}
+.MJXc-TeX-vec-R {font-family: MJXc-TeX-vec-R,MJXc-TeX-vec-Rw}
+.MJXc-TeX-vec-B {font-family: MJXc-TeX-vec-B,MJXc-TeX-vec-Bx,MJXc-TeX-vec-Bw}
+@font-face {font-family: MJXc-TeX-ams-R; src: local('MathJax_AMS'), local('MathJax_AMS-Regular')}
+@font-face {font-family: MJXc-TeX-ams-Rw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_AMS-Regular.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_AMS-Regular.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_AMS-Regular.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-cal-B; src: local('MathJax_Caligraphic Bold'), local('MathJax_Caligraphic-Bold')}
+@font-face {font-family: MJXc-TeX-cal-Bx; src: local('MathJax_Caligraphic'); font-weight: bold}
+@font-face {font-family: MJXc-TeX-cal-Bw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Caligraphic-Bold.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Caligraphic-Bold.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Caligraphic-Bold.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-frak-R; src: local('MathJax_Fraktur'), local('MathJax_Fraktur-Regular')}
+@font-face {font-family: MJXc-TeX-frak-Rw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Fraktur-Regular.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Fraktur-Regular.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Fraktur-Regular.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-frak-B; src: local('MathJax_Fraktur Bold'), local('MathJax_Fraktur-Bold')}
+@font-face {font-family: MJXc-TeX-frak-Bx; src: local('MathJax_Fraktur'); font-weight: bold}
+@font-face {font-family: MJXc-TeX-frak-Bw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Fraktur-Bold.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Fraktur-Bold.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Fraktur-Bold.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-math-BI; src: local('MathJax_Math BoldItalic'), local('MathJax_Math-BoldItalic')}
+@font-face {font-family: MJXc-TeX-math-BIx; src: local('MathJax_Math'); font-weight: bold; font-style: italic}
+@font-face {font-family: MJXc-TeX-math-BIw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Math-BoldItalic.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Math-BoldItalic.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Math-BoldItalic.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-sans-R; src: local('MathJax_SansSerif'), local('MathJax_SansSerif-Regular')}
+@font-face {font-family: MJXc-TeX-sans-Rw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_SansSerif-Regular.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_SansSerif-Regular.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_SansSerif-Regular.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-sans-B; src: local('MathJax_SansSerif Bold'), local('MathJax_SansSerif-Bold')}
+@font-face {font-family: MJXc-TeX-sans-Bx; src: local('MathJax_SansSerif'); font-weight: bold}
+@font-face {font-family: MJXc-TeX-sans-Bw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_SansSerif-Bold.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_SansSerif-Bold.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_SansSerif-Bold.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-sans-I; src: local('MathJax_SansSerif Italic'), local('MathJax_SansSerif-Italic')}
+@font-face {font-family: MJXc-TeX-sans-Ix; src: local('MathJax_SansSerif'); font-style: italic}
+@font-face {font-family: MJXc-TeX-sans-Iw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_SansSerif-Italic.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_SansSerif-Italic.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_SansSerif-Italic.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-script-R; src: local('MathJax_Script'), local('MathJax_Script-Regular')}
+@font-face {font-family: MJXc-TeX-script-Rw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Script-Regular.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Script-Regular.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Script-Regular.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-type-R; src: local('MathJax_Typewriter'), local('MathJax_Typewriter-Regular')}
+@font-face {font-family: MJXc-TeX-type-Rw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Typewriter-Regular.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Typewriter-Regular.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Typewriter-Regular.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-cal-R; src: local('MathJax_Caligraphic'), local('MathJax_Caligraphic-Regular')}
+@font-face {font-family: MJXc-TeX-cal-Rw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Caligraphic-Regular.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Caligraphic-Regular.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Caligraphic-Regular.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-main-B; src: local('MathJax_Main Bold'), local('MathJax_Main-Bold')}
+@font-face {font-family: MJXc-TeX-main-Bx; src: local('MathJax_Main'); font-weight: bold}
+@font-face {font-family: MJXc-TeX-main-Bw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Main-Bold.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Main-Bold.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Main-Bold.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-main-I; src: local('MathJax_Main Italic'), local('MathJax_Main-Italic')}
+@font-face {font-family: MJXc-TeX-main-Ix; src: local('MathJax_Main'); font-style: italic}
+@font-face {font-family: MJXc-TeX-main-Iw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Main-Italic.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Main-Italic.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Main-Italic.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-main-R; src: local('MathJax_Main'), local('MathJax_Main-Regular')}
+@font-face {font-family: MJXc-TeX-main-Rw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Main-Regular.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Main-Regular.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Main-Regular.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-math-I; src: local('MathJax_Math Italic'), local('MathJax_Math-Italic')}
+@font-face {font-family: MJXc-TeX-math-Ix; src: local('MathJax_Math'); font-style: italic}
+@font-face {font-family: MJXc-TeX-math-Iw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Math-Italic.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Math-Italic.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Math-Italic.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-size1-R; src: local('MathJax_Size1'), local('MathJax_Size1-Regular')}
+@font-face {font-family: MJXc-TeX-size1-Rw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Size1-Regular.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Size1-Regular.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Size1-Regular.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-size2-R; src: local('MathJax_Size2'), local('MathJax_Size2-Regular')}
+@font-face {font-family: MJXc-TeX-size2-Rw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Size2-Regular.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Size2-Regular.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Size2-Regular.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-size3-R; src: local('MathJax_Size3'), local('MathJax_Size3-Regular')}
+@font-face {font-family: MJXc-TeX-size3-Rw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Size3-Regular.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Size3-Regular.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Size3-Regular.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-size4-R; src: local('MathJax_Size4'), local('MathJax_Size4-Regular')}
+@font-face {font-family: MJXc-TeX-size4-Rw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Size4-Regular.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Size4-Regular.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Size4-Regular.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-vec-R; src: local('MathJax_Vector'), local('MathJax_Vector-Regular')}
+@font-face {font-family: MJXc-TeX-vec-Rw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Vector-Regular.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Vector-Regular.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Vector-Regular.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-vec-B; src: local('MathJax_Vector Bold'), local('MathJax_Vector-Bold')}
+@font-face {font-family: MJXc-TeX-vec-Bx; src: local('MathJax_Vector'); font-weight: bold}
+@font-face {font-family: MJXc-TeX-vec-Bw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Vector-Bold.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Vector-Bold.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Vector-Bold.otf') format('opentype')}
+</style><span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="\times"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.2em; padding-bottom: 0.333em;">×</span></span></span></span></span></span> 3,000,000 <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="\approx"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.2em; padding-bottom: 0.311em;">≈</span></span></span></span></span></span> 7 days! Now, you can of course use more CPU cores and run multiple instances of this loop at once, but that's not a very interesting solution. In this case the challenge is also time-sensitive and so we need something better.</p>
+<h2>Hacking it with <code>ptrace</code></h2>
+<p>A natural thing to try might be to somehow force the process to <code>fork</code> before <code>read</code>ing the input. This way, if an input fails, we can simply return back to the original state, fork it again, and try another input, without having it go through the 200ms initialization each time. While this does sounds quite tricky, the <a href="https://man7.org/linux/man-pages/man2/ptrace.2.html">ptrace API</a>, which is what debuggers uses behind the scene, allows a tracer to do a lot of interesting things to its child, like hooking and injecting syscalls, rewriting memory, etc. And so it is not difficult to imagine a C program which uses ptrace to:</p>
+<ol>
+<li>Force this executable to <code>fork</code></li>
+<li>Feed the child fake input (e.g. by writing to the memory it passes to <code>read</code>)</li>
+<li>Check the result (by inspecting what it tries to <code>write</code>), and if the input is incorrct:</li>
+<li>Kill the child, and fork the parent again, restarting the loop.</li>
+</ol>
+<p>A program like this could also fake <code>/proc/self/status</code> and the result of <code>ptrace(PTRACE_TRACEME)</code>, thus defeating the debugger detection.</p>
+<p>Now, doing all this isn't free. With such short runtime per iteration (5-10us), the overhead of <code>fork</code> and the context switch between the supervisor, the parent to be forked, and the forked child process quickly dominates the time spent. I created a simple C program <a href="fork-test.c">fork-test.c</a> which measures time elapsed between just calling <code>fork</code> and it returning in the child, and from my testing, forking even this simple process usually takes ~50-150us. This is without the involvement of any ptrace supervisor, the process has less memory mappings than the real binary we're testing, and we're not writing or reading its memory from a remote process. It is reasonable to assume that if we were to actually do the proposed <code>ptrace</code>-based experiment, one iteration including handling <code>read</code>/<code>write</code> will take at least 100us on average (probably more).</p>
+<p>With 100us per iteration, searching through all the inputs will take 5 minutes, which is not bad at all. The result does depends on time though, and for certain time periods there won't always be a valid input. This means that if we don't feel like sitting behind the computer waiting for potentially tens of minutes, we need to either parallelize it by a lot (with different processes trying different ranges of input), or advance our system clock to the future, so that when we come back from our half-hour coffee break the solution is not expired already.</p>
+<p>I have tried but have not been successful in coercing ChatGPT (o1) to give me an out-of-the-box working solution for this – it is tripping over getting the child to behave correctly and I ran out of patience debugging.</p>
+<h2>What if we just revert its state instead?</h2>
+<p>Now, while I don't think there is any reason why the forcing <code>fork</code> approach wouldn't work, this is not the approach I ended up using. Notice that the program doesn't really try to do anything fancy (at least not externally visible) between <code>read</code> and <code>write</code> – all it does is spin some numbers around in its own memory, then spits out ‘Correct’ or ‘Nope’. This means that, in theory, all we have to do is restore it's memory and register states, and let it try with a different injected input. Without the overhead of forking another process, this has the potential to be a lot faster – we're basically turning the whole input validation process into a <code>for</code> loop! It's just that the <code>for</code> is outside the program.</p>
+<p>This is also doable with <code>ptrace</code>, since we can read and write the memory of our traced process, and save/restore its registers. One way we can do this is to save off the content of all writable memory regions—in this case barely even 1 MB—and restore them along with the registers after each iteration. If we want to go even further, we can use <a href="https://man7.org/linux/man-pages/man2/userfaultfd.2.html"><code>userfaultfd</code></a> to monitor which pages are written to after we inject our test input, and only restore those pages. For a program which has a lot more state than a few MB, this could be quite worthwhile.</p>
+<p>Since ChatGPT already failed me once, I'm not going to try and convince it to make this work either. In principle it should all work, but as you will see, this is also not the approach I ended up using.</p>
+<h2>What if we get the kernel to do everything for us?</h2>
+<p>Recently I have also been getting very interested in Linux kernel development (from debugging weird kernel panics at work <img src="smiling-face-with-tear.png" alt="🥲" style="width: 1em; vertical-align: -4px;">), so I decided why not turn this into a kernel programming exercise, and try to get Linux to automatically try all the possible inputs for me? The core idea is:</p>
+<ol>
+<li>We can identify the process (more precisely, task, but it doesn't matter) we're interested in from its name (“<code>hackme</code>”).</li>
+<li>When a target process attempts to <code>read</code> from stdin, we: <br> a) Save off its register states; <br> b) Write-protect all its memory mappings; <br> c) Inject the next input into the read buffer.</li>
+<li>When a write protection fault happens on our target process, we: <br> a) check if it is one of the mapping we've previously write-protected; <br> b) if so, we save off an ‘original’ copy of the page being written to, and allow the write to continue.</li>
+<li>When the target process attempts a <code>write</code> to stdout, we: <br> a) Check if the output indicate failure; <br> b) If the output contains “Nope”, restore all modified memory pages to their original content, restore register states, and re-run the <code>read</code> syscall, which will cause the next input to be injected; <br> c) Otherwise, we just let the process continue. If it prints the flag out, we will see it in the console.</li>
+</ol>
+<p>Now, this might seem like massive overkill, and it probably is, but hear me out:</p>
+<ul>
+<li>We instantly avoid any overhead from involving a <code>ptrace</code> supervisor, or really any other process at all. There is no context switching or waiting between processes, and we can truly run the brute-force loop at the fastest possible speed. 5us <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="\times"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.2em; padding-bottom: 0.333em;">×</span></span></span></span></span></span> 3,000,000 is <em>15 seconds</em>.</li>
+<li>While correctly write-protecting the memory pages, saving them off on write fault, and restoring them might sound tricky, with the way Linux manages writable pages it is actually surprisingly straightforward. This is because even for a writable mapping, pages starts off write-protected, and the kernel only makes them actually writable on the first write attempt. This means that there are very natural places we can add our code to, and we don't even have to actually change any page permissions, etc.</li>
+<li>The <code>ptrace</code> API is quite difficult to use, getting syscall hooking right is not easy (recall ChatGPT failed to write the first <code>ptrace</code> solution), and so we might as well just have the kernel do what we want.</li>
+<li>Hacking the kernel is fun, at least to me <img src="init.png" alt="Small Yuki Nagato emote" style="width: 1.2em; vertical-align: -5px;"></li>
+</ul>
+<p>I will now walk through each step one by one, as laid out above. If you as the reader don't have a lot of kernel experience (I certainly don't), hopefully by going like this, this will not be too difficult to follow:</p>
+<p class="info">
+  I will be using the term ‘process’ and ‘task’ interchangeably in this article.
+</p>
+
+<p>The first step is to identity and mark the process we're interested in. In Linux, each process is represented by a <a href="https://github.com/micromaomao/linux-dev/blob/ick/include/linux/sched.h#L778"><code>struct task_struct</code></a>, which contains things like the PID, process name, memory mappings, and a thousand other things. We can of course add our own data to this struct – for example, we can have a <code>bool</code> to indicate whether a process is our hack target, and use it to decide if we should do special things in our modified <code>read</code>/<code>write</code> syscall handlers (we don't want to break unrelated processes like the shell, for example).</p>
+<p>You probably know that when you run an executable, the shell forks a subprocess then run <code>exec</code> with the command arguments. If we assume our target binary is always named “<code>hackme</code>”, we can check for this in the handler for <code>exec</code>, and set the <code>bool</code> we added previously to <code>true</code>.</p>
+<p>With some searching and perhaps tracing with <a href="https://www.kernel.org/doc/html/latest/trace/ftrace.html">ftrace</a> (I found <code>function_graph</code> to be particularly useful), we find that there is a common function for <code>execve</code> and <code>execveat</code> – <a href="https://github.com/micromaomao/linux-dev/blob/ick/fs/exec.c#L1876"><code>do_execveat_common</code></a>, and so we can add our code there, and add the additional field to the <code>task_struct</code>:</p>
+<p><div class="diff-block-container"><div class="diff-block"><div class="diff-line diff-header-start">diff --git a/fs/exec.c b/fs/exec.c</div><div class="diff-line diff-header">index 6c53920795c2..f07ef9841380 100644</div><div class="diff-line diff-header">--- a/fs/exec.c</div><div class="diff-line diff-header">+++ b/fs/exec.c</div><div class="diff-line diff-hunk"><span class="diff-hunk-lines">@@ -1884,6 +1884,12 @@</span><span class="diff-hunk-function"> <span class="hljs-type">static</span> <span class="hljs-type">int</span> <span class="hljs-title function_">do_execveat_common</span><span class="hljs-params">(<span class="hljs-type">int</span> fd, <span class="hljs-keyword">struct</span> filename *filename,</span></span></div><div class="diff-line diff-context"><span class="diff-symbol"> </span><span class="diff-code">	<span class="hljs-keyword">if</span> (IS_ERR(filename))</span></div><div class="diff-line diff-context"><span class="diff-symbol"> </span><span class="diff-code">		<span class="hljs-keyword">return</span> PTR_ERR(filename);</span></div><div class="diff-line diff-context"><span class="diff-symbol"> </span><span class="diff-code"></span></div><div class="diff-line diff-add"><span class="diff-symbol">+</span><span class="diff-code">	<span class="hljs-keyword">if</span> (<span class="hljs-built_in">strstr</span>(filename-&gt;name, <span class="hljs-string">"hackme"</span>) != <span class="hljs-literal">NULL</span>) {</span></div><div class="diff-line diff-add"><span class="diff-symbol">+</span><span class="diff-code">		pr_info(<span class="hljs-string">"execveat: %s[%u] to be hacked\n"</span>, filename-&gt;name, current-&gt;pid);</span></div><div class="diff-line diff-add"><span class="diff-symbol">+</span><span class="diff-code">		current-&gt;hack_target.hack = <span class="hljs-literal">true</span>;</span></div><div class="diff-line diff-add"><span class="diff-symbol">+</span><span class="diff-code">		current-&gt;hack_target.next_number = <span class="hljs-number">1</span>;</span></div><div class="diff-line diff-add"><span class="diff-symbol">+</span><span class="diff-code">	}</span></div><div class="diff-line diff-add"><span class="diff-symbol">+</span><span class="diff-code"></span></div><div class="diff-line diff-context"><span class="diff-symbol"> </span><span class="diff-code">	<span class="hljs-comment">/*</span></span></div><div class="diff-line diff-context"><span class="diff-symbol"> </span><span class="diff-code"><span class="hljs-comment">	 * We move the actual failure in case of RLIMIT_NPROC excess from</span></span></div><div class="diff-line diff-context"><span class="diff-symbol"> </span><span class="diff-code"><span class="hljs-comment">	 * set*uid() to execve() because too many poorly written programs</span></span></div><div class="diff-line diff-header-start">diff --git a/include/linux/sched.h b/include/linux/sched.h</div><div class="diff-line diff-header">index bb343136ddd0..212b63789de4 100644</div><div class="diff-line diff-header">--- a/include/linux/sched.h</div><div class="diff-line diff-header">+++ b/include/linux/sched.h</div><div class="diff-line diff-hunk"><span class="diff-hunk-lines">@@ -1592,6 +1592,11 @@</span><span class="diff-hunk-function"> <span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">task_struct</span> {</span></span></div><div class="diff-line diff-context"><span class="diff-symbol"> </span><span class="diff-code">	<span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">user_event_mm</span>		*<span class="hljs-title">user_event_mm</span>;</span></span></div><div class="diff-line diff-context"><span class="diff-symbol"> </span><span class="diff-code"><span class="hljs-meta">#<span class="hljs-keyword">endif</span></span></span></div><div class="diff-line diff-context"><span class="diff-symbol"> </span><span class="diff-code"></span></div><div class="diff-line diff-add"><span class="diff-symbol">+</span><span class="diff-code">	<span class="hljs-class"><span class="hljs-keyword">struct</span> {</span></span></div><div class="diff-line diff-add"><span class="diff-symbol">+</span><span class="diff-code">		<span class="hljs-type">bool</span> hack;</span></div><div class="diff-line diff-add"><span class="diff-symbol">+</span><span class="diff-code">		u32 next_number;</span></div><div class="diff-line diff-add"><span class="diff-symbol">+</span><span class="diff-code">	} hack_target;</span></div><div class="diff-line diff-add"><span class="diff-symbol">+</span><span class="diff-code"></span></div><div class="diff-line diff-context"><span class="diff-symbol"> </span><span class="diff-code">	<span class="hljs-comment">/*</span></span></div><div class="diff-line diff-context"><span class="diff-symbol"> </span><span class="diff-code"><span class="hljs-comment">	 * New fields for task_struct should be added above here, so that</span></span></div><div class="diff-line diff-context"><span class="diff-symbol"> </span><span class="diff-code"><span class="hljs-comment">	 * they are included in the randomized portion of task_struct.</span></span></div><div class="diff-line diff-header-start">diff --git a/init/init_task.c b/init/init_task.c</div><div class="diff-line diff-header">index 136a8231355a..51c9b5d202f1 100644</div><div class="diff-line diff-header">--- a/init/init_task.c</div><div class="diff-line diff-header">+++ b/init/init_task.c</div><div class="diff-line diff-hunk"><span class="diff-hunk-lines">@@ -219,6 +219,8 @@</span><span class="diff-hunk-function"> <span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">task_struct</span> <span class="hljs-title">init_task</span> __<span class="hljs-title">aligned</span>(<span class="hljs-title">L1_CACHE_BYTES</span>) =</span> {</span></div><div class="diff-line diff-context"><span class="diff-symbol"> </span><span class="diff-code"><span class="hljs-meta">#<span class="hljs-keyword">ifdef</span> CONFIG_SECCOMP_FILTER</span></span></div><div class="diff-line diff-context"><span class="diff-symbol"> </span><span class="diff-code">	.seccomp	= { .filter_count = ATOMIC_INIT(<span class="hljs-number">0</span>) },</span></div><div class="diff-line diff-context"><span class="diff-symbol"> </span><span class="diff-code"><span class="hljs-meta">#<span class="hljs-keyword">endif</span></span></span></div><div class="diff-line diff-add"><span class="diff-symbol">+</span><span class="diff-code"></span></div><div class="diff-line diff-add"><span class="diff-symbol">+</span><span class="diff-code">  .hack_target = { .hack = <span class="hljs-literal">false</span>, .next_number = <span class="hljs-number">0</span> },</span></div><div class="diff-line diff-context"><span class="diff-symbol"> </span><span class="diff-code">};</span></div><div class="diff-line diff-context"><span class="diff-symbol"> </span><span class="diff-code">EXPORT_SYMBOL(init_task);</span></div><div class="diff-line diff-context"><span class="diff-symbol"> </span><span class="diff-code"></span></div></div></div></p>
+<!--
+
+Conclusion:
+When I was a lot younger, there was this book which attempted to help the reader understand Linux by listing a bunch of source codes and make commentaries on it. It started from bootup. I couldn't even get through a chapter.
+I think you need to play with stuff to understand stuff. Use kgdb etc
+
+-->
+<p><a href="https://github.com/micromaomao/linux-dev/issues">Discuss on GitHub</a></p>
+    <p class="footer">
+      Published
+      <span class="time" title="Wed, 01 Jan 2025 23:21:38 GMT">on Wed Jan 01 2025</span>.<br>
+      Authored by <a href="https://maowtm.org">maowtm (Tingmao Wang)</a> &lt;m@maowtm.org&gt;.<br>
+      
+      Content <a href="https://github.com/micromaomao/blog/blob/draft/LICENSE.md">licensed under a Creative Commons Attribution-ShareAlike 4.0 International License</a>.<br>
+      
+      For permissions beyond the scope of this license, see <a href="../request_cc_extension.html">https://blog.maowtm.org/request_cc_extension.html</a>.<br>
+      
+      If you see something wrong please <a href="https://github.com/micromaomao/blog/issues">report on GitHub</a>.
+    </p><a class="home" href="../index.html">« home</a>
+    <script type="text/javascript" src="/layout.js"></script>
+  </body>
+</html>

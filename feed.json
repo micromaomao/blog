@@ -1,0 +1,15 @@
+[
+  {
+    "title": "Using the Linux kernel to help me crack an executable quickly",
+    "url": "https://blog.maowtm.org/linux-ick/en.html",
+    "date": "2025-01-01T23:21:38.000Z",
+    "tags": [
+      "Linux",
+      "systems programming",
+      "reverse engineering",
+      "performance"
+    ],
+    "cover_image": null,
+    "snippet": "A few weeks ago I found a reverse engineering problem which basically boiled down to running a heavily obfuscated Linux binary and entering the correct number to get it to print a flag. Fortunately, the interesting bits of the program ran quite fast – after reading the input, it spends around 5us before printing out whether the guess was correct or not. This means that even a brute-force search of the possible inputs could finish in a reasonable time, and there is no need to expend much effort on actual reverse engineering if we don't have to. The only tricky part is, how do we convince it to try different inputs as fast as this?"
+  }
+]

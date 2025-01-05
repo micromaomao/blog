@@ -242,7 +242,7 @@ Aside from perf, there are also other ways this application can be made more &ld
 
 ## Thanks
 
-This project originated from a &ldquo;Day-of-Learning&rdquo; idea I had, and I spent my last DoL on the initial parts of this project. DoL is a thing we have at work in [Azure for Operators](https://azure.microsoft.com/en-us/solutions/industries/telecommunications/#overview) (Microsoft), which allows us to spend a day doing &ldquo;learning&rdquo; stuff. I also want to thank one of my colleagues who helped me with some initial DPDK setup and understanding.
+This project originated from a &ldquo;Day-of-Learning&rdquo; idea I had, and I spent my last DoL on the initial parts of this project. DoL is a thing we have at Microsoft, which allows us to spend a day doing &ldquo;learning&rdquo; stuff. I also want to thank one of my colleagues who helped me with some initial DPDK setup and understanding.
 
 ## Appendix: Baseline (Linux kernel sending/recving + DPDK echo) setup &amp; measurements
 

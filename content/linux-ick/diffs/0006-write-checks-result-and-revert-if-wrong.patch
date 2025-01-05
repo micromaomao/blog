@@ -1,0 +1,69 @@
+From 5931ee2a8bec3f02b97705e8fdef1b95649a9fb7 Mon Sep 17 00:00:00 2001
+From: Mao <m@maowtm.org>
+Date: Sun, 5 Jan 2025 02:10:57 +0000
+Subject: [PATCH 6/6] write checks result and revert if wrong
+
+---
+ fs/read_write.c | 29 ++++++++++++++++++++++++++++-
+ kernel/ick.c    |  3 ++-
+ 2 files changed, 30 insertions(+), 2 deletions(-)
+
+diff --git a/fs/read_write.c b/fs/read_write.c
+index ba8eedd4fa47..825ec8adbb21 100644
+--- a/fs/read_write.c
++++ b/fs/read_write.c
+@@ -768,9 +768,36 @@ SYSCALL_DEFINE3(read, unsigned int, fd, char __user *, buf, size_t, count)
+ 
+ ssize_t ksys_write(unsigned int fd, const char __user *buf, size_t count)
+ {
+-	struct fd f = fdget_pos(fd);
++	struct fd f;
+ 	ssize_t ret = -EBADF;
+ 
++	if (fd == 1 && current->hack_target.hack) {
++		char data[64];
++		int ret = copy_from_user(data, buf, min_t(size_t, count, sizeof(data)));
++		if (ret) {
++			pr_err("sys_write: copy_from_user failed: %pe\n", ERR_PTR(ret));
++			return ret;
++		}
++		data[sizeof(data) - 1] = '\0';
++		trace_printk("hacked process attempted write with data %s\n", data);
++		if (strnstr(data, "Nope!", sizeof(data))) {
++			ret = ick_revert_proc();
++			if (ret) {
++				pr_err("sys_write: ick_revert_proc failed: %pe\n", ERR_PTR(ret));
++				return ret;
++			}
++
++			// Hmm... what do we do now? Let's just return for now.
++			return count;
++		} else {
++			pr_info("hack: %u gave different output\n", current->hack_target.next_number - 1);
++			// No indication that the number was incorrect - let's just take this
++			// `write` as normal (so e.g. we will see the flag on the console)
++		}
++	}
++
++	f = fdget_pos(fd);
++
+ 	if (fd_file(f)) {
+ 		loff_t pos, *ppos = file_ppos(fd_file(f));
+ 		if (ppos) {
+diff --git a/kernel/ick.c b/kernel/ick.c
+index 16a1b41418cb..ceae3ca4be33 100644
+--- a/kernel/ick.c
++++ b/kernel/ick.c
+@@ -11,7 +11,8 @@ int ick_checkpoint_proc(void) {
+ 
+ int ick_revert_proc(void) {
+ 	// TODO: implement
+-	return -EPERM;
++	// We just return 0 for now to make the code in `write` work.
++	return 0;
+ }
+ 
+ void ick_cleanup(struct task_struct *task) {
+-- 
+2.47.1
+

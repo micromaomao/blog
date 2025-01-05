@@ -284,7 +284,7 @@ Next, we can finish off the relatively easier part of step 2 &ndash; handling `r
 
 <a class="make-diff" href="./diffs/0005-read-calls-checkpoint-and-inject-guess.patch"></a>
 
-While we can use `strace` to see whether we're sending back the right thing to the user space, for ease of debugging we can write our own test binary which prints out the number received, and also, for now, loops back itself, so that we can see if the guess increments correctly: [my-hackme-looped.cpp](./my-hackme-looped.cpp)
+While we can use `strace` to see whether we're sending back the right thing to the user-space, for ease of debugging we can write our own test binary which prints out the number received, and also, for now, loops back itself, so that we can see if the guess increments correctly: [my-hackme-looped.cpp](./my-hackme-looped.cpp)
 
 <pre>
 <span class="irrelevant">make; ./dev/startvm.sh</span>
@@ -315,7 +315,7 @@ Enter number: Correct!
 <span class="irrelevant">root@feef72fcd655:/#</span>
 </pre>
 
-Great success! Note that at this point we haven't even touched `write` yet &ndash; this is only looping because the program has a deliberate loop inside, but we will eventually not need that once we implement the checkpointing.
+Great success! Note that at this point we haven't even touched `write` yet &ndash; this is only looping because our test program has a deliberate loop inside, but we will eventually not need that once we implement the checkpointing.
 
 Also note that for very frequent output, I have used `trace_printk` which doesn't shows in the console, but can be seen in the kernel trace.
 
@@ -326,7 +326,41 @@ root@feef72fcd655:/# tail /sys/kernel/tracing/trace
  my-hackme-loope-90      [001] .....   447.571691: ksys_read: ick checkpoint on hacked process my-hackme-loope[90]
  my-hackme-loope-90      [001] .....   447.571691: ksys_read: Providing number 28 to hacked process my-hackme-loope[90]
 ...
- ```
+```
+
+Let's also do the same for `write` &ndash; we will get the print output from user-space, and depending on whether we see a &ldquo;`Nope`&rdquo; we will either restore checkpoint, or let the process continue (handling the `write` as normal).
+
+<a class="make-diff" href="./diffs/0006-write-checks-result-and-revert-if-wrong.patch"></a>
+
+Since we haven't implemented checkpoint restore yet, the overall behaviour currently will not change. However, since we're effectively &lsquo;consuming&rsquo; any output with &ldquo;`Nope!`&rdquo;, we should not see them in the console, but we should still see our `trace_printk` printing them out:
+
+<pre>
+root@feef72fcd655:/# ./my-hackme-looped
+[    7.461863][   T84] execveat: ./my-hackme-looped[84] to be hacked
+[    7.487957][   T84] hack: 0 gave different output
+Enter number: [    7.492040][   T84] hack: 1 gave different output
+Enter number: [    7.493428][   T84] hack: 2 gave different output
+Correct!
+root@feef72fcd655:/# cat /sys/kernel/tracing/trace
+<span class="irrelevant"># tracer: nop
+...
+ my-hackme-loope-84      [000] d....     7.461871: console: execveat: ./my-hackme-looped[84] to be hacked</span>
+ my-hackme-loope-84      [000] .....     7.487955: ksys_write: hacked process attempted write with data Enter number:
+ my-hackme-loope-84      [000] d....     7.487961: console: hack: 0 gave different output
+ my-hackme-loope-84      [000] .....     7.490135: ksys_read: ick checkpoint on hacked process my-hackme-loope[84]
+ my-hackme-loope-84      [000] .....     7.490136: ksys_read: Providing number 1 to hacked process my-hackme-loope[84]
+ my-hackme-loope-84      [000] .....     7.492037: ksys_write: hacked process attempted write with data Nope! 1 was a wrong guess. The correct number is 2.
+
+ my-hackme-loope-84      [000] .....     7.492039: ksys_write: hacked process attempted write with data Enter number:
+ my-hackme-loope-84      [000] d....     7.492042: console: hack: 1 gave different output
+ my-hackme-loope-84      [000] .....     7.493423: ksys_read: ick checkpoint on hacked process my-hackme-loope[84]
+ my-hackme-loope-84      [000] .....     7.493424: ksys_read: Providing number 2 to hacked process my-hackme-loope[84]
+ my-hackme-loope-84      [000] .....     7.493427: ksys_write: hacked process attempted write with data Correct!
+
+ my-hackme-loope-84      [000] d....     7.493430: console: hack: 2 gave different output
+</pre>
+
+Note that the &ldquo;\_ gave different output&rdquo; prints are because the program was writing &ldquo;`Enter number: `&rdquo; every loop iteration, which doesn't contain &ldquo;`Nope!`&rdquo;. Once our checkpoint restore is working, the program should end up back to when it first issues the `read`, which means that any prompt to enter number would no longer be printed again.
 
 <!--
 

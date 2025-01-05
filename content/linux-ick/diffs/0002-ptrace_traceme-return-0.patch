@@ -1,7 +1,7 @@
 From 1029371062ea52453fa2770e93ca7a4ae532b134 Mon Sep 17 00:00:00 2001
 From: Mao <m@maowtm.org>
 Date: Sat, 4 Jan 2025 00:04:25 +0000
-Subject: [PATCH 2/5] ptrace_traceme return 0
+Subject: [PATCH 2/6] ptrace_traceme return 0
 
 ---
  kernel/ptrace.c | 2 +-

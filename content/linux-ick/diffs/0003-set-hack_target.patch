@@ -1,7 +1,7 @@
 From ff8eb6f98538fba08f2eaa6216173eeecf8e42ce Mon Sep 17 00:00:00 2001
 From: Mao <m@maowtm.org>
 Date: Sat, 4 Jan 2025 00:05:28 +0000
-Subject: [PATCH 3/5] set hack_target
+Subject: [PATCH 3/6] set hack_target
 
 ---
  fs/exec.c             |  6 ++++++

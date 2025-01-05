@@ -1,7 +1,7 @@
-From 688d46a8efc7edfb35e4634c4ae5e8b93b02fe77 Mon Sep 17 00:00:00 2001
+From fbe3d0c77baff447d155ed775185bfcb69a2286a Mon Sep 17 00:00:00 2001
 From: Mao <m@maowtm.org>
 Date: Sun, 5 Jan 2025 00:34:12 +0000
-Subject: [PATCH 5/5] read calls checkpoint and inject guess
+Subject: [PATCH 5/6] read calls checkpoint and inject guess
 
 ---
  fs/read_write.c | 46 +++++++++++++++++++++++++++++++++++++++++++++-
@@ -9,7 +9,7 @@ Subject: [PATCH 5/5] read calls checkpoint and inject guess
  2 files changed, 47 insertions(+), 2 deletions(-)
 
 diff --git a/fs/read_write.c b/fs/read_write.c
-index 64dc24afdb3a..8edf45702884 100644
+index 64dc24afdb3a..ba8eedd4fa47 100644
 --- a/fs/read_write.c
 +++ b/fs/read_write.c
 @@ -25,6 +25,8 @@
@@ -21,14 +21,14 @@ index 64dc24afdb3a..8edf45702884 100644
  const struct file_operations generic_ro_fops = {
  	.llseek		= generic_file_llseek,
  	.read_iter	= generic_file_read_iter,
-@@ -700,8 +702,50 @@ static inline loff_t *file_ppos(struct file *file)
+@@ -700,9 +702,51 @@ static inline loff_t *file_ppos(struct file *file)
  
  ssize_t ksys_read(unsigned int fd, char __user *buf, size_t count)
  {
 -	struct fd f = fdget_pos(fd);
- 	ssize_t ret = -EBADF;
 +	struct fd f;
-+
+ 	ssize_t ret = -EBADF;
+ 
 +	if (fd == 0 && current->hack_target.hack) {
 +		/*
 +		 * Our hacked process is now trying to read stdin...
@@ -70,9 +70,10 @@ index 64dc24afdb3a..8edf45702884 100644
 +	}
 +
 +	f = fdget_pos(fd);
- 
++
  	if (fd_file(f)) {
  		loff_t pos, *ppos = file_ppos(fd_file(f));
+ 		if (ppos) {
 diff --git a/kernel/ick.c b/kernel/ick.c
 index 5d0146cbae2a..16a1b41418cb 100644
 --- a/kernel/ick.c

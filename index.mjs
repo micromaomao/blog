@@ -5,7 +5,6 @@ import fs from "fs";
 import hljs from "highlight.js";
 import jsyaml from "js-yaml";
 import { marked } from "marked";
-import { gfmHeadingId } from "marked-gfm-heading-id";
 import { markedHighlight } from "marked-highlight";
 import mathjax from "mathjax-node";
 import path from "path";
@@ -16,7 +15,6 @@ import webpack from "webpack";
 import MonacoWebpackPlugin from "monaco-editor-webpack-plugin";
 import { processDiff } from "./diffs.mjs";
 
-marked.use(gfmHeadingId())
 marked.use(markedHighlight({
   highlight(code, lang) {
     if (lang === "") {

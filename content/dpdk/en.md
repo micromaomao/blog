@@ -27,6 +27,8 @@ The source code for my DPDK application is on GitHub: <a target="_blank" href="h
 <a class="github-button" href="https://github.com/micromaomao/dpdk-project" data-icon="octicon-star" data-size="large" data-show-count="true" aria-label="Star micromaomao/dpdk-project on GitHub">Star</a>
 </span>
 
+<div id="setup"></div>
+
 ## Setup
 
 For this project, all testing are done on Microsoft Azure, with a pair of Standard D16s v5 VMs. “Accelerated Networking” is enabled on all NICs to enable using DPDK.
@@ -147,7 +149,7 @@ The application outputs stats to the file specified by `-s` in CSV format. Each 
 
 ![A XKCD-style plot of packets/s against time, plotting two lines - tx and rx. The tx line stays completely flat at 3.5M except for a regular pattern of sudden drop of ~100k every ~100 seconds, and the rx line has random spiky drops, but never goes below 3.3M.](packet-stats.svg)
 
-<a id="drop-rate-graph"></a>
+<div id="drop-rate-graph"></div>
 
 ![A XKCD-style plot of packet loss (%) against time, showing lots of random spikes, which can go from 0.5% up to 1%, with a baseline rate of around 0.05%.](drops-stats.svg)
 

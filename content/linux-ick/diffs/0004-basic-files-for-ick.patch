@@ -1,4 +1,4 @@
-From 6429690bdfacc9ba5325e7e9880efd12bb642ce2 Mon Sep 17 00:00:00 2001
+From 789d4ce67bd57753c5be99c1c80022483903bd3b Mon Sep 17 00:00:00 2001
 From: Mao <m@maowtm.org>
 Date: Sat, 4 Jan 2025 20:24:48 +0000
 Subject: [PATCH 4/5] basic files for ick
@@ -41,7 +41,7 @@ index 745bc773f567..9b13ab8e4f29 100644
 +		instant checkpoint
 diff --git a/include/linux/ick.h b/include/linux/ick.h
 new file mode 100644
-index 000000000000..f1c9f2d99842
+index 000000000000..c6faaa1cbd51
 --- /dev/null
 +++ b/include/linux/ick.h
 @@ -0,0 +1,19 @@
@@ -55,7 +55,7 @@ index 000000000000..f1c9f2d99842
 +
 +#ifdef CONFIG_ICK
 +struct ick_checked_process {
-+  // ???
++	// ???
 +};
 +
 +int ick_checkpoint_proc(void);
@@ -105,7 +105,7 @@ index 87866b037fbe..d129c357e521 100644
 +obj-$(CONFIG_ICK) += ick.o
 diff --git a/kernel/ick.c b/kernel/ick.c
 new file mode 100644
-index 000000000000..ab3e1a6f7c14
+index 000000000000..5d0146cbae2a
 --- /dev/null
 +++ b/kernel/ick.c
 @@ -0,0 +1,19 @@
@@ -115,18 +115,18 @@ index 000000000000..ab3e1a6f7c14
 +#include <linux/errno.h>
 +
 +int ick_checkpoint_proc(void) {
-+  // TODO: implement
-+  return -EPERM;
++	// TODO: implement
++	return -EPERM;
 +}
 +
 +int ick_revert_proc(void) {
-+  // TODO: implement
-+  return -EPERM;
++	// TODO: implement
++	return -EPERM;
 +}
 +
 +void ick_cleanup(struct task_struct *task) {
-+  // TODO: implement
-+  return;
++	// TODO: implement
++	return;
 +}
 -- 
 2.47.1

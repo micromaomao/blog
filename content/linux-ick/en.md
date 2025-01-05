@@ -366,17 +366,19 @@ root@feef72fcd655:/# cat /sys/kernel/tracing/trace
 Note that the &ldquo;\_ gave different output&rdquo; prints are because the program was writing &ldquo;`Enter number: `&rdquo; every loop iteration, which doesn't contain &ldquo;`Nope!`&rdquo;. Once our checkpoint restore is working, the program should end up back to when it first issues the `read`, which means that any prompt to enter number would no longer be printed again.
 
 ## Save and restore registers
+
+`struct pt_regs`
+
+Mention that extended states (fpu, simd regs) technically need to also be saved, but in our case not saving them still worked. Previously I thought syscall are allowed to clobber them (since they're caller-saved), but actually no. The kernel don't save them on syscall entry because the kernel is compiled to not use them, not because clobbering them are allowed. Hence to fully restore the state...
+
 ## Save and restore memory
+
 ## Blocking off other syscalls
+
 ## Final thoughts
 
-<!--
-
-Conclusion:
 When I was a lot younger, there was this book which attempted to help the reader understand Linux by listing a bunch of source codes and make commentaries on it. It started from bootup. I couldn't even get through a chapter.
-I think you need to play with stuff to understand stuff. Use kgdb etc
-
--->
+I think for me, I needed to play with stuff to understand. Try to implement something (like in this case a checkpoint feature), play with kgdb, etc.
 
 ## Addendum: Hacking it with ptrace
 

@@ -270,15 +270,63 @@ root@feef72fcd655:/#
 
 Nice :)
 
-Our next step (step 2) is to figure out a way to save off the state of the target process when it calls `read` &ndash; in some sense, &lsquo;checkpoint&rsquo; it. I'm going to give my special kernel feature that does this a slick name: _ick_, which stands for Instant ChecKpoint. We will create some utility functions which we can call in our patched `read`/`write` to checkpoint and restore the process, as well as a way to clean up the saved state should the process exits unexpectedly. Let's start by creating our header and C file for this feature, and adding a basic `struct ick_checked_process*` pointer in `task_struct` for us to hold various data (like the saved off memory pages) later.
+Our next step (step 2) is to figure out a way to save off the state of the target process when it calls `read` &ndash; in some sense, &lsquo;checkpoint&rsquo; it, and then inject our number guess. I'm going to give my special kernel feature that does this a slick name: _ick_, which stands for Instant ChecKpoint. We will create some utility functions which we can call in our patched `read`/`write` to checkpoint and restore the process, as well as a way to clean up the saved state should the process exits unexpectedly. Let's start by creating our header and C file for this feature, adding a basic `struct ick_checked_process*` pointer in `task_struct` for us to hold various data (like the saved off memory pages) later, and declare our functions.
 
-While this is not really necessary, let's also add a proper config option for our silly little feature &ndash; it's not difficult to do, and follows the Linux tradition. We will then gate all ick-related code within `#ifdef CONFIG_ICK` blocks.
+While this is not really necessary, let's also add a proper config option for our silly little feature &ndash; it's not difficult to do, and follows the rest of Linux. We will then gate all ick-related code within `#ifdef CONFIG_ICK` blocks.
 
 <a class="make-diff" href="./diffs/0004-basic-files-for-ick.patch"></a>
 
 <p class="info">
   In case you didn't know, the proper way to have a function without parameters in C is to use <code>void</code> in the parameter list, like <code>void myfunc(void)</code>.
 </p>
+
+Next, we can finish off the relatively easier part of step 2 &ndash; handling `read`, calling the checkpoint function, and injecting our next guess. Again, we can use `ftrace` to figure out the best function to change. There are more &lsquo;complicated&rsquo; variant of the `read` syscall that takes a `struct iovec`, but that's not what our target binary uses, so we won't worry about that.
+
+<a class="make-diff" href="./diffs/0005-read-calls-checkpoint-and-inject-guess.patch"></a>
+
+While we can use `strace` to see whether we're sending back the right thing to the user space, for ease of debugging we can write our own test binary which prints out the number received, and also, for now, loops back itself, so that we can see if the guess increments correctly: [my-hackme-looped.cpp](./my-hackme-looped.cpp)
+
+<pre>
+<span class="irrelevant">make; ./dev/startvm.sh</span>
+root@feef72fcd655:/# ./my-hackme-looped | head
+[   34.542186][   T83] execveat: ./my-hackme-looped[83] to be hacked
+Enter number: Nope! 1 was a wrong guess. The correct number is 574165.
+Enter number: Nope! 2 was a wrong guess. The correct number is 574165.
+Enter number: Nope! 3 was a wrong guess. The correct number is 574165.
+Enter number: Nope! 4 was a wrong guess. The correct number is 574165.
+Enter number: Nope! 5 was a wrong guess. The correct number is 574165.
+Enter number: Nope! 6 was a wrong guess. The correct number is 574165.
+Enter number: Nope! 7 was a wrong guess. The correct number is 574165.
+Enter number: Nope! 8 was a wrong guess. The correct number is 574165.
+Enter number: Nope! 9 was a wrong guess. The correct number is 574165.
+Enter number: Nope! 10 was a wrong guess. The correct number is 574165.
+root@feef72fcd655:/# ./my-hackme-looped | tail
+[   36.012463][   T85] execveat: ./my-hackme-looped[85] to be hacked
+Enter number: Nope! 494491 was a wrong guess. The correct number is 494500.
+Enter number: Nope! 494492 was a wrong guess. The correct number is 494500.
+Enter number: Nope! 494493 was a wrong guess. The correct number is 494500.
+Enter number: Nope! 494494 was a wrong guess. The correct number is 494500.
+Enter number: Nope! 494495 was a wrong guess. The correct number is 494500.
+Enter number: Nope! 494496 was a wrong guess. The correct number is 494500.
+Enter number: Nope! 494497 was a wrong guess. The correct number is 494500.
+Enter number: Nope! 494498 was a wrong guess. The correct number is 494500.
+Enter number: Nope! 494499 was a wrong guess. The correct number is 494500.
+Enter number: Correct!
+<span class="irrelevant">root@feef72fcd655:/#</span>
+</pre>
+
+Great success! Note that at this point we haven't even touched `write` yet &ndash; this is only looping because the program has a deliberate loop inside, but we will eventually not need that once we implement the checkpointing.
+
+Also note that for very frequent output, I have used `trace_printk` which doesn't shows in the console, but can be seen in the kernel trace.
+
+```txt
+root@feef72fcd655:/# tail /sys/kernel/tracing/trace
+ my-hackme-loope-90      [001] .....   447.571690: ksys_read: ick checkpoint on hacked process my-hackme-loope[90]
+ my-hackme-loope-90      [001] .....   447.571690: ksys_read: Providing number 27 to hacked process my-hackme-loope[90]
+ my-hackme-loope-90      [001] .....   447.571691: ksys_read: ick checkpoint on hacked process my-hackme-loope[90]
+ my-hackme-loope-90      [001] .....   447.571691: ksys_read: Providing number 28 to hacked process my-hackme-loope[90]
+...
+ ```
 
 <!--
 

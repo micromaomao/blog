@@ -1,0 +1,90 @@
+From 610b41498ee0881e750c2203bcc081e159d84f80 Mon Sep 17 00:00:00 2001
+From: Mao <m@maowtm.org>
+Date: Sun, 5 Jan 2025 00:34:12 +0000
+Subject: [PATCH 5/5] read calls checkpoint and inject guess
+
+---
+ fs/read_write.c | 44 +++++++++++++++++++++++++++++++++++++++++++-
+ kernel/ick.c    |  3 ++-
+ 2 files changed, 45 insertions(+), 2 deletions(-)
+
+diff --git a/fs/read_write.c b/fs/read_write.c
+index 64dc24afdb3a..2448258110ed 100644
+--- a/fs/read_write.c
++++ b/fs/read_write.c
+@@ -25,6 +25,8 @@
+ #include <linux/uaccess.h>
+ #include <asm/unistd.h>
+ 
++#include <linux/ick.h>
++
+ const struct file_operations generic_ro_fops = {
+ 	.llseek		= generic_file_llseek,
+ 	.read_iter	= generic_file_read_iter,
+@@ -700,8 +702,48 @@ static inline loff_t *file_ppos(struct file *file)
+ 
+ ssize_t ksys_read(unsigned int fd, char __user *buf, size_t count)
+ {
+-	struct fd f = fdget_pos(fd);
+ 	ssize_t ret = -EBADF;
++	struct fd f;
++
++	if (fd == 0 && current->hack_target.hack) {
++		/*
++		 * Our hacked process is now trying to read stdin...
++		 * If we have not already checkpointed it, do it now.
++		 * (if we _have_ already checkpointed, then maybe we've reverted to this
++		 * point, so just inject next number)
++		 */
++		if (!current->ick_data) {
++			trace_printk("ick checkpoint on hacked process %s[%u]\n", current->comm, current->pid);
++			ret = ick_checkpoint_proc();
++			if (ret) {
++				// %pe with ERR_PTR gets us nice error output like -EINVAL
++				pr_err("sys_read: ick checkpoint failed: %pe\n", ERR_PTR(ret));
++				return ret;
++			}
++		}
++
++		// And now, inject the next guess.
++		u32 number = current->hack_target.next_number++;
++		trace_printk("Providing number %u to hacked process %s[%u]\n", number, current->comm, current->pid);
++		char data[64];
++		int len = snprintf(data, sizeof(data), "%u\n", number);
++		if (len < 0) {
++			pr_err("sys_read: snprintf failed: %pe\n", ERR_PTR(len));
++			return len;
++		}
++		if (count < len) {
++			pr_err("sys_read: user provided buffer too small: %zu < %d\n", count, len);
++			return -EINVAL;
++		}
++		ret = copy_to_user(buf, data, len);
++		if (ret) {
++			pr_err("sys_read: copy_to_user failed: %pe\n", ERR_PTR(ret));
++			return ret;
++		}
++		return len;
++	}
++
++	f = fdget_pos(fd);
+ 
+ 	if (fd_file(f)) {
+ 		loff_t pos, *ppos = file_ppos(fd_file(f));
+diff --git a/kernel/ick.c b/kernel/ick.c
+index ab3e1a6f7c14..f6e24ef08661 100644
+--- a/kernel/ick.c
++++ b/kernel/ick.c
+@@ -5,7 +5,8 @@
+ 
+ int ick_checkpoint_proc(void) {
+   // TODO: implement
+-  return -EPERM;
++  // We just return 0 for now to make the code in `read` work.
++  return 0;
+ }
+ 
+ int ick_revert_proc(void) {
+-- 
+2.47.1
+

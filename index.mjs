@@ -343,6 +343,58 @@ async function main() {
             node.replaceWith(elem);
           });
 
+          $(".make-toc").each((_, e) => {
+            let node = $(e);
+            let toc_container = $('<div class="toc-container"></div>');
+            node.replaceWith(toc_container);
+
+            toc_container.append('<div class="title">Table of Contents</div>');
+
+            let toc = $("<ol></ol>");
+            toc_container.append(toc);
+            let ol_stack = [toc];
+            let li_stack = [];
+            let curr_level = 1;
+            $("h2,h3,h4,h5,h6").each((_, heading_elem) => {
+              let level = parseInt(heading_elem.tagName.substring(1));
+              console.log(`level=${level}, text=${$(heading_elem).text()}`);
+              while (level <= curr_level) {
+                if (curr_level <= 1) {
+                  throw new Error("unreachable");
+                }
+                let last_ol = ol_stack.pop();
+                if (!last_ol.get(0).childNodes.length) {
+                  last_ol.remove();
+                }
+                li_stack.pop();
+                curr_level--;
+              }
+              if (level != curr_level + 1) {
+                throw new Error("make-toc: Invalid nesting of headings");
+              }
+              let li = $("<li></li>");
+              ol_stack[ol_stack.length - 1].append(li);
+
+              if (!$(heading_elem).attr("id")) {
+                let text = $(heading_elem).text();
+                let id = `h_${text.toLowerCase().replace(/[^a-zA-Z0-9]+/g, '-')}`;
+                $(heading_elem).attr("id", id);
+              }
+
+              let a = $("<a></a>");
+              a.text($(heading_elem).text());
+              a.attr("href", `#${$(heading_elem).attr("id")}`);
+              li.append(a);
+              li.append($('<span style="width: 10px; display: inline-block;"></span>')); // Firefox layout bug causing text wrap
+              let ol = $("<ol></ol>");
+              li.append(ol);
+
+              li_stack.push(li);
+              ol_stack.push(ol);
+              curr_level++;
+            });
+          });
+
           $("span").each((_, e) => {
             let node = $(e);
             if ((node.attr("class") || "").startsWith("make-")) {

@@ -65,7 +65,11 @@ A straightforward, first approach would be to just run it repeatedly. However, w
   }
   .highlight {
     background-color: rgb(189, 253, 183);
-    font-style: bold;
+    font-weight: bold;
+  }
+  .red-highlight {
+    color: #dd0000;
+    font-weight: bold;
   }
 </style>
 
@@ -198,7 +202,7 @@ trace-cmd report
 
 We can ignore everything that is not reading from stdin (fd = 0) or writing to stdout (fd = 1) after that. Subtracting the two green numbers, that's 11us from returning from `read` to attempting `write`! On the other hand, getting to the first `read` from the start of the program took almost 200ms, and so if we have to run the whole thing repeatedly (for example, in a bash loop), it will be 200ms <tex>\times</tex> 3,000,000 <tex>\approx</tex> 7 days! Now, you can of course use more CPU cores and run multiple instances of this loop at once, but that's not a very interesting solution. In this case the challenge is also time-sensitive and so we need something better.
 
-Notice that the program doesn't really try to do anything fancy (at least not externally visible) between `read` and `write` &ndash; all it does is spin some numbers around in its own memory, then spits out &lsquo;Correct&rsquo; plus the flag, or &lsquo;Nope&rsquo; if the guess was wrong. This means that, in theory, if we can perfectly restore it's memory and register states<footnote>
+Notice that the program doesn't really try to do anything fancy (at least not externally visible) between `read` and `write` &ndash; all it does is spin some numbers around in its own memory, then spits out &lsquo;Correct&rsquo; plus the flag, or &lsquo;Nope&rsquo; if the guess was wrong. This means that, in theory, if we can perfectly restore the program's memory and register states<footnote>
 Technically there's not all of the state a program could rely on or change, even without issuing any syscalls. For example, it can use the raw `rdtsc` assembly instruction to measure the current time, and deduce if it's being tricked. But in this case restoring registers and memory alone works well enough.
 </footnote>, we can instantly start trying a different input, then another one in 10us (when I ran it fast enough often it finishes within 5), and so on until we find the right number. Without the overhead of even forking another process, this has the potential to be a lot faster &ndash; we're basically turning the whole input validation process into a `for` loop! It's just that the &lsquo;`for`&rsquo; in this case is outside the program. <img src="./hehe.png" alt="Hehe" style="width: 1.2em; vertical-align: -5px;">
 
@@ -368,6 +372,66 @@ root@feef72fcd655:/# cat /sys/kernel/tracing/trace
 Note that the &ldquo;\_ gave different output&rdquo; prints are because the program was writing &ldquo;`Enter number: `&rdquo; every loop iteration, which doesn't contain &ldquo;`Nope!`&rdquo;. Once our checkpoint restore is working, the program should end up back to when it first issues the `read`, which means that any prompt to enter number would no longer be printed again.
 
 ### Save and restore registers
+
+If you had a look at [`struct task_struct`](https://github.com/micromaomao/linux-dev/blob/ick/include/linux/sched.h#L778) and concluded that there is nothing in there that looks like it stores the thread's registers, you're correct. So, what are we supposed to save/restore?
+
+Since what we're trying to do is somewhat similar to forking a process, it might be a good idea to look at how that is handled. Even though the memory handling might be somewhat different from what we're trying to do, at least we can reasonably expect that, in order to fork a process, the kernel has to copy the register states of the parent to the child. We can again use our handy `trace-cmd`, and this time, we can use the `function` tracer, which is a kernel tracing feature that let us see _almost all_ function calls in the kernel. There are many different ways to do this, but I'm going to record `/bin/sh` spawning a new process `/bin/true` (it seems like `trace-cmd` only starts tracing after it creates the child process that executes `/bin/sh`):
+
+<pre>
+root@feef72fcd655:/# trace-cmd record -p function -F -c /bin/sh -c '/bin/true'
+<span class="irrelevant">  plugin 'function'
+CPU0 data recorded at offset=0xbb000
+    15901 bytes in size (126976 uncompressed)
+CPU1 data recorded at offset=0xbf000
+    195677 bytes in size (1400832 uncompressed)</span>
+root@feef72fcd655:/# trace-cmd report > a.log && less a.log
+</pre>
+
+Let's search for &ldquo;`fork`&rdquo; in this (very long) log file:
+
+<pre>
+...
+sh-87    [001] d..2.    26.386693: function:                      recalc_sigpending
+sh-87    [001] d..2.    26.386693: function:                   _raw_spin_unlock_irq
+sh-87    [001] d..1.    26.386693: function:             fpregs_assert_state_consistent
+sh-87    [001] ...1.    26.386694: function:             x64_sys_call
+sh-87    [001] ...1.    26.386694: function:                __do_sys_v<span class="red-highlight">fork</span>
+sh-87    [001] ...1.    26.386694: function:                   kernel_clone
+sh-87    [001] ...1.    26.386694: function:                      copy_process
+sh-87    [001] ...1.    26.386694: function:                         _raw_spin_lock_irq
+sh-87    [001] d..2.    26.386695: function:                         recalc_sigpending
+...
+</pre>
+
+Ok, so it's not exactly using `fork`, but rather, `vfork`, which is a [slightly interesting variant](https://man7.org/linux/man-pages/man2/vfork.2.html) of fork designed to be more performant when the child immediately `exec`s. Nevertheless, `copy_process` seems like an extremely interesting function to check. You can find it in [kernel/fork.c](https://github.com/micromaomao/linux-dev/blob/ick/kernel/fork.c#L2122), and even the comment says that it copies registers:
+
+```c
+/*
+ * This creates a new process as a copy of the old one,
+ * but does not actually start it yet.
+ *
+ * It copies the registers, and all the appropriate
+ * parts of the process environment (as per the clone
+ * flags). The actual kick-off is left to the caller.
+ */
+ __latent_entropy struct task_struct *copy_process(...
+```
+
+<!-- Unfortunately, this function is quite complicated and -->
+
+<!-- The first 50 lines or so are just checking a bunch of preconditions and returning with error if any of them fails, followed by some code which handles pending signals before forking, then we get to this bit:
+
+```c
+    retval = -ENOMEM;
+    p = dup_task_struct(current, node);
+    if (!p)
+        goto fork_out;
+```
+
+It seems to be cloning the current task struct onto a new one &ndash; let's ctrl+click that `dup_task_struct` function (hopefully your editor is good enough to support this basic feature): -->
+
+
+TODO rest
 
 `struct pt_regs`
 

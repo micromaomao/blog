@@ -1,0 +1,2 @@
+(()=>{var __webpack_exports__={};self.addEventListener("message",(evt=>{if("string"==typeof evt.data.code){console.log=function(){postMessage({type:"log",data:Array.from(arguments)})},console.error=function(){postMessage({type:"error",data:Array.from(arguments)})};try{eval(evt.data.code)}catch(e){console.error(e)}postMessage({type:"done"})}}))})();
+//# sourceMappingURL=3742.6c71db40f27f6e7400ae.js.map

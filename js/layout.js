@@ -29,35 +29,64 @@ if (toc) {
   dock_button_container.append(document.createTextNode("]"));
   toc.querySelector(".title").appendChild(dock_button_container);
 
+  function make_toc_docked() {
+    toc.classList.add("docked");
+    toc.style.transition = "none";
+    toc.style.transition = "";
+    dock_button.innerText = "undock";
+    let open_dock_button = document.createElement("div");
+    open_dock_button.classList.add("open-dock-button");
+    open_dock_button.innerText = "table of contents";
+    open_dock_button.addEventListener("click", evt => {
+      toc.classList.toggle("hidden");
+    });
+    toc.appendChild(open_dock_button);
+    window.sessionStorage.setItem("toc_docked", "true");
+  }
+
+  function make_toc_undocked() {
+    toc.classList.remove("docked");
+    dock_button.innerText = "dock to side";
+    toc.querySelector(".open-dock-button").remove();
+    let toc_y = toc.getBoundingClientRect().top;
+    window.scrollTo(0, window.scrollY + toc_y);
+    window.sessionStorage.removeItem("toc_docked");
+  }
+
   dock_button.addEventListener("click", evt => {
-    toc.classList.toggle("docked");
-    if (toc.classList.contains("docked")) {
-      toc.classList.remove("hidden");
-      toc.style.transition = "none";
-      toc.style.transition = "";
-      dock_button.innerText = "undock";
-      let open_dock_button = document.createElement("div");
-      open_dock_button.classList.add("open-dock-button");
-      open_dock_button.innerText = "table of contents";
-      open_dock_button.addEventListener("click", evt => {
-        toc.classList.toggle("hidden");
-      });
-      toc.appendChild(open_dock_button);
+    toc.classList.remove("hidden");
+    if (!toc.classList.contains("docked")) {
+      make_toc_docked();
     } else {
-      dock_button.innerText = "dock to side";
-      toc.querySelector(".open-dock-button").remove();
-      let toc_y = toc.getBoundingClientRect().top;
-      window.scrollTo(0, window.scrollY + toc_y);
+      make_toc_undocked();
     }
   });
 
+  if (window.sessionStorage.getItem("toc_docked")) {
+    make_toc_docked();
+    toc.classList.add("hidden");
+  }
+
   document.addEventListener("mousedown", evt => {
-    if (!evt.target.closest(".toc-container") ||
-      (evt.target.tagName == "A" && !evt.target.classList.contains("dock-button"))) {
+    if (!evt.target.closest(".toc-container")) {
       if (toc.classList.contains("docked") && !toc.classList.contains("hidden")) {
         toc.classList.add("hidden");
         evt.preventDefault();
       }
+    }
+  });
+
+  toc.querySelectorAll("li > a").forEach(a => {
+    a.addEventListener("click", evt => {
+      if (toc.classList.contains("docked")) {
+        toc.classList.add("hidden");
+      }
+    });
+  });
+
+  window.addEventListener("keydown", evt => {
+    if (evt.key == "Escape" && toc.classList.contains("docked")) {
+      toc.classList.add("hidden");
     }
   });
 }

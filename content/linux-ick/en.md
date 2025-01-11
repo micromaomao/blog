@@ -136,7 +136,7 @@ It then proceeded to do this, which I assume is a second layer of debugger detec
 ptrace(PTRACE_TRACEME) = -1 EPERM (Operation not permitted)
 ```
 
-It is probably looking for whether this call returns a `-EPERM`, which would indicate that the process is (already) being traced. But since we're already making kernel changes, this is not difficult to work around either:
+It is probably looking for whether this call returns a `-EPERM`, which would indicate that the process is (already) being traced. But since we're already making kernel changes, this is not difficult to work around either. We can find the relevant function by searching for `PTRACE_TRACEME`, which will quickly surface the function `ptrace_traceme`:
 
 <a class="make-diff" href="./diffs/0002-ptrace_traceme-return-0.patch"></a>
 
@@ -245,7 +245,7 @@ Technically, anything stored in the `task_struct` is per-thread, but in this cas
 
 You probably know that when you run an executable, the shell forks a subprocess then run `exec` with the command arguments. If we assume our target binary is always named &ldquo;`hackme`&rdquo;, we can check for this in the handler for `exec`, and set the `bool` we added previously to `true`.
 
-With some searching and perhaps tracing with [ftrace](https://www.kernel.org/doc/html/latest/trace/ftrace.html) (I found `function_graph` to be particularly useful), we find that there is a common function for `execve` and `execveat` &ndash; [`do_execveat_common`](https://github.com/micromaomao/linux-dev/blob/ick/fs/exec.c#L1876), and so we can add our code there, and add the additional field to the `task_struct`:
+With some searching around and perhaps tracing function calls with `trace-cmd` (which juse uses [ftrace](https://www.kernel.org/doc/html/latest/trace/ftrace.html)), we find that there is a common function for `execve` and `execveat` &ndash; [`do_execveat_common`](https://github.com/micromaomao/linux-dev/blob/ick/fs/exec.c#L1876), and so we can add our code there, and add the additional field to the `task_struct`:
 
 <a class="make-diff" href="./diffs/0003-set-hack_target.patch"></a>
 
@@ -324,7 +324,7 @@ Enter number: Correct!
 
 Great success! Note that at this point we haven't even touched `write` yet &ndash; this is only looping because our test program has a deliberate loop inside, but we will eventually not need that once we implement the checkpointing.
 
-Also note that for very frequent output, I have used `trace_printk` which doesn't shows in the console, but can be seen in the kernel trace.
+Also note that for very frequent output, I have used `trace_printk` which doesn't print to the console, but can be seen in the kernel trace. As opposed to `pr_info`/`printk`, this is just writing to a ringbuffer in memory, and so is also much faster and more appropriate to use in tight loops.
 
 ```txt
 root@feef72fcd655:/# tail /sys/kernel/tracing/trace
@@ -341,7 +341,7 @@ Let's also do the same for `write` &ndash; we will get the print output from use
 
 <a class="make-diff" href="./diffs/0006-write-checks-result-and-revert-if-wrong.patch"></a>
 
-Since we haven't implemented checkpoint restore yet, the overall behaviour currently will not change. However, since we're effectively &lsquo;consuming&rsquo; any output with &ldquo;`Nope!`&rdquo;, we should not see them in the console, but we should still see our `trace_printk` printing them out:
+Since we haven't implemented checkpoint restore yet, the overall behaviour currently will not change. However, since we're effectively &lsquo;consuming&rsquo; any output with &ldquo;`Nope!`&rdquo; (by not returning from `ksys_write` instead of letting it continue), we should not see them in the console, but we should still see our `trace_printk` printing them out:
 
 <pre>
 root@feef72fcd655:/# ./my-hackme-looped
@@ -369,11 +369,17 @@ root@feef72fcd655:/# cat /sys/kernel/tracing/trace
  my-hackme-loope-84      [000] d....     7.493430: console: hack: 2 gave different output
 </pre>
 
+<p class="info">
+  You do not need <code>trace-cmd</code> nor even enabling tracing in tracefs to see <code>trace_printk</code> outputs.
+</p>
+
 Note that the &ldquo;\_ gave different output&rdquo; prints are because the program was writing &ldquo;`Enter number: `&rdquo; every loop iteration, which doesn't contain &ldquo;`Nope!`&rdquo;. Once our checkpoint restore is working, the program should end up back to when it first issues the `read`, which means that any prompt to enter number would no longer be printed again.
 
 ### Save and restore registers
 
 If you had a look at [`struct task_struct`](https://github.com/micromaomao/linux-dev/blob/ick/include/linux/sched.h#L778) and concluded that there is nothing in there that looks like it stores the thread's registers, you're correct. So, what are we supposed to save/restore?
+
+In Linux, each thread has a _kernel_ stack which is used when it is executing kernel code (for example, when it is handling a syscall). This is separate from the user-space stack, and in fact lives in kernel memory not accessible from user-space. When the thread enters the kernel due to a syscall (or other reasons like interrupts), kernel entry code (written in assembly) pushes all the (general-purpose) registers onto this stack before calling into any
 
 Since what we're trying to do is somewhat similar to forking a process, it might be a good idea to look at how that is handled. Even though the memory handling might be somewhat different from what we're trying to do, at least we can reasonably expect that, in order to fork a process, the kernel has to copy the register states of the parent to the child. We can again use our handy `trace-cmd`, and this time, we can use the `function` tracer, which is a kernel tracing feature that let us see _almost all_ function calls in the kernel. There are many different ways to do this, but I'm going to record `/bin/sh` spawning a new process `/bin/true` (it seems like `trace-cmd` only starts tracing after it creates the child process that executes `/bin/sh`):
 
@@ -417,7 +423,14 @@ Ok, so it's not exactly using `fork`, but rather, `vfork`, which is a [slightly 
  __latent_entropy struct task_struct *copy_process(...
 ```
 
-<!-- Unfortunately, this function is quite complicated and -->
+Unfortunately, this function is quite complicated and
+
+When faced with a problem like this, there is generally tzwo routes we can take:
+
+- We can dig through the code ourselves, using tracing or kgdb (kernel debugger), play around with stuff until we understand more about what's going on, and answer our own question. Oftentimes this ends up eventually being the only viable option anyway if you want to gather a deep enough understanding.
+- Alternatively, you can look up your question on Google or even ChatGPT, find relevant documentations or someone else's blog article, and get the answer quicker.
+
+Both approaches are valid, and you need to be good at doing both. In this case, there is an excellent resource which explains how
 
 <!-- The first 50 lines or so are just checking a bunch of preconditions and returning with error if any of them fails, followed by some code which handles pending signals before forking, then we get to this bit:
 

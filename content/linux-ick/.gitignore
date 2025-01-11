@@ -1,3 +1,5 @@
 fork-test
 my-hackme
 my-hackme-looped
+syscall_regs_test.o
+syscall_regs_test

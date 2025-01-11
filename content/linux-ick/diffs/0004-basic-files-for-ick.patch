@@ -1,7 +1,7 @@
-From 681e5d970ba2b89a6781937d0b47f130ac28cfaf Mon Sep 17 00:00:00 2001
+From e0da2b62425dc0b4c4587ae7b4e123aebe5c8755 Mon Sep 17 00:00:00 2001
 From: Mao <m@maowtm.org>
 Date: Sat, 4 Jan 2025 20:24:48 +0000
-Subject: [PATCH 4/6] basic files for ick
+Subject: [PATCH 4/7] basic files for ick
 
 ---
  .config               |  2 ++
@@ -16,10 +16,10 @@ Subject: [PATCH 4/6] basic files for ick
  create mode 100644 kernel/ick.c
 
 diff --git a/.config b/.config
-index c7846156e302..b3c57b92579c 100644
+index eaada7b552ab..bead8c813d47 100644
 --- a/.config
 +++ b/.config
-@@ -3452,3 +3452,5 @@ CONFIG_ARCH_USE_MEMTEST=y
+@@ -3450,3 +3450,5 @@ CONFIG_ARCH_USE_MEMTEST=y
  #
  # end of Rust hacking
  # end of Kernel hacking
@@ -78,10 +78,10 @@ index 000000000000..640d46e3a223
 +
 +#endif
 diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 6adc1add5288..8a631848512c 100644
+index 9f58f1db4632..b20a4ced71f8 100644
 --- a/include/linux/sched.h
 +++ b/include/linux/sched.h
-@@ -1592,6 +1592,10 @@ struct task_struct {
+@@ -1599,6 +1599,10 @@ struct task_struct {
  	struct user_event_mm		*user_event_mm;
  #endif
  

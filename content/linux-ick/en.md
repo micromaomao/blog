@@ -1,6 +1,6 @@
 ---
 title: "Using the Linux kernel to help me crack an executable quickly"
-tags: ["Linux", "systems programming", "reverse engineering", "performance"]
+tags: ["Linux", "systems programming", "reverse engineering", "performance", "tracing", "debugging"]
 time: "2025-01-01T23:21:38+00:00"
 discuss:
   "GitHub": "https://github.com/micromaomao/linux-dev/issues"
@@ -379,76 +379,251 @@ Note that the &ldquo;\_ gave different output&rdquo; prints are because the prog
 
 If you had a look at [`struct task_struct`](https://github.com/micromaomao/linux-dev/blob/ick/include/linux/sched.h#L778) and concluded that there is nothing in there that looks like it stores the thread's registers, you're correct. So, what are we supposed to save/restore?
 
-In Linux, each thread has a _kernel_ stack which is used when it is executing kernel code (for example, when it is handling a syscall). This is separate from the user-space stack, and in fact lives in kernel memory not accessible from user-space. When the thread enters the kernel due to a syscall (or other reasons like interrupts), kernel entry code (written in assembly) pushes all the (general-purpose) registers onto this stack before calling into any
+In Linux, each thread has a _kernel_ stack which is used when it is executing kernel code (for example, when it is handling a syscall). This is separate from the user-space stack, and in fact lives in kernel memory not accessible from user-space. When a thread is running user-space code, it is empty. Whenever the thread enters the kernel, for example due to a syscall (or other reasons like interrupts), kernel entry code ([arch/x86/entry/entry_64.S](https://github.com/micromaomao/linux-dev/blob/ick/arch/x86/entry/entry_64.S)) pushes all the (general-purpose) registers from user-space onto this stack before calling into any C functions, which will start messing up the registers (especially the caller-saved ones, since the compiler isn't required to restore them at the end of a function):
 
-Since what we're trying to do is somewhat similar to forking a process, it might be a good idea to look at how that is handled. Even though the memory handling might be somewhat different from what we're trying to do, at least we can reasonably expect that, in order to fork a process, the kernel has to copy the register states of the parent to the child. We can again use our handy `trace-cmd`, and this time, we can use the `function` tracer, which is a kernel tracing feature that let us see _almost all_ function calls in the kernel. There are many different ways to do this, but I'm going to record `/bin/sh` spawning a new process `/bin/true` (it seems like `trace-cmd` only starts tracing after it creates the child process that executes `/bin/sh`):
-
+<style>
+  .code-comment { color: #888; }
+</style>
 <pre>
-root@feef72fcd655:/# trace-cmd record -p function -F -c /bin/sh -c '/bin/true'
-<span class="irrelevant">  plugin 'function'
-CPU0 data recorded at offset=0xbb000
-    15901 bytes in size (126976 uncompressed)
-CPU1 data recorded at offset=0xbf000
-    195677 bytes in size (1400832 uncompressed)</span>
-root@feef72fcd655:/# trace-cmd report > a.log && less a.log
+SYM_CODE_START(<b>entry_SYSCALL_64</b>)
+    <span class="irrelevant">...</span>
+    <b>PUSH_AND_CLEAR_REGS</b> rax=$-ENOSYS
+    <span class="irrelevant">...</span>
+    <b>call</b>    do_syscall_64        <span class="code-comment">/* returns with IRQs disabled */</span>
 </pre>
 
-Let's search for &ldquo;`fork`&rdquo; in this (very long) log file:
-
 <pre>
-...
-sh-87    [001] d..2.    26.386693: function:                      recalc_sigpending
-sh-87    [001] d..2.    26.386693: function:                   _raw_spin_unlock_irq
-sh-87    [001] d..1.    26.386693: function:             fpregs_assert_state_consistent
-sh-87    [001] ...1.    26.386694: function:             x64_sys_call
-sh-87    [001] ...1.    26.386694: function:                __do_sys_v<span class="red-highlight">fork</span>
-sh-87    [001] ...1.    26.386694: function:                   kernel_clone
-sh-87    [001] ...1.    26.386694: function:                      copy_process
-sh-87    [001] ...1.    26.386694: function:                         _raw_spin_lock_irq
-sh-87    [001] d..2.    26.386695: function:                         recalc_sigpending
-...
+.macro <b>PUSH_REGS</b> rdx=%rdx rcx=%rcx rax=%rax save_ret=0 unwind_hint=1
+    .if \save_ret
+    <b>pushq</b>   %rsi            <span class="code-comment">/* pt_regs->si */</span>
+    <b>movq</b>    8(%rsp), %rsi    <span class="code-comment">/* temporarily store the return address in %rsi */</span>
+    <b>movq</b>    %rdi, 8(%rsp)    <span class="code-comment">/* pt_regs->di (overwriting original return address) */</span>
+    .else
+    <b>pushq</b>   %rdi        <span class="code-comment">/* pt_regs->di */</span>
+    <b>pushq</b>   %rsi        <span class="code-comment">/* pt_regs->si */</span>
+    .endif
+    <b>pushq</b>   \rdx        <span class="code-comment">/* pt_regs->dx */</span>
+    <b>pushq</b>   \rcx        <span class="code-comment">/* pt_regs->cx */</span>
+    <b>pushq</b>   \rax        <span class="code-comment">/* pt_regs->ax */</span>
+    <b>pushq</b>   %r8         <span class="code-comment">/* pt_regs->r8 */</span>
+    <b>pushq</b>   %r9         <span class="code-comment">/* pt_regs->r9 */</span>
+    <b>pushq</b>   %r10        <span class="code-comment">/* pt_regs->r10 */</span>
+    <b>pushq</b>   %r11        <span class="code-comment">/* pt_regs->r11 */</span>
+    <b>pushq</b>   %rbx        <span class="code-comment">/* pt_regs->rbx */</span>
+    <b>pushq</b>   %rbp        <span class="code-comment">/* pt_regs->rbp */</span>
+    <b>pushq</b>   %r12        <span class="code-comment">/* pt_regs->r12 */</span>
+    <b>pushq</b>   %r13        <span class="code-comment">/* pt_regs->r13 */</span>
+    <b>pushq</b>   %r14        <span class="code-comment">/* pt_regs->r14 */</span>
+    <b>pushq</b>   %r15        <span class="code-comment">/* pt_regs->r15 */</span>
+
+    .if \unwind_hint
+    <b>UNWIND_HINT_REGS</b>
+    .endif
+
+    .if \save_ret
+    <b>pushq</b>    %rsi        <span class="code-comment">/* return address on top of stack */</span>
+    .endif
+.endm
+
+.macro <b>PUSH_AND_CLEAR_REGS</b> rdx=%rdx rcx=%rcx rax=%rax save_ret=0 clear_bp=1 unwind_hint=1
+    <b>PUSH_REGS</b> rdx=\rdx, rcx=\rcx, rax=\rax, save_ret=\save_ret unwind_hint=\unwind_hint
+    <b>CLEAR_REGS</b> clear_bp=\clear_bp
+.endm
 </pre>
 
-Ok, so it's not exactly using `fork`, but rather, `vfork`, which is a [slightly interesting variant](https://man7.org/linux/man-pages/man2/vfork.2.html) of fork designed to be more performant when the child immediately `exec`s. Nevertheless, `copy_process` seems like an extremely interesting function to check. You can find it in [kernel/fork.c](https://github.com/micromaomao/linux-dev/blob/ick/kernel/fork.c#L2122), and even the comment says that it copies registers:
+The result of the register pushing code is that the top (i.e. &lsquo;outer-most&rsquo; frame) of the task stack effectively contains a [`struct pt_regs`](https://github.com/micromaomao/linux-dev/blob/ick/arch/x86/include/asm/ptrace.h#L103)<footnote>
+I don't know why this is called `pt_regs` and defined in `ptrace.h` &ndash; most of its uses have nothing to do with ptrace at all.
+</footnote> after this. On kernel exit, this is popped back into the actual registers before returning to user-space. Therefore, it's reasonable to think that if we save and restore this `struct pt_regs`, we can effectively save and restore the register states of the calling thread.
 
-```c
-/*
- * This creates a new process as a copy of the old one,
- * but does not actually start it yet.
- *
- * It copies the registers, and all the appropriate
- * parts of the process environment (as per the clone
- * flags). The actual kick-off is left to the caller.
- */
- __latent_entropy struct task_struct *copy_process(...
-```
+Assuming our hypothesis is correct, we can start implementing the register saving part of ick. Some searching around the kernel code would reveal that we can use the `current_pt_regs` macro to get a pointer to this struct for our current task. See for example [arch/x86/kernel/process.c:231](https://github.com/micromaomao/linux-dev/blob/ick/arch/x86/kernel/process.c#L231) (in `copy_thread`). This function is called when a thread calls `fork`, and it copies the `pt_regs` from the current task (the parent that called `fork`) to the new child task.
 
-Unfortunately, this function is quite complicated and
+<a class="make-diff" href="./diffs/0007-save-and-restore-registers.patch"></a>
 
-When faced with a problem like this, there is generally tzwo routes we can take:
+Let's try it out:
 
-- We can dig through the code ourselves, using tracing or kgdb (kernel debugger), play around with stuff until we understand more about what's going on, and answer our own question. Oftentimes this ends up eventually being the only viable option anyway if you want to gather a deep enough understanding.
-- Alternatively, you can look up your question on Google or even ChatGPT, find relevant documentations or someone else's blog article, and get the answer quicker.
+<pre>
+root@c8c5a2904008:/# ./my-hackme-looped
+[    4.294402][   T79] execveat: ./my-hackme-looped[79] to be hacked
+[    4.323670][   T79] hack: 0 gave different output
+Enter number: [    4.327423][   T79] my-hackme-loope[79]: segfault at 3a ip 000000000000003a sp 00007ffd0a4a49f0 error 14 likely on CPU 1 (core 1, socket 0)
+[    4.329196][   T79] Code: Unable to access opcode bytes at 0x10.
+</pre>
 
-Both approaches are valid, and you need to be good at doing both. In this case, there is an excellent resource which explains how
+Hmm&hellip; The program crashed because it tried to jump to some nonsensical instruction address (0x0000003a). Now, remember that we haven't implemented memory restore yet, and &lsquo;memory&rsquo; includes the (user-space) stack as well. Consider what happens when you call a C function like `read`: the return address gets pushed to the stack, the function executes, and when it finishes the `ret` instruction pops that address from the stack and jumps to the caller. The caller may then call other functions, which will push and pop more data and return addresses from the stack, overwriting the previous one. Therefore, until we implements checkpoint/restore of memory, we will never be able to return to the original call side anyway, and it is perfectly possible that if the call stack for the `read` and `write` functions are at different depths, restoring the registers would result in the stack pointer pointing at garbage, rather than a valid return address.
 
-<!-- The first 50 lines or so are just checking a bunch of preconditions and returning with error if any of them fails, followed by some code which handles pending signals before forking, then we get to this bit:
+We can confirm what's going on with `gdb`. First we tell it to stop on the first `read`, so that we can inspect the registers:
 
-```c
-    retval = -ENOMEM;
-    p = dup_task_struct(current, node);
-    if (!p)
-        goto fork_out;
-```
+<pre>
+root@c8c5a2904008:/# gdb my-hackme-looped
+<span class="irrelevant">GNU gdb (Debian 13.1-3) 13.1
+<i>...</i>
+Reading symbols from my-hackme-looped...</span>
+(gdb) catch syscall read
+Catchpoint 1 (syscall &apos;read&apos; [0])
+(gdb) condition 1 $rdi == 0
+(gdb) r
+Starting program: <font color="#4E9A06">/my-hackme-looped</font>
+[   32.349018][   T94] execveat: /my-hackme-looped[94] to be hacked
+[   32.393885][   T94] hack: 0 gave different output
+Enter number:
+Catchpoint 1 (call to syscall read), <font color="#3465A4">0x000000000053eed1</font> in <font color="#C4A000">read</font> ()
+(gdb)
+</pre>
 
-It seems to be cloning the current task struct onto a new one &ndash; let's ctrl+click that `dup_task_struct` function (hopefully your editor is good enough to support this basic feature): -->
+The instruction `condition 1 $rdi == 0` makes the catchpoint only trigger on read from stdin ($rdi holds the first argument, and that is the file descriptor in the case of `read`/`write`). The catchpoint will trigger before the syscall is actually executed by the kernel (although because it uses ptrace to trap on syscalls, `$rip` will point to the instruction after the `syscall`, looking as-if the syscall has already executed).
 
+<pre>(gdb) disas $rip
+Dump of assembler code for function <font color="#C4A000">read</font>:
+   <font color="#3465A4">0x000000000053eec0</font> &lt;+0&gt;:	<font color="#4E9A06">endbr64</font>
+   <font color="#3465A4">0x000000000053eec4</font> &lt;+4&gt;:	<font color="#4E9A06">cmpb   </font><font color="#3465A4">$0x0</font>,<font color="#3465A4">0xa668d</font>(<font color="#CC0000">%rip</font>)<font color="#8D8F8A">        # 0x5e5558 &lt;__libc_single_threaded&gt;</font>
+   <font color="#3465A4">0x000000000053eecb</font> &lt;+11&gt;:	<font color="#4E9A06">je     </font><font color="#3465A4">0x53eee0</font> &lt;<font color="#C4A000">read</font>+32&gt;
+   <font color="#3465A4">0x000000000053eecd</font> &lt;+13&gt;:	<font color="#4E9A06">xor    </font><font color="#CC0000">%eax</font>,<font color="#CC0000">%eax</font>
+   <font color="#3465A4">0x000000000053eecf</font> &lt;+15&gt;:	<font color="#4E9A06">syscall</font>
+=&gt; <font color="#3465A4">0x000000000053eed1</font> &lt;+17&gt;:	<font color="#4E9A06">cmp    </font><font color="#3465A4">$0xfffffffffffff000</font>,<font color="#CC0000">%rax</font>
+   <font color="#3465A4">0x000000000053eed7</font> &lt;+23&gt;:	<font color="#4E9A06">ja     </font><font color="#3465A4">0x53ef28</font> &lt;<font color="#C4A000">read</font>+104&gt;
+   <font color="#3465A4">0x000000000053eed9</font> &lt;+25&gt;:	<font color="#4E9A06">ret</font>
+   <font color="#3465A4">0x000000000053eeda</font> &lt;+26&gt;:	<font color="#4E9A06">nopw   </font><font color="#3465A4">0x0</font>(<font color="#CC0000">%rax</font>,<font color="#CC0000">%rax</font>,<font color="#3465A4">1</font>)
+   <font color="#3465A4">0x000000000053eee0</font> &lt;+32&gt;:	<font color="#4E9A06">push   </font><font color="#CC0000">%rbp</font>
+</pre>
 
-TODO rest
+Let's note down the registers:
 
-`struct pt_regs`
+<pre>(gdb) info reg
+rax            0xffffffffffffffda  -38
+rbx            0x5e4a00            6179328
+rcx            0x53eed1            5500625
+rdx            0x1000              4096
+rsi            0x6038a0            6305952
+rdi            0x0                 0
+rbp            0x7fffffffd800      0x7fffffffd800
+rsp            0x7fffffffd7c8      0x7fffffffd7c8
+r8             0x0                 0
+r9             0x4                 4
+r10            0x405b0f            4217615
+r11            0x246               582
+r12            0x5e1e10            6168080
+r13            0x5e1cc0            6167744
+r14            0x5e4820            6178848
+r15            0x5e1e10            6168080
+rip            0x53eed1            0x53eed1 &lt;read+17&gt;
+eflags         0x246               [ PF ZF IF ]
+cs             0x33                51
+ss             0x2b                43
+ds             0x0                 0
+es             0x0                 0
+fs             0x0                 0
+gs             0x0                 0
+(gdb)
+</pre>
 
-Mention that extended states (fpu, simd regs) technically need to also be saved, but in our case not saving them still worked. Previously I thought syscall are allowed to clobber them (since they're caller-saved), but actually no. The kernel don't save them on syscall entry because the kernel is compiled to not use them, not because clobbering them are allowed. Hence to fully restore the state...
+Ok, let's allow the program to continue to `write`:
+
+<pre>(gdb) catch syscall write
+Catchpoint 2 (syscall &apos;write&apos; [1])
+(gdb) c
+Continuing.
+
+Catchpoint 1 (returned from syscall read), <font color="#3465A4">0x000000000053eed1</font> in <font color="#C4A000">read</font> ()
+(gdb) c
+Continuing.
+
+Catchpoint 2 (call to syscall write), <font color="#3465A4">0x000000000053ef74</font> in <font color="#C4A000">write</font> ()
+(gdb)
+</pre>
+
+Let's see the registers again, before we enter the syscall:
+
+<pre>(gdb) info reg
+rax            0xffffffffffffffda  -38
+rbx            0x3a                58
+rcx            0x53ef74            5500788
+rdx            0x3a                58
+rsi            0x602890            6301840
+rdi            0x1                 1
+rbp            0x7fffffffd7b0      0x7fffffffd7b0
+rsp            0x7fffffffd788      0x7fffffffd788
+r8             0xcccccccccccccccd  -3689348814741910323
+r9             0x7fffffffd7a0      140737488344992
+r10            0x1                 1
+r11            0x202               514
+r12            0x3a                58
+r13            0x602890            6301840
+r14            0x5e4820            6178848
+r15            0x5e1cc0            6167744
+rip            0x53ef74            0x53ef74 &lt;write+20&gt;
+eflags         0x202               [ IF ]
+cs             0x33                51
+ss             0x2b                43
+ds             0x0                 0
+es             0x0                 0
+fs             0x0                 0
+gs             0x0                 0
+(gdb)
+</pre>
+
+Looks quite different from before! Now we let it continue, then we shall see the registers reverting to the state before the `read`:
+
+<pre>(gdb) c
+Continuing.
+
+Catchpoint 1 (returned from syscall read), <font color="#3465A4">0x000000000053eed1</font> in <font color="#C4A000">read</font> ()
+(gdb) info reg
+rax            0x3a                58
+rbx            0x5e4a00            6179328
+rcx            0x53eed1            5500625
+rdx            0x1000              4096
+rsi            0x6038a0            6305952
+rdi            0x0                 0
+rbp            0x7fffffffd800      0x7fffffffd800
+rsp            0x7fffffffd7c8      0x7fffffffd7c8
+r8             0x0                 0
+r9             0x4                 4
+r10            0x405b0f            4217615
+r11            0x246               582
+r12            0x5e1e10            6168080
+r13            0x5e1cc0            6167744
+r14            0x5e4820            6178848
+r15            0x5e1e10            6168080
+rip            0x53eed1            0x53eed1 &lt;read+17&gt;
+eflags         0x246               [ PF ZF IF ]
+cs             0x33                51
+ss             0x2b                43
+ds             0x0                 0
+es             0x0                 0
+fs             0x0                 0
+gs             0x0                 0
+(gdb)
+</pre>
+
+Seems pretty successful - we've even confused `gdb` (it says &ldquo;returned from syscall read&rdquo;). Note that `rax` is the syscall return value, and therefore it is reasonable for it to be different before and after the syscall. Careful readers might have noticed something unusual here, but let's save that for later :)
+
+We know that if we let it continue it will just crash, but let's see what happens anyway, just for fun. `ni` basically lets it run one more instruction, then stop it again:
+
+<pre>(gdb) disas $rip
+Dump of assembler code for function <font color="#C4A000">read</font>:
+   <font color="#3465A4">0x000000000053eec0</font> &lt;+0&gt;:	<font color="#4E9A06">endbr64</font>
+   <font color="#3465A4">0x000000000053eec4</font> &lt;+4&gt;:	<font color="#4E9A06">cmpb   </font><font color="#3465A4">$0x0</font>,<font color="#3465A4">0xa668d</font>(<font color="#CC0000">%rip</font>)<font color="#8D8F8A">        # 0x5e5558 &lt;__libc_single_threaded&gt;</font>
+   <font color="#3465A4">0x000000000053eecb</font> &lt;+11&gt;:	<font color="#4E9A06">je     </font><font color="#3465A4">0x53eee0</font> &lt;<font color="#C4A000">read</font>+32&gt;
+   <font color="#3465A4">0x000000000053eecd</font> &lt;+13&gt;:	<font color="#4E9A06">xor    </font><font color="#CC0000">%eax</font>,<font color="#CC0000">%eax</font>
+   <font color="#3465A4">0x000000000053eecf</font> &lt;+15&gt;:	<font color="#4E9A06">syscall</font>
+=&gt; <font color="#3465A4">0x000000000053eed1</font> &lt;+17&gt;:	<font color="#4E9A06">cmp    </font><font color="#3465A4">$0xfffffffffffff000</font>,<font color="#CC0000">%rax</font>
+   <font color="#3465A4">0x000000000053eed7</font> &lt;+23&gt;:	<font color="#4E9A06">ja     </font><font color="#3465A4">0x53ef28</font> &lt;<font color="#C4A000">read</font>+104&gt;
+   <font color="#3465A4">0x000000000053eed9</font> &lt;+25&gt;:	<font color="#4E9A06">ret</font>
+   <i class="irrelevant">...</i>
+
+(gdb) ni
+<font color="#3465A4">0x000000000053eed7</font> in <font color="#C4A000">read</font> ()
+(gdb)
+<font color="#3465A4">0x000000000053eed9</font> in <font color="#C4A000">read</font> ()
+(gdb)
+<font color="#3465A4">0x000000000000003a</font> in <font color="#C4A000">??</font> ()
+(gdb)
+</pre>
+
+Ok, that didn't take very long to break.
+
+<!-- TODO:
+Mention that extended states (fpu, simd regs) technically need to also be saved, but in our case not saving them still worked. Previously I thought syscall are allowed to clobber them (since they're caller-saved), but actually no. The kernel don't save them on syscall entry because the kernel is compiled to not use them, not because clobbering them are allowed. Hence to fully restore the state... -->
 
 ### Save and restore memory
 

@@ -1,6 +1,7 @@
 # Compile with:
 #   as -o syscall_regs_test.o -g syscall_regs_test.S
 #   ld -o syscall_regs_test syscall_regs_test.o
+
 .section .data
 msg: .ascii "Nope! Read: "
 msgLen = . - msg

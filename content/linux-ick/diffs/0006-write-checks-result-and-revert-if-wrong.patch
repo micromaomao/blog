@@ -1,7 +1,7 @@
-From 0fa4da8304778f87481789a748c0ee898e5a8627 Mon Sep 17 00:00:00 2001
+From 1ce452431b049f23379a353d40acd88fca1002f5 Mon Sep 17 00:00:00 2001
 From: Mao <m@maowtm.org>
 Date: Sun, 5 Jan 2025 02:10:57 +0000
-Subject: [PATCH 6/6] write checks result and revert if wrong
+Subject: [PATCH 6/7] write checks result and revert if wrong
 
 ---
  fs/read_write.c | 29 ++++++++++++++++++++++++++++-
@@ -9,7 +9,7 @@ Subject: [PATCH 6/6] write checks result and revert if wrong
  2 files changed, 30 insertions(+), 2 deletions(-)
 
 diff --git a/fs/read_write.c b/fs/read_write.c
-index ba8eedd4fa47..825ec8adbb21 100644
+index 43f403ef9476..f5a10ff795aa 100644
 --- a/fs/read_write.c
 +++ b/fs/read_write.c
 @@ -768,9 +768,36 @@ SYSCALL_DEFINE3(read, unsigned int, fd, char __user *, buf, size_t, count)

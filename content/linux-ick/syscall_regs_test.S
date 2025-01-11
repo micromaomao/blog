@@ -37,7 +37,7 @@ _start:
   movl $(128 - msgLen), %edx      # count
   syscall
 
-  movq %rax, %rbx # ret is num bytes read
+  movq %rax, %rdx # ret is num bytes read
 
   # memcpy(dst=buffer, src=msg, count=msgLen)
   lea msg(%rip), %rsi
@@ -70,7 +70,9 @@ _start:
   movl $1, %eax          # sys_write
   movl $1, %edi          # fd = stdout
   lea buffer(%rip), %rsi # buf = buffer
-  addq $msgLen, %rbx     # count = ret + msgLen
+  # count = ret + msgLen
+  # %rdx previously set by saving ret from the read into it
+  addq $msgLen, %rdx
   syscall
 
   movl $60, %eax  # sys_exit

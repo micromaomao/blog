@@ -1,4 +1,4 @@
-From 91b6eb431f34b1754c8faa1ed9bb3f2fa27f814e Mon Sep 17 00:00:00 2001
+From e77f78dba77e822c9e8de54d59292130047584b9 Mon Sep 17 00:00:00 2001
 From: Mao <m@maowtm.org>
 Date: Sat, 4 Jan 2025 00:04:25 +0000
 Subject: [PATCH 2/7] ptrace_traceme return 0

@@ -1,6 +1,6 @@
 ---
 title: "Using the Linux kernel to help me crack an executable quickly"
-tags: ["Linux", "systems programming", "reverse engineering", "performance", "tracing", "debugging"]
+tags: ["Linux", "systems programming", "reverse engineering", "performance", "process checkpoint"]
 time: "2025-01-01T23:21:38+00:00"
 discuss:
   "GitHub": "https://github.com/micromaomao/linux-dev/issues"
@@ -176,7 +176,7 @@ $ cat strace.log
 21:01:00.556739011 +++ exited with 0 +++
 </pre>
 
-If we use the kernel tracing tool `trace-cmd` (which interacts with [ftrace](https://www.kernel.org/doc/html/latest/trace/ftrace.html) and related APIs designed for both kernel debugging and performance tracing), we can find out how long the program spends computing the result after reading the input, not including time spent in the actual I/O, and also without any `strace` overhead (which was actually quite significant when you're looking at sub-ms level).
+If we use the kernel tracing tool `trace-cmd` (which interacts with [ftrace](https://docs.kernel.org/6.12/trace/ftrace.html) and related APIs designed for both kernel debugging and performance tracing), we can find out how long the program spends computing the result after reading the input, not including time spent in the actual I/O, and also without any `strace` overhead (which was actually quite significant when you're looking at sub-ms level).
 
 To do this, we can trace the `syscalls` family of events. We're specifically interested in `read` and `write`, and each syscall has two events we can trace: `sys_enter_...` and `sys_exit_...`. We specify these events with `-e`, and `-F -c` to only trace events from children processes.
 
@@ -245,7 +245,7 @@ Technically, anything stored in the `task_struct` is per-thread, but in this cas
 
 You probably know that when you run an executable, the shell forks a subprocess then run `exec` with the command arguments. If we assume our target binary is always named &ldquo;`hackme`&rdquo;, we can check for this in the handler for `exec`, and set the `bool` we added previously to `true`.
 
-With some searching around and perhaps tracing function calls with `trace-cmd` (which juse uses [ftrace](https://www.kernel.org/doc/html/latest/trace/ftrace.html)), we find that there is a common function for `execve` and `execveat` &ndash; [`do_execveat_common`](https://github.com/micromaomao/linux-dev/blob/ick/fs/exec.c#L1876), and so we can add our code there, and add the additional field to the `task_struct`:
+With some searching around and perhaps tracing function calls with `trace-cmd` (which juse uses [ftrace](https://docs.kernel.org/6.12/trace/ftrace.html)), we find that there is a common function for `execve` and `execveat` &ndash; [`do_execveat_common`](https://github.com/micromaomao/linux-dev/blob/ick/fs/exec.c#L1876), and so we can add our code there, and add the additional field to the `task_struct`:
 
 <a class="make-diff" href="./diffs/0003-set-hack_target.patch"></a>
 
@@ -392,7 +392,7 @@ SYM_CODE_START(<b>entry_SYSCALL_64</b>)
     <b>call</b>    do_syscall_64        <span class="code-comment">/* returns with IRQs disabled */</span>
 </pre>
 
-<pre>
+<pre id="push_regs">
 .macro <b>PUSH_REGS</b> rdx=%rdx rcx=%rcx rax=%rax save_ret=0 unwind_hint=1
     .if \save_ret
     <b>pushq</b>   %rsi            <span class="code-comment">/* pt_regs->si */</span>
@@ -622,8 +622,18 @@ Dump of assembler code for function <font color="#C4A000">read</font>:
 
 Ok, that didn't take very long to break.
 
-<!-- TODO:
-Mention that extended states (fpu, simd regs) technically need to also be saved, but in our case not saving them still worked. Previously I thought syscall are allowed to clobber them (since they're caller-saved), but actually no. The kernel don't save them on syscall entry because the kernel is compiled to not use them, not because clobbering them are allowed. Hence to fully restore the state... -->
+#### What about the other ones?
+
+Now, some of you might have noticed the lack of the more &lsquo;unusual&rsquo; registers in the `PUSH_REGS` code [above](#push_regs) (or in [`struct pt_regs`](https://github.com/micromaomao/linux-dev/blob/ick/arch/x86/include/asm/ptrace.h#L103)), and if you're questioning whether just saving the general-purpose registers in `pt_regs` is enough, you're right. We have not saved any of xmm0-xmm31 (or their y/z extensions) which are used for floating point operations and various generations of SIMD, or the FS and GS segment registers [which can be set by user-space](https://docs.kernel.org/6.12/arch/x86/x86_64/fsgs.html) (most notably, libc uses them to point to start of thread-local storage, which obviously shouldn't change in the lifetime of a thread, but really they can be used in whatever ways by an obfuscated program).
+
+However, in a sensible program linking to a &lsquo;normal&rsquo; libc, neither of these ought to matter. This is because, as noted earlier, the segment registers shouldn't normally change inside a thread, and the SIMD registers are caller-saved<footnote>
+H.J. Lu, et al. (2024) [_System V Application Binary Interface AMD64 Architecture Processor Supplement (With LP64 and ILP32 Programming Models) Version 1.0_](https://gitlab.com/x86-psABIs/x86-64-ABI/-/jobs/artifacts/master/raw/x86-64-ABI/abi.pdf?job=build) &sect; 3.2.1<br>
+Also see https://godbolt.org/z/oj3ej3e5z
+</footnote>, which means that the compiler isn't supposed to rely on them suriving across a call to libc's `read()` or `write()` wrappers (although technically `syscall` is supposed to perserve those).
+
+For performance reasons the kernel does not save these registers to memory on every kernel entry, but only when it is about to context-switch to another task.<footnote>
+Although because the kernel itself also uses GS for per-CPU data, it does a [`swapgs`](https://wiki.osdev.org/SWAPGS) to stash off the user-space GS to some hidden machine-specific register.
+</footnote> After all, the ?mm registers, on a new-enough CPU, totals to 512 bits <tex>\times</tex> 32 = 2 KiB (not counting the vector mask registers, etc). This makes our life harder if we want to save/restore those (which is technically the correct thing to do), but since they are unlikely to break a &lsquo;reasonable&rsquo; program, we will leave them untouched for now.
 
 ### Save and restore memory
 

@@ -1,4 +1,4 @@
-all: fork-test my-hackme my-hackme-looped
+all: fork-test my-hackme my-hackme-looped fork-debug
 
 clean:
 	rm -f fork-test my-hackme my-hackme-looped syscall_regs_test syscall_regs_test.o
@@ -15,3 +15,6 @@ my-hackme-looped: my-hackme-looped.cpp
 syscall_regs_test: syscall_regs_test.S
 	as -o syscall_regs_test.o -g syscall_regs_test.S
 	ld -o syscall_regs_test syscall_regs_test.o
+
+fork-debug: fork-debug.c
+	gcc -o fork-debug fork-debug.c -Og -g

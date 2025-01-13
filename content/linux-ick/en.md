@@ -202,13 +202,20 @@ trace-cmd report
 
 We can ignore everything that is not reading from stdin (fd = 0) or writing to stdout (fd = 1) after that. Subtracting the two green numbers, that's 11us from returning from `read` to attempting `write`! On the other hand, getting to the first `read` from the start of the program took almost 200ms, and so if we have to run the whole thing repeatedly (for example, in a bash loop), it will be 200ms <tex>\times</tex> 3,000,000 <tex>\approx</tex> 7 days! Now, you can of course use more CPU cores and run multiple instances of this loop at once, but that's not a very interesting solution. In this case the challenge is also time-sensitive and so we need something better.
 
+<style>
+  img.emoji {
+    width: 1.2em;
+    vertical-align: -5px;
+  }
+</style>
+
 Notice that the program doesn't really try to do anything fancy (at least not externally visible) between `read` and `write` &ndash; all it does is spin some numbers around in its own memory, then spits out &lsquo;Correct&rsquo; plus the flag, or &lsquo;Nope&rsquo; if the guess was wrong. This means that, in theory, if we can perfectly restore the program's memory and register states<footnote>
 Technically there's not all of the state a program could rely on or change, even without issuing any syscalls. For example, it can use the raw `rdtsc` assembly instruction to measure the current time, and deduce if it's being tricked. But in this case restoring registers and memory alone works well enough.
-</footnote>, we can instantly start trying a different input, then another one in 10us (when I ran it fast enough often it finishes within 5), and so on until we find the right number. Without the overhead of even forking another process, this has the potential to be a lot faster &ndash; we're basically turning the whole input validation process into a `for` loop! It's just that the &lsquo;`for`&rsquo; in this case is outside the program. <img src="./hehe.png" alt="Hehe" style="width: 1.2em; vertical-align: -5px;">
+</footnote>, we can instantly start trying a different input, then another one in 10us (when I ran it fast enough often it finishes within 5), and so on until we find the right number. Without the overhead of even forking another process, this has the potential to be a lot faster &ndash; we're basically turning the whole input validation process into a `for` loop! It's just that the &lsquo;`for`&rsquo; in this case is outside the program. <img src="./hehe.png" alt="Hehe" class="emoji">
 
 ## What if we get the kernel to try numbers for us?
 
-Recently I have also been getting very interested in Linux kernel development (from debugging weird kernel panics at work <img src="smiling-face-with-tear.png" alt="&#x1F972;" style="width: 1.2em; vertical-align: -5px;">), so I decided why not turn this into a kernel programming exercise, and try to get Linux to automatically try all the possible inputs for me, and restore the program state in between inputs, as suggested earlier?
+Recently I have also been getting very interested in Linux kernel development (from debugging weird kernel panics at work <img src="smiling-face-with-tear.png" alt="&#x1F972;" class="emoji">), so I decided why not turn this into a kernel programming exercise, and try to get Linux to automatically try all the possible inputs for me, and restore the program state in between inputs, as suggested earlier?
 
 The core idea is:
 
@@ -233,7 +240,7 @@ Compared to alternative, user-space approach with ptrace (which I will explore a
 Ok, technically there is another way that can be basically as fast, and which doesn't involve kernel modifications. You can instead use `SECCOMP_RET_TRAP` with a seccomp bpf filter to have the kernel turn the syscall you're interested into a `SIGSYS`, and inject code into the program to handle this signal. This gives you the functionality of a ptrace-based syscall interceptor (your injected code can save/restore registers via the `ucontext` reference, and of course memory too) without the cost of ptrace. But this is arguably getting into wilder territory than some not-too-complex kernel modifications. There are real world projects which does this for a very good reason &ndash; sandboxing. See [gVisor Systrap](https://gvisor.dev/blog/2023/04/28/systrap-release/) for more detail.
 </footnote> From my testing, when the input-checking code is ran in a tight loop this way, it is even faster and often takes aound 5us. 5us <tex>\times</tex> 3,000,000 is _15 seconds_.
 - While correctly write-protecting the memory pages, saving them off on write fault, and restoring them might sound tricky, with the way Linux manages writable pages it is actually surprisingly straightforward. This is because even for a writable mapping, pages starts off write-protected, and the kernel only makes them actually writable on the first write attempt. This means that there are very natural places we can add our code to, and we don't even have to actually change any permissions, etc.
-- Hacking the kernel is fun, at least to me <img src="./init.png" alt="Small Yuki Nagato emote" style="width: 1.2em; vertical-align: -5px;">, and I learn a lot this way. In the future if I have a similar problem but a lot larger input space, what we did here might prove to be useful again.
+- Hacking the kernel is fun, at least to me <img src="./init.png" alt="Small Yuki Nagato emote" class="emoji">, and I learn a lot this way. In the future if I have a similar problem but a lot larger input space, what we did here might prove to be useful again.
 
 I will now walk through each step one by one, as laid out above. If you as the reader don't have a lot of kernel experience (I certainly don't), hopefully by going like this, this will not be too difficult to follow:
 
@@ -633,9 +640,64 @@ Also see https://godbolt.org/z/oj3ej3e5z
 
 For performance reasons the kernel does not save these registers to memory on every kernel entry, but only when it is about to context-switch to another task.<footnote>
 Although because the kernel itself also uses GS for per-CPU data, it does a [`swapgs`](https://wiki.osdev.org/SWAPGS) to stash off the user-space GS to some hidden machine-specific register.
-</footnote> After all, the ?mm registers, on a new-enough CPU, totals to 512 bits <tex>\times</tex> 32 = 2 KiB (not counting the vector mask registers, etc). This makes our life harder if we want to save/restore those (which is technically the correct thing to do), but since they are unlikely to break a &lsquo;reasonable&rsquo; program, we will leave them untouched for now.
+</footnote> After all, the ?mm registers, on a new-enough CPU with AVX-512, totals to 512 bits <tex>\times</tex> 32 = 2 KiB (not counting the vector mask registers, etc). This makes our life harder if we want to save/restore those (which is technically the correct thing to do for a fully working save/restore), but since they are unlikely to break a &lsquo;reasonable&rsquo; program, we will leave them untouched for now.
+
+<p class="info">
+  Do you want to learn more about how Linux manages processes, does context switches, and similar low-level topics, or just learn more about the kernel in general? Check out these highly informative lecture notes: <a href="https://linux-kernel-labs.github.io/refs/heads/master/so2/index.html" target="_blank">Operating Systems 2</a> (maybe after you're done with this article <img src="./grinning-squinting-face.png" alt="&#x1F606;" class="emoji">).
+</p>
 
 ### Save and restore memory
+
+Ok. now finally the exciting part! This part is going to be a bit more difficult if you aren't familiar with how &lsquo;memory paging&rsquo; or page faults work. There are two videos which I find quite informative:
+
+- [CS 134 OS—5.7 Paging on x86](https://www.youtube.com/watch?v=dn55T2q63RU&t=11s) covers the page table structure itself. Note that in this video, the lecturer is talking about how this is on 32 bit, hence only 2 levels of indirections. On x86_64, there are 4 levels of paging, but the fundamental idea is the same.
+- [CS 134 OS—7 Paging HW: Copy-On-Write Fork](https://www.youtube.com/watch?v=ViUwLytKzTY) is especially useful for our purpose. It shows how an OS can use write protected pages to implement _copy-on-write_ memory (used when forking a process).
+
+However, don't be alarmed by this &ndash; understanding how page tables work helps, but we won't need to do any manual manipulation to these tables! Let's start by looking at how Linux manages a process's memory.
+
+There are multiple ways we could go about this &ndash; one thing we can do is to follow what happens on a `fork`, and try to replicate that (but only the memory part).
+
+... TODO ...
+
+Mention about vm_flags and `vma_set_page_prot` used by `mprotect` - `VM_WRITE` not resulting in `__RW`
+
+```c
+static pgprot_t protection_map[16] __ro_after_init = {
+    [VM_NONE]                                    = PAGE_NONE,
+    [VM_READ]                                    = PAGE_READONLY,
+    [VM_WRITE]                                   = PAGE_COPY,
+    [VM_WRITE | VM_READ]                         = PAGE_COPY,
+    [VM_EXEC]                                    = PAGE_READONLY_EXEC,
+    [VM_EXEC | VM_READ]                          = PAGE_READONLY_EXEC,
+    [VM_EXEC | VM_WRITE]                         = PAGE_COPY_EXEC,
+    [VM_EXEC | VM_WRITE | VM_READ]               = PAGE_COPY_EXEC,
+    [VM_SHARED]                                  = PAGE_NONE,
+    [VM_SHARED | VM_READ]                        = PAGE_READONLY,
+    [VM_SHARED | VM_WRITE]                       = PAGE_SHARED,
+    [VM_SHARED | VM_WRITE | VM_READ]             = PAGE_SHARED,
+    [VM_SHARED | VM_EXEC]                        = PAGE_READONLY_EXEC,
+    [VM_SHARED | VM_EXEC | VM_READ]              = PAGE_READONLY_EXEC,
+    [VM_SHARED | VM_EXEC | VM_WRITE]             = PAGE_SHARED_EXEC,
+    [VM_SHARED | VM_EXEC | VM_WRITE | VM_READ]   = PAGE_SHARED_EXEC
+};
+```
+
+```c
+#define pgprot_val(x)		((x).pgprot)
+#define __pgprot(x)		((pgprot_t) { (x) } )
+#define __pg(x)			__pgprot(x)
+
+#define PAGE_NONE	     __pg(   0|   0|   0|___A|   0|   0|   0|___G)
+#define PAGE_SHARED	     __pg(__PP|__RW|_USR|___A|__NX|   0|   0|   0)
+#define PAGE_SHARED_EXEC     __pg(__PP|__RW|_USR|___A|   0|   0|   0|   0)
+#define PAGE_COPY_NOEXEC     __pg(__PP|   0|_USR|___A|__NX|   0|   0|   0)
+#define PAGE_COPY_EXEC	     __pg(__PP|   0|_USR|___A|   0|   0|   0|   0)
+#define PAGE_COPY	     __pg(__PP|   0|_USR|___A|__NX|   0|   0|   0)
+#define PAGE_READONLY	     __pg(__PP|   0|_USR|___A|__NX|   0|   0|   0)
+#define PAGE_READONLY_EXEC   __pg(__PP|   0|_USR|___A|   0|   0|   0|   0)
+```
+
+#### Printing page faults
 
 ### Blocking off other syscalls
 

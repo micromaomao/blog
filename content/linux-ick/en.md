@@ -339,7 +339,7 @@ root@feef72fcd655:/# tail /sys/kernel/tracing/trace
  my-hackme-loope-90      [001] .....   447.571690: ksys_read: Providing number 27 to hacked process my-hackme-loope[90]
  my-hackme-loope-90      [001] .....   447.571691: ksys_read: ick checkpoint on hacked process my-hackme-loope[90]
  my-hackme-loope-90      [001] .....   447.571691: ksys_read: Providing number 28 to hacked process my-hackme-loope[90]
-...
+ ...                     ...           ...         ...
 ```
 
 ### Patching `write` to call our revert function
@@ -359,7 +359,7 @@ Enter number: [    7.493428][   T84] hack: 2 gave different output
 Correct!
 root@feef72fcd655:/# cat /sys/kernel/tracing/trace
 <span class="irrelevant"># tracer: nop
-...
+ ...                     ...             ...       ...
  my-hackme-loope-84      [000] d....     7.461871: console: execveat: ./my-hackme-looped[84] to be hacked</span>
  my-hackme-loope-84      [000] .....     7.487955: ksys_write: hacked process attempted write with data Enter number:
  my-hackme-loope-84      [000] d....     7.487961: console: hack: 0 gave different output
@@ -655,7 +655,265 @@ Ok. now finally the exciting part! This part is going to be a bit more difficult
 
 However, don't be alarmed by this &ndash; understanding how page tables work helps, but we won't need to do any manual manipulation to these tables! Let's start by looking at how Linux manages a process's memory.
 
-There are multiple ways we could go about this &ndash; one thing we can do is to follow what happens on a `fork`, and try to replicate that (but only the memory part).
+There are multiple ways we could go about this &ndash; one thing we can do is to follow what happens on a `fork`, and try to replicate that (but only the memory part). We can again use the [fork-test.c](fork-test.c) program for this.
+
+Starting with a simple `trace-cmd record`, it gives us a bunch of garbage, probably because it's recording the executable initialization as well:
+```
+root@f8b9ed144f52:/# trace-cmd record -p function_graph --max-graph-depth 4 -F -c ./fork-test
+  plugin 'function_graph'
+I am the parent. Fork took 222414 ns to return
+I am the child. It took 1151499 ns to fork
+CPU0 data recorded at offset=0xbc000
+    54349 bytes in size (294912 uncompressed)
+root@f8b9ed144f52:/# trace-cmd report > a.log
+root@f8b9ed144f52:/# less a.log
+fork-test-92    [000]   153.874423: funcgraph_entry:        1.623 us   |  mutex_unlock();
+       fork-test-92    [000]   153.874425: funcgraph_entry:                   |  __f_unlock_pos() {
+       fork-test-92    [000]   153.874425: funcgraph_entry:        0.311 us   |    mutex_unlock();
+       fork-test-92    [000]   153.874426: funcgraph_exit:         0.961 us   |  }
+       fork-test-92    [000]   153.874426: funcgraph_entry:        0.391 us   |  fpregs_assert_state_consistent();
+       fork-test-92    [000]   153.874429: funcgraph_entry:                   |  x64_sys_call() {
+       fork-test-92    [000]   153.874430: funcgraph_entry:                   |    __x64_sys_execve() {
+       fork-test-92    [000]   153.874430: funcgraph_entry:                   |      getname() {
+       fork-test-92    [000]   153.874431: funcgraph_entry:        0.612 us   |        getname_flags();
+       fork-test-92    [000]   153.874432: funcgraph_exit:         1.212 us   |      }
+       fork-test-92    [000]   153.874432: funcgraph_entry:                   |      do_execveat_common.isra.0() {
+       fork-test-92    [000]   153.874433: funcgraph_entry:                   |        alloc_bprm() {
+          <idle>-0     [000]   153.874798: funcgraph_entry:        0.452 us   |  _raw_spin_lock_irqsave();
+          <idle>-0     [000]   153.874798: funcgraph_entry:        0.100 us   |  _raw_spin_unlock_irqrestore();
+          <idle>-0     [000]   153.874799: funcgraph_entry:        0.141 us   |  switch_mm_irqs_off();
+       ...             ...     ...         ...                     ...           ...
+       fork-test-92    [000]   153.878550: funcgraph_entry:                   |  handle_mm_fault() {
+       fork-test-92    [000]   153.878550: funcgraph_entry:                   |    __handle_mm_fault() {
+       fork-test-92    [000]   153.878550: funcgraph_entry:                   |      pte_offset_map_nolock() {
+       fork-test-92    [000]   153.878551: funcgraph_entry:        0.140 us   |        __pte_offset_map();
+       fork-test-92    [000]   153.878551: funcgraph_exit:         0.351 us   |      }
+       fork-test-92    [000]   153.878551: funcgraph_entry:        0.110 us   |      __rcu_read_unlock();
+       fork-test-92    [000]   153.878551: funcgraph_entry:        0.100 us   |      __rcu_read_lock();
+       fork-test-92    [000]   153.878551: funcgraph_entry:                   |      filemap_map_pages() {
+       fork-test-92    [000]   153.878552: funcgraph_entry:        0.109 us   |        __rcu_read_lock();
+       fork-test-92    [000]   153.878552: funcgraph_entry:        0.431 us   |        next_uptodate_folio();
+       fork-test-92    [000]   153.878552: funcgraph_entry:        0.230 us   |        __pte_offset_map_lock();
+...
+```
+
+Thankfully, there is a useful flag for us for exactly this situation:
+
+```
+-g function-name
+    This option is for the function_graph plugin. It will graph the given function. That is, it will only trace the function and all functions that it calls. You can have more than one -g on the command
+    line.
+```
+
+You can search through the list of available functions by looking at `available_filter_functions` under tracefs:
+
+<pre>
+root@f8b9ed144f52:/# cat /sys/kernel/tracing/available_filter_functions | grep fork
+ret_from_fork
+<span class="highlight">__do_sys_fork</span>
+__do_sys_vfork
+tsk_fork_get_node
+fork_usermode_driver
+</pre>
+
+Let's try `__do_sys_fork`:
+
+```
+root@f8b9ed144f52:/# trace-cmd record -p function_graph --max-graph-depth 4 -g __do_sys_fork -F -c ./fork-test
+  plugin 'function_graph'
+I am the parent. Fork took 174195 ns to return
+I am the child. It took 1053852 ns to fork
+CPU0 data recorded at offset=0xbc000
+    1619 bytes in size (8192 uncompressed)
+root@f8b9ed144f52:/# trace-cmd report
+cpus=1
+       fork-test-107   [000]   766.823819: funcgraph_entry:                   |  __do_sys_fork() {
+       fork-test-107   [000]   766.823820: funcgraph_entry:                   |    kernel_clone() {
+       fork-test-107   [000]   766.823820: funcgraph_entry:                   |      copy_process() {
+       fork-test-107   [000]   766.823820: funcgraph_entry:        0.361 us   |        _raw_spin_lock_irq();
+       fork-test-107   [000]   766.823821: funcgraph_entry:        0.181 us   |        recalc_sigpending();
+       fork-test-107   [000]   766.823821: funcgraph_entry:        0.100 us   |        _raw_spin_unlock_irq();
+       fork-test-107   [000]   766.823822: funcgraph_entry:        0.120 us   |        tsk_fork_get_node();
+       ...             ...     ...         ...                     ...                 ...
+       fork-test-107   [000]   766.823841: funcgraph_entry:        0.120 us   |        posix_cputimers_group_init();
+       fork-test-107   [000]   766.823841: funcgraph_entry:        0.100 us   |        __mutex_init();
+       fork-test-107   [000]   766.823842: funcgraph_entry:        0.101 us   |        __init_rwsem();
+       fork-test-107   [000]   766.823842: funcgraph_entry:      + 44.784 us  |        copy_mm();
+       fork-test-107   [000]   766.823887: funcgraph_entry:        0.211 us   |        copy_namespaces();
+       fork-test-107   [000]   766.823887: funcgraph_entry:        0.751 us   |        copy_thread();
+       fork-test-107   [000]   766.823888: funcgraph_entry:        1.172 us   |        alloc_pid();
+       fork-test-107   [000]   766.823889: funcgraph_entry:        0.111 us   |        __mutex_init();
+       fork-test-107   [000]   766.823890: funcgraph_entry:        0.130 us   |        user_disable_single_step();
+       fork-test-107   [000]   766.823890: funcgraph_entry:        0.151 us   |        clear_posix_cputimers_work();
+```
+
+Hey, isn't this much nicer! Now, one of the function here looks quite interesting: [`copy_mm`](https://github.com/micromaomao/linux-dev/blob/ick/kernel/fork.c#L1720). There is a lot of stuff going on underneath that function, but if you just ignore anything that's about folios (which is some abstraction to group pages together), &lsquo;shared&rsquo; pages (which aren't CoW'd on fork), huge pages, etc., you will find that for a normal, anonymous mapping, it eventually ends up in [`__copy_present_ptes`](https://github.com/micromaomao/linux-dev/blob/ick/mm/memory.c#L951), which contains this bit that should seem very interesting for what we're trying to do here:
+
+<!-- ```c
+static __always_inline void __copy_present_ptes(struct vm_area_struct *dst_vma,
+		struct vm_area_struct *src_vma, pte_t *dst_pte, pte_t *src_pte,
+		pte_t pte, unsigned long addr, int nr)
+{
+	struct mm_struct *src_mm = src_vma->vm_mm;
+
+	/* If it's a COW mapping, write protect it both processes. */
+	if (is_cow_mapping(src_vma->vm_flags) && pte_write(pte)) {
+		wrprotect_ptes(src_mm, addr, src_pte, nr);
+		pte = pte_wrprotect(pte);
+	}
+
+	/* If it's a shared mapping, mark it clean in the child. */
+``` -->
+<pre><code class="language-c"><span style="opacity: 0.4;"><span class="hljs-type">static</span> __always_inline <span class="hljs-type">void</span> __copy_present_ptes(<span class="hljs-keyword">struct</span> vm_area_struct *dst_vma,
+        <span class="hljs-keyword">struct</span> vm_area_struct *src_vma, <span class="hljs-type">pte_t</span> *dst_pte, <span class="hljs-type">pte_t</span> *src_pte,
+        <span class="hljs-type">pte_t</span> pte, <span class="hljs-type">unsigned</span> <span class="hljs-type">long</span> addr, <span class="hljs-type">int</span> nr)
+{
+    <span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">mm_struct</span> *<span class="hljs-title">src_mm</span> =</span> src_vma-&gt;vm_mm;
+</span>
+    <span class="hljs-comment">/* If it's a COW mapping, write protect it both processes. */</span>
+    <span class="hljs-keyword">if</span> (is_cow_mapping(src_vma-&gt;vm_flags) &amp;&amp; pte_write(pte)) {
+        wrprotect_ptes(src_mm, addr, src_pte, nr);
+        pte = pte_wrprotect(pte);
+    }
+<span style="opacity: 0.4;">
+    <span class="hljs-comment">/* If it's a shared mapping, mark it clean in the child. */</span></span>
+</code></pre>
+
+Hmm, ok. This seems to just be setting the page table entries (ptes) to be read-only (write-protect) if this page is supposed to CoW. If you drill down into either [`wrprotect_ptes`](https://github.com/micromaomao/linux-dev/blob/ick/include/linux/pgtable.h#L851) or [`pte_wrprotect`](https://github.com/micromaomao/linux-dev/blob/ick/arch/x86/include/asm/pgtable.h#L440), none of those functions does anything fancy. Once this is done, later on if we get a write page fault, how does the kernel know this page is supposed to be CoW'd (rather than treating that fault as an error)?
+
+If you want to have some fun, you can try breaking into the kernel debugger at a fork like this:
+
+<pre>
+root@f8b9ed144f52:/# <b>echo g > /proc/sysrq-trigger</b>
+[   21.811502][   T71] sysrq: DEBUG
+
+Entering kdb (current=0xffff888003898e80, pid 71) on processor 0 due to NonMaskable Interrupt @ 0xffffffff8115fb08
+[0]kdb>
+</pre>
+<pre>
+<span class="comment"><i>Now, in another terminal:</i></span>
+<font color="#4E9A06">&gt; </font><font color="#3465A4">./.dev/kgdb.sh</font>
+    <span class="irrelevant"># sometimes this would fail to connect. If you don't see a backtrace, do "q" then try again</span>
+<font color="#75507B"><b>GNU gdb (GDB) 15.2</b></font>
+<span class="irrelevant">...</span>
+Reading symbols from <font color="#4E9A06">../vmlinux</font>...
+Remote debugging using kgdb.sock
+<font color="#C4A000">kgdb_breakpoint</font> () at <font color="#4E9A06">kernel/debug/debug_core.c</font>:1222
+1222		<b>wmb</b><font color="#CC0000">();</font> <font color="#06989A">/* Sync point after breakpoint */</font>
+#0  <font color="#C4A000">kgdb_breakpoint</font> () at <font color="#4E9A06">kernel/debug/debug_core.c</font>:1222
+<span class="irrelevant">...</span>
+(gdb) <b>b __do_sys_fork</b>
+Breakpoint 1 at <font color="#3465A4">0xffffffff810836c0</font>: file <font color="#4E9A06">kernel/fork.c</font>, line 2888.
+(gdb) <b>c</b>
+Continuing.
+</pre>
+<pre>
+<span class="comment">Now, in the VM terminal:</span>
+root@f8b9ed144f52:/# <b>exec ./fork-test</b> <span class="code-comment"># Use exec so that we don't break on the shell's fork</span><footnote>
+Technically the shell would probably use <a href="https://man7.org/linux/man-pages/man2/vfork.2.html"><code>vfork</code></a>, so it might not matter anyway
+</footnote>
+</pre>
+<pre>
+<span class="comment">And back to gdb:</span>
+[Thread 8 exited]
+
+Thread 41 hit Breakpoint 1, <font color="#C4A000">__do_sys_fork</font> (<font color="#06989A">__unused</font>=0xffffc9000014bf58) at <font color="#4E9A06">kernel/fork.c</font>:2888
+2888	<font color="#CC0000">{</font>
+(gdb) <b>bt</b>
+#0  <font color="#C4A000">__do_sys_fork</font> (<font color="#06989A">__unused</font>=0xffffc9000014bf58) at <font color="#4E9A06">kernel/fork.c</font>:2888
+#1  <font color="#3465A4">0xffffffff81002b79</font> in <font color="#C4A000">x64_sys_call</font> (<font color="#06989A">regs=regs@entry</font>=0xffffc9000014bf58, <font color="#06989A">nr</font>=&lt;optimized out&gt;) at <font color="#4E9A06">./arch/x86/include/generated/asm/syscalls_64.h</font>:58
+#2  <font color="#3465A4">0xffffffff81869db0</font> in <font color="#C4A000">do_syscall_x64</font> (<font color="#06989A">regs</font>=0xffffc9000014bf58, <font color="#06989A">nr</font>=&lt;optimized out&gt;) at <font color="#4E9A06">arch/x86/entry/common.c</font>:52
+#3  <font color="#C4A000">do_syscall_64</font> (<font color="#06989A">regs</font>=0xffffc9000014bf58, <font color="#06989A">nr</font>=&lt;optimized out&gt;) at <font color="#4E9A06">arch/x86/entry/common.c</font>:83
+#4  <font color="#3465A4">0xffffffff81a000b0</font> in <font color="#C4A000">entry_SYSCALL_64</font> () at <font color="#4E9A06">arch/x86/entry/entry_64.S</font>:121
+#5  <font color="#3465A4">0x00007fd58ea30020</font> in <font color="#C4A000">??</font> ()
+#6  <font color="#3465A4">0x000055b95d166dd8</font> in <font color="#C4A000">??</font> ()
+#7  <font color="#3465A4">0x00007ffd638ff2c8</font> in <font color="#C4A000">??</font> ()
+#8  <font color="#3465A4">0x0000000000000000</font> in <font color="#C4A000">??</font> ()
+(gdb)
+</pre>
+
+Maybe let's just break on that `__copy_present_ptes` function and see how it's called:
+
+<pre>
+(gdb) <b>b __copy_present_ptes</b>
+Breakpoint 2 at <font color="#3465A4">0xffffffff8129b0d8</font>: __copy_present_ptes. (2 locations)
+(gdb) <b>c</b>
+Continuing.
+
+Thread 41 hit Breakpoint 2.1, <font color="#C4A000">__copy_present_ptes</font> (<font color="#06989A">dst_vma</font>=&lt;optimized out&gt;, <font color="#06989A">src_vma</font>=0xffff88800391c428, <font color="#06989A">dst_pte</font>=0xffff88800392bb30, <font color="#06989A">src_pte</font>=0xffff88800398fb30, <font color="#06989A">pte</font>=..., <font color="#06989A">addr</font>=94254619058176, <font color="#06989A">nr</font>=1) at <font color="#4E9A06">mm/memory.c</font>:956
+956		<font color="#3465A4"><b>if</b></font> <font color="#CC0000">(</font><b>is_cow_mapping</b><font color="#CC0000">(</font>src_vma<font color="#CC0000">-&gt;</font>vm_flags<font color="#CC0000">)</font> <font color="#CC0000">&amp;&amp;</font> <b>pte_write</b><font color="#CC0000">(</font>pte<font color="#CC0000">))</font> <font color="#CC0000">{</font>
+(gdb) <b>bt</b>
+#0  <font color="#C4A000">__copy_present_ptes</font> (<font color="#06989A">dst_vma</font>=&lt;optimized out&gt;, <font color="#06989A">src_vma</font>=0xffff88800391c428, <font color="#06989A">dst_pte</font>=0xffff88800392bb30, <font color="#06989A">src_pte</font>=0xffff88800398fb30, <font color="#06989A">pte</font>=..., <font color="#06989A">addr</font>=94254619058176, <font color="#06989A">nr</font>=1) at <font color="#4E9A06">mm/memory.c</font>:956
+#1  <font color="#C4A000">copy_present_ptes</font> (<font color="#06989A">dst_vma</font>=&lt;optimized out&gt;, <font color="#06989A">src_vma</font>=0xffff88800391c428, <font color="#06989A">dst_pte</font>=0xffff88800392bb30, <font color="#06989A">src_pte</font>=0xffff88800398fb30, <font color="#06989A">pte</font>=..., <font color="#06989A">addr</font>=94254619058176, <font color="#06989A">max_nr</font>=&lt;optimized out&gt;, <font color="#06989A">rss</font>=0xffffc9000014bc80,
+    <font color="#06989A">prealloc</font>=&lt;synthetic pointer&gt;) at <font color="#4E9A06">mm/memory.c</font>:1052
+#2  <font color="#C4A000">copy_pte_range</font> (<font color="#06989A">dst_vma</font>=&lt;optimized out&gt;, <font color="#06989A">src_vma</font>=0xffff88800391c428, <font color="#06989A">dst_pmd</font>=&lt;optimized out&gt;, <font color="#06989A">src_pmd</font>=&lt;optimized out&gt;, <font color="#06989A">addr</font>=94254619058176, <font color="#06989A">end</font>=&lt;optimized out&gt;) at <font color="#4E9A06">mm/memory.c</font>:1167
+#3  <font color="#C4A000">copy_pmd_range</font> (<font color="#06989A">dst_vma</font>=&lt;optimized out&gt;, <font color="#06989A">src_vma</font>=0xffff88800391c428, <font color="#06989A">dst_pud</font>=&lt;optimized out&gt;, <font color="#06989A">src_pud</font>=&lt;optimized out&gt;, <font color="#06989A">addr</font>=&lt;optimized out&gt;, <font color="#06989A">end</font>=&lt;optimized out&gt;) at <font color="#4E9A06">mm/memory.c</font>:1255
+#4  <font color="#C4A000">copy_pud_range</font> (<font color="#06989A">dst_vma</font>=&lt;optimized out&gt;, <font color="#06989A">src_vma</font>=0xffff88800391c428, <font color="#06989A">dst_p4d</font>=&lt;optimized out&gt;, <font color="#06989A">src_p4d</font>=&lt;optimized out&gt;, <font color="#06989A">addr</font>=&lt;optimized out&gt;, <font color="#06989A">end</font>=&lt;optimized out&gt;) at <font color="#4E9A06">mm/memory.c</font>:1292
+#5  <font color="#C4A000">copy_p4d_range</font> (<font color="#06989A">dst_vma</font>=&lt;optimized out&gt;, <font color="#06989A">src_vma</font>=&lt;optimized out&gt;, <font color="#06989A">dst_pgd</font>=&lt;optimized out&gt;, <font color="#06989A">src_pgd</font>=&lt;optimized out&gt;, <font color="#06989A">addr</font>=&lt;optimized out&gt;, <font color="#06989A">end</font>=&lt;optimized out&gt;) at <font color="#4E9A06">mm/memory.c</font>:1316
+#6  <font color="#C4A000">copy_page_range</font> (<font color="#06989A">dst_vma=dst_vma@entry</font>=0xffff8880039194c0, <font color="#06989A">src_vma=src_vma@entry</font>=0xffff88800391c428) at <font color="#4E9A06">mm/memory.c</font>:1414
+#7  <font color="#3465A4">0xffffffff81080b27</font> in <font color="#C4A000">dup_mmap</font> (<font color="#06989A">mm</font>=0xffff88800284ca00, <font color="#06989A">oldmm</font>=0xffff88800284cf00) at <font color="#4E9A06">kernel/fork.c</font>:749
+#8  <font color="#C4A000">dup_mm</font> (<font color="#06989A">tsk</font>=0xffff888003898000, <font color="#06989A">oldmm</font>=0xffff88800284cf00) at <font color="#4E9A06">kernel/fork.c</font>:1691
+#9  <font color="#C4A000">copy_mm</font> (<font color="#06989A">clone_flags=clone_flags@entry</font>=0, <font color="#06989A">tsk=tsk@entry</font>=0xffff888003898000) at <font color="#4E9A06">kernel/fork.c</font>:1743
+#10 <font color="#3465A4">0xffffffff8108260a</font> in <font color="#C4A000">copy_process</font> (<font color="#06989A">pid=pid@entry</font>=0x0 &lt;fixed_percpu_data&gt;, <font color="#06989A">trace=trace@entry</font>=0, <font color="#06989A">node=node@entry</font>=-1, <font color="#06989A">args=args@entry</font>=0xffffc9000014be98) at <font color="#4E9A06">kernel/fork.c</font>:2393
+#11 <font color="#3465A4">0xffffffff810830a0</font> in <font color="#C4A000">kernel_clone</font> (<font color="#06989A">args=args@entry</font>=0xffffc9000014be98) at <font color="#4E9A06">kernel/fork.c</font>:2805
+#12 <font color="#3465A4">0xffffffff81083705</font> in <font color="#C4A000">__do_sys_fork</font> (<font color="#06989A">__unused</font>=&lt;optimized out&gt;) at <font color="#4E9A06">kernel/fork.c</font>:2894
+</pre>
+
+The `copy_???_range` functions here are just descending down the page table levels (p4d = level 4, pud = page &lsquo;upper&rsquo; directory aka. level 3, pmd = page &lsquo;middle&rsquo; directory aka. level 2, pte = page table entry)
+
+Anyway, our `fork-test.c` program obviously uses a stack, and so we expect that once `fork` returns it will immediately triggers a page fault due to trying to push new stuff onto the stack. Maybe looking at this could answer our earlier questions about how the kernel knows to CoW a page?
+
+<pre>(gdb) <b>info break</b>
+Num     Type           Disp Enb Address            What
+1       breakpoint     keep y   <font color="#3465A4">0xffffffff810836c0</font> in <font color="#C4A000">__do_sys_fork</font> at <font color="#4E9A06">kernel/fork.c</font>:2888
+	breakpoint already hit 1 time
+2       breakpoint     keep y   &lt;MULTIPLE&gt;
+	breakpoint already hit 1 time
+2.1                         y   <font color="#3465A4">0xffffffff8129b0d8</font> in <font color="#C4A000">__copy_present_ptes</font> at <font color="#4E9A06">mm/memory.c</font>:956
+2.2                         y   <font color="#3465A4">0xffffffff8129ba81</font> in <font color="#C4A000">__copy_present_ptes</font> at <font color="#4E9A06">mm/memory.c</font>:956
+(gdb) <b>del 1 2</b>
+(gdb) <b>info break</b>
+No breakpoints, watchpoints, tracepoints, or catchpoints.
+(gdb) <b>b handle_mm_fault</b>
+Breakpoint 7 at <font color="#3465A4">0xffffffff8129db20</font>: file <font color="#4E9A06">mm/memory.c</font>, line 6044.
+(gdb) <b>c</b>
+Continuing.
+[New Thread 72]
+[Switching to Thread 72]
+
+Thread 42 hit Breakpoint 7, <font color="#C4A000">handle_mm_fault</font> (<font color="#06989A">vma=vma@entry</font>=0xffff888003919da8, <font color="#06989A">address=address@entry</font>=140555195568232, <font color="#06989A">flags=flags@entry</font>=533, <font color="#06989A">regs=regs@entry</font>=0xffffc9000015bda8) at <font color="#4E9A06">mm/memory.c</font>:6044
+6044	<font color="#CC0000">{</font>
+(gdb) <b>lx-ps</b>
+      TASK          PID    COMM
+...
+0xffff888003898e80  71   fork-test
+0xffff888003898000  72   fork-test
+</pre>
+
+We seems to have entered the child! Does the function `handle_mm_fault` look familiar? This was the function that was spamming our ftrace earlier when we didn't filter on `__do_sys_fork`. Now, this is another case where I'm going to magically pull out a function name: `wp_page_copy`. You should eventually find this if you follow the code path, getting past the page table allocation in `__handle_mm_fault`, then `handle_pte_fault`, getting past the swap and NUMA stuff, into `do_wp_page` and eventually find `wp_page_copy` at the bottom.
+
+<pre>(gdb) <b>b wp_page_copy</b>
+Breakpoint 8 at <font color="#3465A4">0xffffffff81295add</font>: file <font color="#4E9A06">mm/memory.c</font>, line 3333.
+(gdb) info break
+Num     Type           Disp Enb Address            What
+7       breakpoint     keep y   <font color="#3465A4">0xffffffff8129db20</font> in <font color="#C4A000">handle_mm_fault</font> at <font color="#4E9A06">mm/memory.c</font>:6044
+	breakpoint already hit 1 time
+8       breakpoint     keep y   <font color="#3465A4">0xffffffff81295add</font> in <font color="#C4A000">wp_page_copy</font> at <font color="#4E9A06">mm/memory.c</font>:3333
+(gdb) <b>c</b>
+Continuing.
+
+Thread 42 hit Breakpoint 8, <font color="#C4A000">wp_page_copy</font> (<font color="#06989A">vmf</font>=0xffffc9000015bc40) at <font color="#4E9A06">mm/memory.c</font>:3333
+3333		<font color="#3465A4"><b>const</b></font> <font color="#4E9A06">bool</font> unshare <font color="#CC0000">=</font> vmf<font color="#CC0000">-&gt;</font>flags <font color="#CC0000">&amp;</font> FAULT_FLAG_UNSHARE<font color="#CC0000">;</font>
+(gdb) <b>bt</b>
+#0  <font color="#C4A000">wp_page_copy</font> (<font color="#06989A">vmf</font>=0xffffc9000015bc40) at <font color="#4E9A06">mm/memory.c</font>:3333
+#1  <font color="#C4A000">do_wp_page</font> (<font color="#06989A">vmf=vmf@entry</font>=0xffffc9000015bc40) at <font color="#4E9A06">mm/memory.c</font>:3745
+#2  <font color="#3465A4">0xffffffff8129cf4f</font> in <font color="#C4A000">handle_pte_fault</font> (<font color="#06989A">vmf</font>=0xffffc9000015bc40) at <font color="#4E9A06">mm/memory.c</font>:5782
+#3  <font color="#C4A000">__handle_mm_fault</font> (<font color="#06989A">vma=vma@entry</font>=0xffff888003919da8, <font color="#06989A">address=address@entry</font>=140555195568232, <font color="#06989A">flags=flags@entry</font>=533) at <font color="#4E9A06">mm/memory.c</font>:5909
+</pre>
+
+TODO
+
+However, for our checkpoint purpose, we don't actually want to make a copy of the page table &ndash; we want to just make the current process's pages write-protected, and when we get a page fault, do our custom logic.
 
 ... TODO ...
 

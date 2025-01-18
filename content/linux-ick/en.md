@@ -648,17 +648,18 @@ Although because the kernel itself also uses GS for per-CPU data, it does a [`sw
 
 ### Save and restore memory
 
-Ok. now finally the exciting part! This part is going to be a bit more difficult if you aren't familiar with how &lsquo;memory paging&rsquo; or page faults work. There are two videos which I find quite informative:
+Ok. now finally the exciting part! This part is going to be a bit more difficult if you aren't familiar with how &lsquo;memory paging&rsquo; or page faults work. There are two videos which I found quite informative:
 
 - [CS 134 OS—5.7 Paging on x86](https://www.youtube.com/watch?v=dn55T2q63RU&t=11s) covers the page table structure itself. Note that in this video, the lecturer is talking about how this is on 32 bit, hence only 2 levels of indirections. On x86_64, there are 4 levels of paging, but the fundamental idea is the same.
-- [CS 134 OS—7 Paging HW: Copy-On-Write Fork](https://www.youtube.com/watch?v=ViUwLytKzTY) is especially useful for our purpose. It shows how an OS can use write protected pages to implement _copy-on-write_ memory (used when forking a process).
+- [CS 134 OS—7 Paging HW: Copy-On-Write Fork](https://www.youtube.com/watch?v=ViUwLytKzTY) is especially useful for our purpose. It discusses how an OS can use write protected pages to implement _copy-on-write_ memory (used when forking a process).
 
 However, don't be alarmed by this &ndash; understanding how page tables work helps, but we won't need to do any manual manipulation to these tables! Let's start by looking at how Linux manages a process's memory.
 
 There are multiple ways we could go about this &ndash; one thing we can do is to follow what happens on a `fork`, and try to replicate that (but only the memory part). We can again use the [fork-test.c](fork-test.c) program for this.
 
 Starting with a simple `trace-cmd record`, it gives us a bunch of garbage, probably because it's recording the executable initialization as well:
-```
+
+<pre>
 root@f8b9ed144f52:/# trace-cmd record -p function_graph --max-graph-depth 4 -F -c ./fork-test
   plugin 'function_graph'
 I am the parent. Fork took 222414 ns to return
@@ -667,7 +668,7 @@ CPU0 data recorded at offset=0xbc000
     54349 bytes in size (294912 uncompressed)
 root@f8b9ed144f52:/# trace-cmd report > a.log
 root@f8b9ed144f52:/# less a.log
-fork-test-92    [000]   153.874423: funcgraph_entry:        1.623 us   |  mutex_unlock();
+       fork-test-92    [000]   153.874423: funcgraph_entry:        1.623 us   |  mutex_unlock();
        fork-test-92    [000]   153.874425: funcgraph_entry:                   |  __f_unlock_pos() {
        fork-test-92    [000]   153.874425: funcgraph_entry:        0.311 us   |    mutex_unlock();
        fork-test-92    [000]   153.874426: funcgraph_exit:         0.961 us   |  }
@@ -679,9 +680,9 @@ fork-test-92    [000]   153.874423: funcgraph_entry:        1.623 us   |  mutex_
        fork-test-92    [000]   153.874432: funcgraph_exit:         1.212 us   |      }
        fork-test-92    [000]   153.874432: funcgraph_entry:                   |      do_execveat_common.isra.0() {
        fork-test-92    [000]   153.874433: funcgraph_entry:                   |        alloc_bprm() {
-          <idle>-0     [000]   153.874798: funcgraph_entry:        0.452 us   |  _raw_spin_lock_irqsave();
-          <idle>-0     [000]   153.874798: funcgraph_entry:        0.100 us   |  _raw_spin_unlock_irqrestore();
-          <idle>-0     [000]   153.874799: funcgraph_entry:        0.141 us   |  switch_mm_irqs_off();
+<span class="irrelevant">          &lt;idle&gt;-0     [000]   153.874798: funcgraph_entry:        0.452 us   |  _raw_spin_lock_irqsave();
+          &lt;idle&gt;-0     [000]   153.874798: funcgraph_entry:        0.100 us   |  _raw_spin_unlock_irqrestore();
+          &lt;idle&gt;-0     [000]   153.874799: funcgraph_entry:        0.141 us   |  switch_mm_irqs_off();</span>
        ...             ...     ...         ...                     ...           ...
        fork-test-92    [000]   153.878550: funcgraph_entry:                   |  handle_mm_fault() {
        fork-test-92    [000]   153.878550: funcgraph_entry:                   |    __handle_mm_fault() {
@@ -695,14 +696,15 @@ fork-test-92    [000]   153.874423: funcgraph_entry:        1.623 us   |  mutex_
        fork-test-92    [000]   153.878552: funcgraph_entry:        0.431 us   |        next_uptodate_folio();
        fork-test-92    [000]   153.878552: funcgraph_entry:        0.230 us   |        __pte_offset_map_lock();
 ...
-```
+</pre>
 
 Thankfully, there is a useful flag for us for exactly this situation:
 
 ```
 -g function-name
-    This option is for the function_graph plugin. It will graph the given function. That is, it will only trace the function and all functions that it calls. You can have more than one -g on the command
-    line.
+    This option is for the function_graph plugin. It will graph the given
+    function. That is, it will only trace the function and all functions that it
+    calls. You can have more than one -g on the command line.
 ```
 
 You can search through the list of available functions by looking at `available_filter_functions` under tracefs:
@@ -747,9 +749,32 @@ cpus=1
        fork-test-107   [000]   766.823890: funcgraph_entry:        0.151 us   |        clear_posix_cputimers_work();
 ```
 
-Hey, isn't this much nicer! Now, one of the function here looks quite interesting: [`copy_mm`](https://github.com/micromaomao/linux-dev/blob/ick/kernel/fork.c#L1720). There is a lot of stuff going on underneath that function, but if you just ignore anything that's about folios (which is some abstraction to group pages together), &lsquo;shared&rsquo; pages (which aren't CoW'd on fork), huge pages, etc., you will find that for a normal, anonymous mapping, it eventually ends up in [`__copy_present_ptes`](https://github.com/micromaomao/linux-dev/blob/ick/mm/memory.c#L951), which contains this bit that should seem very interesting for what we're trying to do here:
+Hey, isn't this much nicer! Now, one of the function here looks quite interesting: [`copy_mm`](https://github.com/micromaomao/linux-dev/blob/ick/kernel/fork.c#L1720). There is a lot of stuff going on underneath that function, but if you follow the function calls, you will eventually find this bit in [`dup_mmap`](https://github.com/micromaomao/linux-dev/blob/ick/kernel/fork.c#L634):
 
-<!-- ```c
+<!--
+Original source code:
+```c
+    for_each_vma(vmi, mpnt) {
+        ...
+        if (!(tmp->vm_flags & VM_WIPEONFORK))
+            retval = copy_page_range(tmp, mpnt);
+```
+Syntax highlighting baked in to make part of it less opaque, to highlight the important bits.
+-->
+<pre>
+<code class="language-c"><span style="opacity: 0.4;">    for_each_vma(vmi, mpnt) {
+        ...</span>
+        <span class="hljs-keyword">if</span> (!(tmp-&gt;vm_flags &amp; VM_WIPEONFORK))
+            retval = copy_page_range(tmp, mpnt);</code>
+</pre>
+
+This is executed under a `for_each_vma`. VMA here means &lsquo;Virtual Memory Area&rsquo;, and it represents a memory mapping, which can be either a file, other exotic stuff like devices, or anonymous (i.e. &lsquo;normal&rsquo; RAM), which is what we care the most about.
+
+From [`copy_page_range`](https://github.com/micromaomao/linux-dev/blob/ick/mm/memory.c#L1358), after descending through the `copy_p?d_range` (which we can guess is dealing with lower and lower page tables), it eventually ends up in [`__copy_present_ptes`](https://github.com/micromaomao/linux-dev/blob/ick/mm/memory.c#L951), which contains this bit that should seem very interesting for what we're trying to do here:
+
+<!--
+Original source code:
+```c
 static __always_inline void __copy_present_ptes(struct vm_area_struct *dst_vma,
 		struct vm_area_struct *src_vma, pte_t *dst_pte, pte_t *src_pte,
 		pte_t pte, unsigned long addr, int nr)
@@ -763,7 +788,8 @@ static __always_inline void __copy_present_ptes(struct vm_area_struct *dst_vma,
 	}
 
 	/* If it's a shared mapping, mark it clean in the child. */
-``` -->
+```
+-->
 <pre><code class="language-c"><span style="opacity: 0.4;"><span class="hljs-type">static</span> __always_inline <span class="hljs-type">void</span> __copy_present_ptes(<span class="hljs-keyword">struct</span> vm_area_struct *dst_vma,
         <span class="hljs-keyword">struct</span> vm_area_struct *src_vma, <span class="hljs-type">pte_t</span> *dst_pte, <span class="hljs-type">pte_t</span> *src_pte,
         <span class="hljs-type">pte_t</span> pte, <span class="hljs-type">unsigned</span> <span class="hljs-type">long</span> addr, <span class="hljs-type">int</span> nr)
@@ -779,7 +805,9 @@ static __always_inline void __copy_present_ptes(struct vm_area_struct *dst_vma,
     <span class="hljs-comment">/* If it's a shared mapping, mark it clean in the child. */</span></span>
 </code></pre>
 
-Hmm, ok. This seems to just be setting the page table entries (ptes) to be read-only (write-protect) if this page is supposed to CoW. If you drill down into either [`wrprotect_ptes`](https://github.com/micromaomao/linux-dev/blob/ick/include/linux/pgtable.h#L851) or [`pte_wrprotect`](https://github.com/micromaomao/linux-dev/blob/ick/arch/x86/include/asm/pgtable.h#L440), none of those functions does anything fancy. Once this is done, later on if we get a write page fault, how does the kernel know this page is supposed to be CoW'd (rather than treating that fault as an error)?
+Hmm, ok. This seems to just be setting the page table entries (PTEs) to be read-only (write-protect) if this page is supposed to CoW. If you drill down into either [`wrprotect_ptes`](https://github.com/micromaomao/linux-dev/blob/ick/include/linux/pgtable.h#L851) or [`pte_wrprotect`](https://github.com/micromaomao/linux-dev/blob/ick/arch/x86/include/asm/pgtable.h#L440), none of those functions does anything fancy aside from just manipulating or setting the PTE flags. Note that [`__copy_present_ptes`](https://github.com/micromaomao/linux-dev/blob/ick/mm/memory.c#L951) does 2 things at once &ndash; copy the PTEs to the child process's page table, and setting them as read-only in both the parent and the child if it is Copy-on-Write (CoW).
+
+Ok, that's great, but later on if we get a write page fault, how does the kernel know this page is supposed to be CoW'd (rather than, say, treating that fault as an error)?
 
 If you want to have some fun, you can try breaking into the kernel debugger at a fork like this:
 
@@ -810,7 +838,7 @@ Continuing.
 <pre>
 <span class="comment">Now, in the VM terminal:</span>
 root@f8b9ed144f52:/# <b>exec ./fork-test</b> <span class="code-comment"># Use exec so that we don't break on the shell's fork</span><footnote>
-Technically the shell would probably use <a href="https://man7.org/linux/man-pages/man2/vfork.2.html"><code>vfork</code></a>, so it might not matter anyway
+Technically the shell (and libc in general) would probably use either <a href="https://man7.org/linux/man-pages/man2/clone.2.html"><code>clone</code></a>, or in some cases <a href="https://man7.org/linux/man-pages/man2/vfork.2.html"><code>vfork</code></a>, so it might not matter anyway
 </footnote>
 </pre>
 <pre>
@@ -861,9 +889,11 @@ Thread 41 hit Breakpoint 2.1, <font color="#C4A000">__copy_present_ptes</font> (
 
 The `copy_???_range` functions here are just descending down the page table levels (p4d = level 4, pud = page &lsquo;upper&rsquo; directory aka. level 3, pmd = page &lsquo;middle&rsquo; directory aka. level 2, pte = page table entry)
 
-Anyway, our `fork-test.c` program obviously uses a stack, and so we expect that once `fork` returns it will immediately triggers a page fault due to trying to push new stuff onto the stack. Maybe looking at this could answer our earlier questions about how the kernel knows to CoW a page?
+Anyway, our [fork-test.c](./fork-test.c) program obviously uses a stack, and so we expect that once `fork` returns it will immediately triggers a page fault due to trying to push new stuff onto the stack. Maybe looking at this could answer our earlier questions about how the kernel knows to CoW a page?
 
-<pre>(gdb) <b>info break</b>
+<pre>
+<span class="comment">Let's first get rid of our existing breakpoints:</span>
+(gdb) <b>info break</b>
 Num     Type           Disp Enb Address            What
 1       breakpoint     keep y   <font color="#3465A4">0xffffffff810836c0</font> in <font color="#C4A000">__do_sys_fork</font> at <font color="#4E9A06">kernel/fork.c</font>:2888
 	breakpoint already hit 1 time
@@ -874,15 +904,17 @@ Num     Type           Disp Enb Address            What
 (gdb) <b>del 1 2</b>
 (gdb) <b>info break</b>
 No breakpoints, watchpoints, tracepoints, or catchpoints.
+<span class="comment">Now, break on this quite appropriately named function:</span>
 (gdb) <b>b handle_mm_fault</b>
 Breakpoint 7 at <font color="#3465A4">0xffffffff8129db20</font>: file <font color="#4E9A06">mm/memory.c</font>, line 6044.
 (gdb) <b>c</b>
 Continuing.
 [New Thread 72]
-[Switching to Thread 72]
+[Switching to Thread 72] <span class="comment">&lt;-- this is the right &lsquo;Thread&rsquo; we want. The &ldquo;Thread 42&rdquo; is gdb being weird</span>
 
 Thread 42 hit Breakpoint 7, <font color="#C4A000">handle_mm_fault</font> (<font color="#06989A">vma=vma@entry</font>=0xffff888003919da8, <font color="#06989A">address=address@entry</font>=140555195568232, <font color="#06989A">flags=flags@entry</font>=533, <font color="#06989A">regs=regs@entry</font>=0xffffc9000015bda8) at <font color="#4E9A06">mm/memory.c</font>:6044
 6044	<font color="#CC0000">{</font>
+<span class="comment">&lsquo;lx-ps&rsquo; is part of the kgdb util scripts that kgdb.sh will automatically load. There are other useful &lsquo;lx-...&rsquo; commands too.</span>
 (gdb) <b>lx-ps</b>
       TASK          PID    COMM
 ...
@@ -890,7 +922,7 @@ Thread 42 hit Breakpoint 7, <font color="#C4A000">handle_mm_fault</font> (<font 
 0xffff888003898000  72   fork-test
 </pre>
 
-We seems to have entered the child! Does the function `handle_mm_fault` look familiar? This was the function that was spamming our ftrace earlier when we didn't filter on `__do_sys_fork`. Now, this is another case where I'm going to magically pull out a function name: `wp_page_copy`. You should eventually find this if you follow the code path, getting past the page table allocation in `__handle_mm_fault`, then `handle_pte_fault`, getting past the swap and NUMA stuff, into `do_wp_page` and eventually find `wp_page_copy` at the bottom.
+We seems to have entered the child! Does the function `handle_mm_fault` look familiar? This was the function that was spamming our ftrace earlier when we didn't filter on `__do_sys_fork`. Now, I'm again going to randomly pull out a function name: `wp_page_copy`. You should eventually find this if you follow the code path, getting past the page table allocation in `__handle_mm_fault`, then `handle_pte_fault`, getting past the swap (for now) and NUMA stuff, into [`do_wp_page`](https://github.com/micromaomao/linux-dev/blob/ick/mm/memory.c#L3657) and eventually find [`wp_page_copy`](https://github.com/micromaomao/linux-dev/blob/ick/mm/memory.c#L3333) at the bottom.
 
 <pre>(gdb) <b>b wp_page_copy</b>
 Breakpoint 8 at <font color="#3465A4">0xffffffff81295add</font>: file <font color="#4E9A06">mm/memory.c</font>, line 3333.
@@ -911,7 +943,7 @@ Thread 42 hit Breakpoint 8, <font color="#C4A000">wp_page_copy</font> (<font col
 #3  <font color="#C4A000">__handle_mm_fault</font> (<font color="#06989A">vma=vma@entry</font>=0xffff888003919da8, <font color="#06989A">address=address@entry</font>=140555195568232, <font color="#06989A">flags=flags@entry</font>=533) at <font color="#4E9A06">mm/memory.c</font>:5909
 </pre>
 
-TODO
+We're quite close to finding out
 
 However, for our checkpoint purpose, we don't actually want to make a copy of the page table &ndash; we want to just make the current process's pages write-protected, and when we get a page fault, do our custom logic.
 
@@ -955,6 +987,8 @@ static pgprot_t protection_map[16] __ro_after_init = {
 #define PAGE_READONLY_EXEC   __pg(__PP|   0|_USR|___A|   0|   0|   0|   0)
 ```
 
+`do_swap_page` also calls `do_wp_page`. Not sure about huge pages so will disable that.
+
 #### Printing page faults
 
 ### Blocking off other syscalls
@@ -963,6 +997,8 @@ static pgprot_t protection_map[16] __ro_after_init = {
 
 When I was a lot younger, there was this book which attempted to help the reader understand Linux by listing a bunch of source codes and make commentaries on it. It started from bootup. I couldn't even get through a chapter.
 I think for me, I needed to play with stuff to understand. Try to implement something (like in this case a checkpoint feature), play with kgdb, etc.
+
+Also learned about stuff incrementally by reading code, which would otherwise be overwhelming if I tried to read up on them at once - like folio etc
 
 ## Addendum: Hacking it with ptrace
 

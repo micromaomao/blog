@@ -807,8 +807,6 @@ static __always_inline void __copy_present_ptes(struct vm_area_struct *dst_vma,
 
 Hmm, ok. This seems to just be setting the page table entries (PTEs) to be read-only (write-protect) if this page is supposed to CoW. If you drill down into either [`wrprotect_ptes`](https://github.com/micromaomao/linux-dev/blob/ick/include/linux/pgtable.h#L851) or [`pte_wrprotect`](https://github.com/micromaomao/linux-dev/blob/ick/arch/x86/include/asm/pgtable.h#L440), none of those functions does anything fancy aside from just manipulating or setting the PTE flags. Note that [`__copy_present_ptes`](https://github.com/micromaomao/linux-dev/blob/ick/mm/memory.c#L951) does 2 things at once &ndash; copy the PTEs to the child process's page table, and setting them as read-only in both the parent and the child if it is Copy-on-Write (CoW).
 
-Ok, that's great, but later on if we get a write page fault, how does the kernel know this page is supposed to be CoW'd (rather than, say, treating that fault as an error)?
-
 If you want to have some fun, you can try breaking into the kernel debugger at a fork like this:
 
 <pre>
@@ -887,7 +885,9 @@ Thread 41 hit Breakpoint 2.1, <font color="#C4A000">__copy_present_ptes</font> (
 #12 <font color="#3465A4">0xffffffff81083705</font> in <font color="#C4A000">__do_sys_fork</font> (<font color="#06989A">__unused</font>=&lt;optimized out&gt;) at <font color="#4E9A06">kernel/fork.c</font>:2894
 </pre>
 
-The `copy_???_range` functions here are just descending down the page table levels (p4d = level 4, pud = page &lsquo;upper&rsquo; directory aka. level 3, pmd = page &lsquo;middle&rsquo; directory aka. level 2, pte = page table entry)
+The `copy_p?d_range` functions here are indeed just descending down the page table levels (p4d = level 4, pud = page &lsquo;upper&rsquo; directory aka. level 3, pmd = page &lsquo;middle&rsquo; directory aka. level 2, pte = page table entry)
+
+Ok, that's great, but later on if we get a write page fault, how does the kernel know this page is supposed to be CoW'd (rather than, say, treating that fault as an error)?
 
 Anyway, our [fork-test.c](./fork-test.c) program obviously uses a stack, and so we expect that once `fork` returns it will immediately triggers a page fault due to trying to push new stuff onto the stack. Maybe looking at this could answer our earlier questions about how the kernel knows to CoW a page?
 
@@ -907,14 +907,17 @@ No breakpoints, watchpoints, tracepoints, or catchpoints.
 <span class="comment">Now, break on this quite appropriately named function:</span>
 (gdb) <b>b handle_mm_fault</b>
 Breakpoint 7 at <font color="#3465A4">0xffffffff8129db20</font>: file <font color="#4E9A06">mm/memory.c</font>, line 6044.
+<span class="comment">And let it continue. This will return from fork, and we should see our child executing.</span>
 (gdb) <b>c</b>
 Continuing.
-[New Thread 72]
-[Switching to Thread 72] <span class="comment">&lt;-- this is the right &lsquo;Thread&rsquo; we want. The &ldquo;Thread 42&rdquo; is gdb being weird</span>
+[New Thread 72] <span class="comment">&lt;-- this &lsquo;Thread 72&rsquo; is the right &lsquo;Thread&rsquo; we want. The &ldquo;Thread 42&rdquo; printed later
+                    on the breakpoint hit is gdb being weird</span>
+[Switching to Thread 72]
 
 Thread 42 hit Breakpoint 7, <font color="#C4A000">handle_mm_fault</font> (<font color="#06989A">vma=vma@entry</font>=0xffff888003919da8, <font color="#06989A">address=address@entry</font>=140555195568232, <font color="#06989A">flags=flags@entry</font>=533, <font color="#06989A">regs=regs@entry</font>=0xffffc9000015bda8) at <font color="#4E9A06">mm/memory.c</font>:6044
 6044	<font color="#CC0000">{</font>
-<span class="comment">&lsquo;lx-ps&rsquo; is part of the kgdb util scripts that kgdb.sh will automatically load. There are other useful &lsquo;lx-...&rsquo; commands too.</span>
+<span class="comment">&lsquo;lx-ps&rsquo; is part of the kgdb util scripts that kgdb.sh will automatically load. There are other
+useful &lsquo;lx-...&rsquo; commands too.</span>
 (gdb) <b>lx-ps</b>
       TASK          PID    COMM
 ...
@@ -922,7 +925,7 @@ Thread 42 hit Breakpoint 7, <font color="#C4A000">handle_mm_fault</font> (<font 
 0xffff888003898000  72   fork-test
 </pre>
 
-We seems to have entered the child! Does the function `handle_mm_fault` look familiar? This was the function that was spamming our ftrace earlier when we didn't filter on `__do_sys_fork`. Now, I'm again going to randomly pull out a function name: `wp_page_copy`. You should eventually find this if you follow the code path, getting past the page table allocation in `__handle_mm_fault`, then `handle_pte_fault`, getting past the swap (for now) and NUMA stuff, into [`do_wp_page`](https://github.com/micromaomao/linux-dev/blob/ick/mm/memory.c#L3657) and eventually find [`wp_page_copy`](https://github.com/micromaomao/linux-dev/blob/ick/mm/memory.c#L3333) at the bottom.
+We seems to have entered the child! We chose to break on `handle_mm_fault` &ndash; does it look familiar? This was the function that was spamming our ftrace earlier when we didn't filter on `__do_sys_fork`. Now, I'm again going to randomly pull out a function name: `wp_page_copy`. You should eventually find this if you follow the code path, getting past the page table allocation in `__handle_mm_fault`, then `handle_pte_fault`, getting past the swap (for now) and NUMA stuff, into [`do_wp_page`](https://github.com/micromaomao/linux-dev/blob/ick/mm/memory.c#L3657) and eventually find [`wp_page_copy`](https://github.com/micromaomao/linux-dev/blob/ick/mm/memory.c#L3333) at the bottom.
 
 <pre>(gdb) <b>b wp_page_copy</b>
 Breakpoint 8 at <font color="#3465A4">0xffffffff81295add</font>: file <font color="#4E9A06">mm/memory.c</font>, line 3333.

@@ -657,9 +657,11 @@ However, don't be alarmed by this &ndash; understanding how page tables work hel
 
 There are multiple ways we could go about this &ndash; one thing we can do is to follow what happens on a `fork`, and try to replicate that (but only the memory part). We can again use the [fork-test.c](fork-test.c) program for this.
 
+#### What does `fork` do?
+
 Starting with a simple `trace-cmd record`, it gives us a bunch of garbage, probably because it's recording the executable initialization as well:
 
-<pre>
+<pre id="what-does-fork-do-pre">
 root@f8b9ed144f52:/# trace-cmd record -p function_graph --max-graph-depth 4 -F -c ./fork-test
   plugin 'function_graph'
 I am the parent. Fork took 222414 ns to return
@@ -858,7 +860,7 @@ Thread 41 hit Breakpoint 1, <font color="#C4A000">__do_sys_fork</font> (<font co
 (gdb)
 </pre>
 
-Maybe let's just break on that `__copy_present_ptes` function and see how it's called:
+Maybe let's just break on that `__copy_present_ptes` function mentioned earlier and see how it's called:
 
 <pre>
 (gdb) <b>b __copy_present_ptes</b>
@@ -889,41 +891,225 @@ The `copy_p?d_range` functions here are indeed just descending down the page tab
 
 Ok, that's great, but later on if we get a write page fault, how does the kernel know this page is supposed to be CoW'd (rather than, say, treating that fault as an error)?
 
-Anyway, our [fork-test.c](./fork-test.c) program obviously uses a stack, and so we expect that once `fork` returns it will immediately triggers a page fault due to trying to push new stuff onto the stack. Maybe looking at this could answer our earlier questions about how the kernel knows to CoW a page?
+#### How does the kernel know what to do with write faults?
+
+Because our [fork-test.c](./fork-test.c) program (and really all the programs in general) uses a stack, we can expect that once `fork` returns it will immediately triggers a page fault due to trying to push new stuff onto the stack. Maybe looking at what happens then could answer our questions about how the kernel knows when to CoW a page? Let's continue to trace our program, after the fork:
 
 <pre>
-<span class="comment">Let's first get rid of our existing breakpoints:</span>
-(gdb) <b>info break</b>
-Num     Type           Disp Enb Address            What
-1       breakpoint     keep y   <font color="#3465A4">0xffffffff810836c0</font> in <font color="#C4A000">__do_sys_fork</font> at <font color="#4E9A06">kernel/fork.c</font>:2888
-	breakpoint already hit 1 time
-2       breakpoint     keep y   &lt;MULTIPLE&gt;
-	breakpoint already hit 1 time
-2.1                         y   <font color="#3465A4">0xffffffff8129b0d8</font> in <font color="#C4A000">__copy_present_ptes</font> at <font color="#4E9A06">mm/memory.c</font>:956
-2.2                         y   <font color="#3465A4">0xffffffff8129ba81</font> in <font color="#C4A000">__copy_present_ptes</font> at <font color="#4E9A06">mm/memory.c</font>:956
-(gdb) <b>del 1 2</b>
-(gdb) <b>info break</b>
-No breakpoints, watchpoints, tracepoints, or catchpoints.
-<span class="comment">Now, break on this quite appropriately named function:</span>
-(gdb) <b>b handle_mm_fault</b>
-Breakpoint 7 at <font color="#3465A4">0xffffffff8129db20</font>: file <font color="#4E9A06">mm/memory.c</font>, line 6044.
-<span class="comment">And let it continue. This will return from fork, and we should see our child executing.</span>
+root@9ba6f25d9dac:/# trace-cmd record -p function_graph --max-graph-depth 4 -F -c -e sys_exit_fork ./fork-test
+<span class="irrelevant">  plugin 'function_graph'
+I am the parent. Fork took 226508 ns to return
+I am the child. It took 1146400 ns to fork
+CPU0 data recorded at offset=0xa9000
+    57232 bytes in size (307200 uncompressed)</span>
+root@9ba6f25d9dac:/# trace-cmd report > a.log
+root@9ba6f25d9dac:/# grep -A 20 'sys_exit_fork' a.log <span class="code-comment"># find the point where we return from fork</span>
+       fork-test-73    [000]    51.507748: <span class="red-highlight">sys_exit_fork</span>:        0x4a
+<span class="irrelevant">       fork-test-73    [000]    51.507749: funcgraph_exit:         0.702 us   |  }
+       fork-test-73    [000]    51.507749: funcgraph_entry:        0.120 us   |  fpregs_assert_state_consistent();
+       fork-test-73    [000]    51.507749: funcgraph_entry:                   |  lock_vma_under_rcu() {
+       fork-test-73    [000]    51.507750: funcgraph_entry:        0.111 us   |    __rcu_read_lock();
+       fork-test-73    [000]    51.507750: funcgraph_entry:        0.110 us   |    down_read_trylock();
+       fork-test-73    [000]    51.507750: funcgraph_entry:        0.100 us   |    __rcu_read_unlock();
+       fork-test-73    [000]    51.507750: funcgraph_exit:         0.811 us   |  }</span>
+       fork-test-73    [000]    51.507750: funcgraph_entry:                   |  <span class="highlight">handle_mm_fault</span>() {
+       fork-test-73    [000]    51.507750: funcgraph_entry:                   |    __handle_mm_fault() {
+       fork-test-73    [000]    51.507751: funcgraph_entry:                   |      pte_offset_map_nolock() {
+       fork-test-73    [000]    51.507751: funcgraph_entry:        0.140 us   |        __pte_offset_map();
+       fork-test-73    [000]    51.507751: funcgraph_exit:         0.361 us   |      }
+       fork-test-73    [000]    51.507751: funcgraph_entry:        0.120 us   |      _raw_spin_lock();
+       fork-test-73    [000]    51.507751: funcgraph_entry:                   |      do_wp_page() {
+       fork-test-73    [000]    51.507751: funcgraph_entry:        0.100 us   |        vm_normal_page();
+       fork-test-73    [000]    51.507752: funcgraph_entry:        0.101 us   |        _raw_spin_unlock();
+       fork-test-73    [000]    51.507752: funcgraph_entry:        0.100 us   |        __rcu_read_unlock();
+       fork-test-73    [000]    51.507752: funcgraph_entry:        0.100 us   |        __vmf_anon_prepare();
+       fork-test-73    [000]    51.507752: funcgraph_entry:        0.291 us   |        __folio_alloc_noprof();
+       fork-test-73    [000]    51.507753: funcgraph_entry:        0.371 us   |        copy_mc_to_kernel();
+--
+<span class="irrelevant">       fork-test-74    [000]    51.507790: <span class="red-highlight">sys_exit_fork</span>:        0x0
+       fork-test-74    [000]    51.507790: funcgraph_exit:         0.251 us   |    }
+       fork-test-74    [000]    51.507790: funcgraph_entry:                   |    __rseq_handle_notify_resume() {
+       fork-test-74    [000]    51.507791: funcgraph_entry:                   |      lock_mm_and_find_vma() {
+       fork-test-74    [000]    51.507791: funcgraph_entry:        0.111 us   |        down_read_trylock();
+       fork-test-74    [000]    51.507791: funcgraph_entry:        0.381 us   |        find_vma();
+       fork-test-74    [000]    51.507791: funcgraph_exit:         0.811 us   |      }</span>
+       fork-test-74    [000]    51.507791: funcgraph_entry:                   |      <span class="highlight">handle_mm_fault</span>() {
+       fork-test-74    [000]    51.507792: funcgraph_entry:        1.713 us   |        __handle_mm_fault();
+       fork-test-74    [000]    51.507793: funcgraph_exit:         1.924 us   |      }
+       fork-test-74    [000]    51.507793: funcgraph_entry:        0.100 us   |      up_read();
+       fork-test-74    [000]    51.507794: funcgraph_exit:         3.647 us   |    }
+       fork-test-74    [000]    51.507794: funcgraph_entry:        0.110 us   |    fpregs_assert_state_consistent();
+       fork-test-74    [000]    51.507794: funcgraph_entry:                   |    switch_fpu_return() {
+       fork-test-74    [000]    51.507794: funcgraph_entry:                   |      restore_fpregs_from_fpstate() {
+       fork-test-74    [000]    51.507794: funcgraph_entry:        0.110 us   |        xfd_validate_state();
+       fork-test-74    [000]    51.507795: funcgraph_exit:         0.410 us   |      }
+       fork-test-74    [000]    51.507795: funcgraph_exit:         0.641 us   |    }
+       fork-test-74    [000]    51.507795: funcgraph_exit:         6.993 us   |  }
+       fork-test-74    [000]    51.507795: funcgraph_entry:                   |  lock_vma_under_rcu() {
+       fork-test-74    [000]    51.507795: funcgraph_entry:        0.111 us   |    __rcu_read_lock();
+</pre>
+
+Remember [earlier](#what-does-fork-do-pre) when we did the ftrace on our little fork program without filtering, there was a bunch of [`handle_mm_fault`](https://github.com/micromaomao/linux-dev/blob/5996393469d99560b7845d22c9eff00661de0724/mm/memory.c#L6042)? (I've omitted many repeats of it in that trace dump)
+
+Now we see this again, and we can reasonably guess that it is the entry point to page faults (well, for user space). In fact, if you look at its signature, it looks like by the time we get there, we've already got the [`struct vm_area_struct`](https://github.com/micromaomao/linux-dev/blob/5996393469d99560b7845d22c9eff00661de0724/include/linux/mm_types.h#L697):
+
+```c
+/*
+ * By the time we get here, we already hold the mm semaphore
+ *
+ * The mmap_lock may have been released depending on flags and our
+ * return value.  See filemap_fault() and __folio_lock_or_retry().
+ */
+vm_fault_t handle_mm_fault(struct vm_area_struct *vma, unsigned long address,
+               unsigned int flags, struct pt_regs *regs)
+```
+
+Let's try running it again, but this time after the `fork`, we will break on it. We will first use GDB to find out the process's memory map, for our reference:
+
+<pre>
+<span class="comment">In our VM:</span>
+root@9ba6f25d9dac:/# gdb ./fork-test
+<font color="#75507B"><b>GNU gdb (Debian 13.1-3) 13.1</b></font>
+<span class="irrelevant">...</span>
+Reading symbols from <font color="#4E9A06">./fork-test</font>...
+(No debugging symbols found in <font color="#4E9A06">./fork-test</font>)
+(gdb) <b>info proc mappings</b><footnote><a href="https://stackoverflow.com/a/5691536/4013790" target="_blank">stack overflow</a></footnote>
+No current process: you must name one.
+<span class="comment">oops, let's try again after the program gets to right before the fork</span>
+(gdb) <b>catch syscall fork</b>
+Catchpoint 1 (syscall &apos;fork&apos; [57])
+(gdb) <b>r</b>
+Starting program: <font color="#4E9A06">/fork-test</font>
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library &quot;<font color="#4E9A06">/lib/x86_64-linux-gnu/libthread_db.so.1</font>&quot;.
+
+Catchpoint 1 (call to syscall fork), <font color="#C4A000">syscall</font> () at <font color="#4E9A06">../sysdeps/unix/sysv/linux/x86_64/syscall.S</font>:38
+38	../sysdeps/unix/sysv/linux/x86_64/syscall.S: No such file or directory.
+(gdb) <b>info proc mappings</b>
+process 74
+Mapped address spaces:
+
+          Start Addr           End Addr       Size     Offset  Perms  objfile
+      0x555555554000     0x555555555000     0x1000        0x0  r--p   /fork-test
+      0x555555555000     0x555555556000     0x1000     0x1000  r-xp   /fork-test
+      0x555555556000     0x555555557000     0x1000     0x2000  r--p   /fork-test
+      0x555555557000     0x555555558000     0x1000     0x2000  r--p   /fork-test
+      0x555555558000     0x555555559000     0x1000     0x3000  rw-p   /fork-test
+      0x7ffff7dd9000     0x7ffff7ddc000     0x3000        0x0  rw-p
+      0x7ffff7ddc000     0x7ffff7e02000    0x26000        0x0  r--p   /usr/lib/x86_64-linux-gnu/libc.so.6
+      0x7ffff7e02000     0x7ffff7f57000   0x155000    0x26000  r-xp   /usr/lib/x86_64-linux-gnu/libc.so.6
+      0x7ffff7f57000     0x7ffff7faa000    0x53000   0x17b000  r--p   /usr/lib/x86_64-linux-gnu/libc.so.6
+      0x7ffff7faa000     0x7ffff7fae000     0x4000   0x1ce000  r--p   /usr/lib/x86_64-linux-gnu/libc.so.6
+      0x7ffff7fae000     0x7ffff7fb0000     0x2000   0x1d2000  rw-p   /usr/lib/x86_64-linux-gnu/libc.so.6
+      0x7ffff7fb0000     0x7ffff7fbd000     0xd000        0x0  rw-p
+      0x7ffff7fc3000     0x7ffff7fc5000     0x2000        0x0  rw-p
+      0x7ffff7fc5000     0x7ffff7fc9000     0x4000        0x0  r--p   [vvar]
+      0x7ffff7fc9000     0x7ffff7fcb000     0x2000        0x0  r-xp   [vdso]
+      0x7ffff7fcb000     0x7ffff7fcc000     0x1000        0x0  r--p   /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+      0x7ffff7fcc000     0x7ffff7ff1000    0x25000     0x1000  r-xp   /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+      0x7ffff7ff1000     0x7ffff7ffb000     0xa000    0x26000  r--p   /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+      0x7ffff7ffb000     0x7ffff7ffd000     0x2000    0x30000  r--p   /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+      0x7ffff7ffd000     0x7ffff7fff000     0x2000    0x32000  rw-p   /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+      0x7ffffffde000     0x7ffffffff000    0x21000        0x0  rw-p   [stack]
+  0xffffffffff600000 0xffffffffff601000     0x1000        0x0  --xp   [vsyscall]
+(gdb) <b>shell echo g &gt; /proc/sysrq-trigger</b>
+[   27.650816][   T77] sysrq: DEBUG
+
+Entering kdb (current=0xffff88800389c880, pid 77) on processor 0 due to NonMaskable Interrupt @ 0xffffffff8115f7c8
+[0]kdb&gt;
+</pre>
+<pre><span class="comment">Now, in another terminal</span>
+<font color="#4E9A06">&gt; </font><font color="#3465A4">./.dev/kgdb.sh</font>
+<font color="#75507B"><b>GNU gdb (GDB) 15.2</b></font>
+<span class="irrelevant">...</span>
+<span class="comment">We first want to reach the point where the kernel gets the fork call from the program,
+before actually breaking on handle_mm_fault, otherwise we will just be spammed when the
+program loads</span>
+(gdb) <b>b __do_sys_fork</b>
+Breakpoint 1 at <font color="#3465A4">0xffffffff810833a0</font>: file <font color="#4E9A06">kernel/fork.c</font>, line 2888.
 (gdb) <b>c</b>
 Continuing.
-[New Thread 72] <span class="comment">&lt;-- this &lsquo;Thread 72&rsquo; is the right &lsquo;Thread&rsquo; we want. The &ldquo;Thread 42&rdquo; printed later
-                    on the breakpoint hit is gdb being weird</span>
-[Switching to Thread 72]
+<span class="comment">Go back to the VM terminal and do a &lsquo;c&rsquo;, which will immediately break in kgdb again,
+then go back to kgdb</span>
+[Thread 8 exited]
+[Thread 77 exited]
+[Switching to Thread 74]
 
-Thread 42 hit Breakpoint 7, <font color="#C4A000">handle_mm_fault</font> (<font color="#06989A">vma=vma@entry</font>=0xffff888003919da8, <font color="#06989A">address=address@entry</font>=140555195568232, <font color="#06989A">flags=flags@entry</font>=533, <font color="#06989A">regs=regs@entry</font>=0xffffc9000015bda8) at <font color="#4E9A06">mm/memory.c</font>:6044
+Thread 43<sup><span class="comment">ignore this, confusing gdb numbering</span></sup> hit Breakpoint 1, <font color="#C4A000">__do_sys_fork</font> (<font color="#06989A">__unused</font>=0xffffc90000163f58) at <font color="#4E9A06">kernel/fork.c</font>:2888
+2888	<font color="#CC0000">{</font>
+<span class="comment">Great, but are we sure this is the right fork we're looking for? Let's check the process
+we're currently on</span>
+(gdb) <b>monitor ps</b>
+36 sleeping system daemon (state [ims]) processes suppressed,
+use 'ps A' to see all.
+Task Addr               Pid   Parent [*] cpu State Thread             Command
+<span class="highlight">0xffff88800389ab80       74       71  1    0   R  0xffff88800389b580 *fork-test</span>
+
+0xffff888002b58000        1        0  0    0   S  0xffff888002b58a00  init.sh
+0xffff888003898000       70        1  0    0   S  0xffff888003898a00  bash
+0xffff888003898e80       71       70  0    0   S  0xffff888003899880  gdb
+0xffff888003899d00       73       70  0    0   S  0xffff88800389a700  gdb worker
+0xffff88800389ab80       74       71  1    0   R  0xffff88800389b580 *fork-test
+<span class="comment">Nice, now we can break on handle_mm_fault, which could trigger in either the parent or the child.</span>
+(gdb) <b>b handle_mm_fault</b>
+Breakpoint 2 at <font color="#3465A4">0xffffffff81296e90</font>: file <font color="#4E9A06">mm/memory.c</font>, line 6044.
+(gdb) <b>c</b>
+Continuing.
+[New Thread 78]
+[Switching to Thread 71]
+
+Thread 41 hit Breakpoint 2, <font color="#C4A000">handle_mm_fault</font> (<font color="#06989A">vma=vma@entry</font>=0xffff88800391ee40, <font color="#06989A">address=address@entry</font>=94342972527488, <font color="#06989A">flags=flags@entry</font>=4948, <font color="#06989A">regs=regs@entry</font>=0xffffc90000153f58) at <font color="#4E9A06">mm/memory.c</font>:6044
 6044	<font color="#CC0000">{</font>
-<span class="comment">&lsquo;lx-ps&rsquo; is part of the kgdb util scripts that kgdb.sh will automatically load. There are other
-useful &lsquo;lx-...&rsquo; commands too.</span>
-(gdb) <b>lx-ps</b>
-      TASK          PID    COMM
-...
-0xffff888003898e80  71   fork-test
-0xffff888003898000  72   fork-test
+<span class="comment">Hmm... this doesn't look right. PID 71 is gdb...</span>
+(gdb) monitor ps
+36 sleeping system daemon (state [ims]) processes suppressed,
+use &apos;ps A&apos; to see all.
+Task Addr               Pid   Parent [*] cpu State Thread             Command
+0xffff888003898e80       71       70  1    0   R  0xffff888003899880 *gdb
+<span class="irrelevant">...</span>
+<span class="comment">Oops, that's not what we want. It's likely that our earlier &lsquo;syscall fork&rsquo; catchpoint triggered again.
+Let's restrict our breakpoint to the child, actually.</span>
+<span class="comment">Annoyingly we have to deal with gdb and the kernel using separate &lsquo;numbering system&rsquo; here...</span>
+(gdb) <b>info thread</b>
+  Id   Target Id                      Frame
+  1    Thread 4294967294 (shadowCPU0) <font color="#C4A000">handle_mm_fault</font> (<font color="#06989A">vma=vma@entry</font>=0xffff88800391ee40, <font color="#06989A">address=address@entry</font>=94342972527488, <font color="#06989A">flags=flags@entry</font>=4948, <font color="#06989A">regs=regs@entry</font>=0xffffc90000153f58) at <font color="#4E9A06">mm/memory.c</font>:6044
+  2    Thread 1 (init.sh)             <font color="#3465A4">0x0000000000000000</font> in <font color="#C4A000">fixed_percpu_data</font> ()
+<span class="irrelevant">  ...</span>
+* 41   Thread 71 (gdb)                <font color="#C4A000">handle_mm_fault</font> (<font color="#06989A">vma=vma@entry</font>=0xffff88800391ee40, <font color="#06989A">address=address@entry</font>=94342972527488, <font color="#06989A">flags=flags@entry</font>=4948, <font color="#06989A">regs=regs@entry</font>=0xffffc90000153f58) at <font color="#4E9A06">mm/memory.c</font>:6044
+  42   Thread 73 (gdb worker)         <font color="#3465A4">0x0000000000000000</font> in <font color="#C4A000">fixed_percpu_data</font> ()
+  43   Thread 74 (fork-test)          <font color="#3465A4">0x0000000000000000</font> in <font color="#C4A000">fixed_percpu_data</font> ()
+  <span class="highlight">45</span>   Thread 78 (fork-test)          <font color="#3465A4">0x0000000000000000</font> in <font color="#C4A000">fixed_percpu_data</font> ()
+(gdb) <b>del 2</b>
+(gdb) <b>break handle_mm_fault thread 45</b>
+Breakpoint 4 at <font color="#3465A4">0xffffffff81296e90</font>: file <font color="#4E9A06">mm/memory.c</font>, line 6044.
+(gdb) <b>c</b>
+Continuing.
+[Switching to Thread 78]
+
+Thread 45 hit Breakpoint 4, <font color="#C4A000">handle_mm_fault</font> (<font color="#06989A">vma=vma@entry</font>=0xffff888003a3e260, <font color="#06989A">address=address@entry</font>=140737351884904, <font color="#06989A">flags=flags@entry</font>=533, <font color="#06989A">regs=regs@entry</font>=0xffffc9000004bda8) at <font color="#4E9A06">mm/memory.c</font>:6044
+6044	<font color="#CC0000">{</font>
+(gdb) <b>monitor ps</b>
+36 sleeping system daemon (state [ims]) processes suppressed,
+use &apos;ps A&apos; to see all.
+Task Addr               Pid   Parent [*] cpu State Thread             Command
+0xffff88800389c880       78       71  1    0   R  0xffff88800389d280 *fork-test
+
+0xffff888002b58000        1        0  0    0   S  0xffff888002b58a00  init.sh
+0xffff888003898000       70        1  0    0   S  0xffff888003898a00  bash
+0xffff888003898e80       71       70  0    0   R  0xffff888003899880  gdb
+0xffff888003899d00       73       70  0    0   S  0xffff88800389a700  gdb worker
+0xffff88800389ab80       74       71  0    0   t  0xffff88800389b580  fork-test
+0xffff88800389c880       78       71  1    0   R  0xffff88800389d280 *fork-test
+<span class="comment">Finally! Let's check the vma</span>
+(gdb) <b>print/x *vma</b>
+<font color="#06989A">$2</font> = {{{<font color="#06989A">vm_start</font> = 0x7ffff7dd9000, <font color="#06989A">vm_end</font> = 0x7ffff7ddc000}, <font color="#06989A">vm_rcu</font> = {<font color="#06989A">next</font> = 0x7ffff7dd9000, <font color="#06989A">func</font> = 0x7ffff7ddc000}}, <font color="#06989A">vm_mm</font> = 0xffff88800284cf00, <font color="#06989A">vm_page_prot</font> = {<font color="#06989A">pgprot</font> = 0x8000000000000025}, {<font color="#06989A">vm_flags</font> = 0x100073,
+    <font color="#06989A">__vm_flags</font> = 0x100073}, <font color="#06989A">detached</font> = 0x0, <font color="#06989A">vm_lock_seq</font> = 0x0, <font color="#06989A">vm_lock</font> = 0xffff888003947fc8, <font color="#06989A">shared</font> = {<font color="#06989A">rb</font> = {<font color="#06989A">__rb_parent_color</font> = 0x0, <font color="#06989A">rb_right</font> = 0x0, <font color="#06989A">rb_left</font> = 0x0}, <font color="#06989A">rb_subtree_last</font> = 0x0}, <font color="#06989A">anon_vma_chain</font> = {<font color="#06989A">next</font> = 0xffff888003a39550,
+    <font color="#06989A">prev</font> = 0xffff888003a39510}, <font color="#06989A">anon_vma</font> = 0xffff888003a3aaf8, <font color="#06989A">vm_ops</font> = 0x0, <font color="#06989A">vm_pgoff</font> = 0x7ffff7dd9, <font color="#06989A">vm_file</font> = 0x0, <font color="#06989A">vm_private_data</font> = 0x0, <font color="#06989A">swap_readahead_info</font> = {<font color="#06989A">counter</font> = 0x0}, <font color="#06989A">vm_userfaultfd_ctx</font> = {&lt;No data fields&gt;}}
+(gdb) print/x address
+<font color="#06989A">$3</font> = 0x7ffff7dda068
 </pre>
+
+Hmm&hellip; This is not the area previously marked `[stack]` in `info proc mappings`. However, do you remember
 
 We seems to have entered the child! We chose to break on `handle_mm_fault` &ndash; does it look familiar? This was the function that was spamming our ftrace earlier when we didn't filter on `__do_sys_fork`. Now, I'm again going to randomly pull out a function name: `wp_page_copy`. You should eventually find this if you follow the code path, getting past the page table allocation in `__handle_mm_fault`, then `handle_pte_fault`, getting past the swap (for now) and NUMA stuff, into [`do_wp_page`](https://github.com/micromaomao/linux-dev/blob/ick/mm/memory.c#L3657) and eventually find [`wp_page_copy`](https://github.com/micromaomao/linux-dev/blob/ick/mm/memory.c#L3333) at the bottom.
 

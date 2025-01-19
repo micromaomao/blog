@@ -1089,7 +1089,7 @@ Task Addr               Pid   Parent [*] cpu State Thread             Command
 <span class="irrelevant">...</span>
 </pre>
 
-Oops, that's not what we want. It's likely that our earlier &lsquo;syscall fork&rsquo; catchpoint triggered again. Let's keep doing `c`, and also go back to the gdb in the VM and do `c`, until we get to handle_mm_fault in the fork-test, either child or parent (the first one would copy memory). The confusing &lsquo;two numbering system&rsquo; for threads in kgdb definitely isn't helpful, but you can always do either a `monitor ps` or `info threads` to check. The breakpoint message uses the &lsquo;gdb numbering&rsquo;, which is the first column of `info threads`.
+Oops, that's not what we want. Let's keep doing `c` until we get to `handle_mm_fault` in the fork-test process, either child or parent (the first one would copy memory). The confusing &lsquo;two numbering system&rsquo; for threads in kgdb definitely isn't helpful, but you can always do either a `monitor ps` or `info threads` to check. The breakpoint message uses the &lsquo;gdb numbering&rsquo;, which is the first column of `info threads`.
 
 <pre>(gdb) <b>info threads</b>
   Id   Target Id                      Frame
@@ -1214,20 +1214,14 @@ Thread 45 hit Breakpoint 2, <font color="#C4A000">handle_mm_fault</font> (<font 
 </span>
 </pre>
 
-Nice! Now, this whole process was a bit fiddly. With some clever `if` statements you can probably make the kernel automatically break when the right `handle_mm_fault` happens (e.g. first time after a process called &lsquo;fork-test&rsquo; returns from fork). Alternatively you can place a bunch of `trace_printk`s to study its behaviour. Let's see how far we get in that function: (ignore the different thread IDs, I had to restart the VM and did some different things)
+Nice! Now, this whole process was a bit fiddly. With some clever `if` statements you can probably make the kernel automatically break when the right `handle_mm_fault` happens (e.g. first time after a process called &lsquo;fork-test&rsquo; returns from fork). Alternatively you can place a bunch of `trace_printk`s to study its behaviour. Let's see how far we get in that function:
 
 <pre>(gdb) <b>n</b>
 47			<font color="#3465A4"><b>return</b></font> <b>this_cpu_read_const</b><font color="#CC0000">(</font>const_pcpu_hot<font color="#CC0000">.</font>current_task<font color="#CC0000">);</font>
 (gdb) <b>bt</b>
 #0  <font color="#C4A000">handle_mm_fault</font> (<font color="#06989A">vma=vma@entry</font>=0xffff888003956be0, <font color="#06989A">address=address@entry</font>=140737488350168, <font color="#06989A">flags=flags@entry</font>=4693, <font color="#06989A">regs=regs@entry</font>=0xffffc90000173f58) at <font color="#4E9A06">./arch/x86/include/asm/current.h</font>:47
-#1  <font color="#3465A4">0xffffffff8106f6f4</font> in <font color="#C4A000">do_user_addr_fault</font> (<font color="#06989A">regs=regs@entry</font>=0xffffc90000173f58, <font color="#06989A">error_code=error_code@entry</font>=7, <font color="#06989A">address=address@entry</font>=140737488350168) at <font color="#4E9A06">arch/x86/mm/fault.c</font>:1338
-#2  <font color="#3465A4">0xffffffff81857850</font> in <font color="#C4A000">handle_page_fault</font> (<font color="#06989A">regs</font>=0xffffc90000173f58, <font color="#06989A">error_code</font>=7, <font color="#06989A">address</font>=140737488350168) at <font color="#4E9A06">arch/x86/mm/fault.c</font>:1481
-#3  <font color="#C4A000">exc_page_fault</font> (<font color="#06989A">regs</font>=0xffffc90000173f58, <font color="#06989A">error_code</font>=7) at <font color="#4E9A06">arch/x86/mm/fault.c</font>:1539
-#4  <font color="#3465A4">0xffffffff81a0125b</font> in <font color="#C4A000">asm_exc_page_fault</font> () at <font color="#4E9A06">./arch/x86/include/asm/idtentry.h</font>:623
-#5  <font color="#3465A4">0x00007ffff7ffd020</font> in <font color="#C4A000">??</font> ()
-#6  <font color="#3465A4">0x0000555555557dd8</font> in <font color="#C4A000">??</font> ()
-#7  <font color="#3465A4">0x00007fffffffed18</font> in <font color="#C4A000">??</font> ()
-#8  <font color="#3465A4">0x0000000000000000</font> in <font color="#C4A000">??</font> ()
+<span class="irrelevant">...</span>
+<span class="comment">Note that this is not in fact returning from handle_mm_fault, it's inlining something in asm/current.h.</span>
 (gdb) <b>n</b>
 6052		ret <font color="#CC0000">=</font> <b>sanitize_fault_flags</b><font color="#CC0000">(</font>vma<font color="#CC0000">,</font> <font color="#CC0000">&amp;</font>flags<font color="#CC0000">);</font>
 (gdb)
@@ -1239,46 +1233,213 @@ Nice! Now, this whole process was a bit fiddly. With some clever `if` statements
 (gdb) <b>bt</b>
 #0  <font color="#C4A000">handle_mm_fault</font> (<font color="#06989A">vma=vma@entry</font>=0xffff888003956be0, <font color="#06989A">address=address@entry</font>=140737488350168, <font color="#06989A">flags=flags@entry</font>=4693, <font color="#06989A">regs=regs@entry</font>=0xffffc90000173f58)
     at <font color="#4E9A06">./include/linux/hugetlb_inline.h</font>:11
-#1  <font color="#3465A4">0xffffffff8106f6f4</font> in <font color="#C4A000">do_user_addr_fault</font> (<font color="#06989A">regs=regs@entry</font>=0xffffc90000173f58, <font color="#06989A">error_code=error_code@entry</font>=7, <font color="#06989A">address=address@entry</font>=140737488350168)
-    at <font color="#4E9A06">arch/x86/mm/fault.c</font>:1338
-#2  <font color="#3465A4">0xffffffff81857850</font> in <font color="#C4A000">handle_page_fault</font> (<font color="#06989A">regs</font>=0xffffc90000173f58, <font color="#06989A">error_code</font>=7, <font color="#06989A">address</font>=140737488350168) at <font color="#4E9A06">arch/x86/mm/fault.c</font>:1481
-#3  <font color="#C4A000">exc_page_fault</font> (<font color="#06989A">regs</font>=0xffffc90000173f58, <font color="#06989A">error_code</font>=7) at <font color="#4E9A06">arch/x86/mm/fault.c</font>:1539
-#4  <font color="#3465A4">0xffffffff81a0125b</font> in <font color="#C4A000">asm_exc_page_fault</font> () at <font color="#4E9A06">./arch/x86/include/asm/idtentry.h</font>:623
-#5  <font color="#3465A4">0x00007ffff7ffd020</font> in <font color="#C4A000">??</font> ()
-#6  <font color="#3465A4">0x0000555555557dd8</font> in <font color="#C4A000">??</font> ()
-#7  <font color="#3465A4">0x00007fffffffed18</font> in <font color="#C4A000">??</font> ()
-#8  <font color="#3465A4">0x0000000000000000</font> in <font color="#C4A000">??</font> ()
+<span class="irrelevant">...</span>
 (gdb) <b>n</b>
 6077			ret <font color="#CC0000">=</font> <b>__handle_mm_fault</b><font color="#CC0000">(</font>vma<font color="#CC0000">,</font> address<font color="#CC0000">,</font> flags<font color="#CC0000">);</font>
 (gdb)
 </pre>
 
-There
+This seems worthy of stepping into &ndash; there isn't much left in `handle_mm_fault` itself anyway.
 
-We seems to have entered the child! We chose to break on `handle_mm_fault` &ndash; does it look familiar? This was the function that was spamming our ftrace earlier when we didn't filter on `__do_sys_fork`. Now, I'm again going to randomly pull out a function name: `wp_page_copy`. You should eventually find this if you follow the code path, getting past the page table allocation in `__handle_mm_fault`, then `handle_pte_fault`, getting past the swap (for now) and NUMA stuff, into [`do_wp_page`](https://github.com/micromaomao/linux-dev/blob/ick/mm/memory.c#L3657) and eventually find [`wp_page_copy`](https://github.com/micromaomao/linux-dev/blob/ick/mm/memory.c#L3333) at the bottom.
-
-<pre>(gdb) <b>b wp_page_copy</b>
-Breakpoint 8 at <font color="#3465A4">0xffffffff81295add</font>: file <font color="#4E9A06">mm/memory.c</font>, line 3333.
-(gdb) <b>info break</b>
-Num     Type           Disp Enb Address            What
-7       breakpoint     keep y   <font color="#3465A4">0xffffffff8129db20</font> in <font color="#C4A000">handle_mm_fault</font> at <font color="#4E9A06">mm/memory.c</font>:6044
-	breakpoint already hit 1 time
-8       breakpoint     keep y   <font color="#3465A4">0xffffffff81295add</font> in <font color="#C4A000">wp_page_copy</font> at <font color="#4E9A06">mm/memory.c</font>:3333
-(gdb) <b>c</b>
-Continuing.
-
-Thread 42 hit Breakpoint 8, <font color="#C4A000">wp_page_copy</font> (<font color="#06989A">vmf</font>=0xffffc9000015bc40) at <font color="#4E9A06">mm/memory.c</font>:3333
-3333		<font color="#3465A4"><b>const</b></font> <font color="#4E9A06">bool</font> unshare <font color="#CC0000">=</font> vmf<font color="#CC0000">-&gt;</font>flags <font color="#CC0000">&amp;</font> FAULT_FLAG_UNSHARE<font color="#CC0000">;</font>
-(gdb) <b>bt</b>
-#0  <font color="#C4A000">wp_page_copy</font> (<font color="#06989A">vmf</font>=0xffffc9000015bc40) at <font color="#4E9A06">mm/memory.c</font>:3333
-#1  <font color="#C4A000">do_wp_page</font> (<font color="#06989A">vmf=vmf@entry</font>=0xffffc9000015bc40) at <font color="#4E9A06">mm/memory.c</font>:3745
-#2  <font color="#3465A4">0xffffffff8129cf4f</font> in <font color="#C4A000">handle_pte_fault</font> (<font color="#06989A">vmf</font>=0xffffc9000015bc40) at <font color="#4E9A06">mm/memory.c</font>:5782
-#3  <font color="#C4A000">__handle_mm_fault</font> (<font color="#06989A">vma=vma@entry</font>=0xffff888003919da8, <font color="#06989A">address=address@entry</font>=140555195568232, <font color="#06989A">flags=flags@entry</font>=533) at <font color="#4E9A06">mm/memory.c</font>:5909
+<pre>
+(gdb) <b>s</b>
+<font color="#C4A000">__handle_mm_fault</font> (<font color="#06989A">vma=vma@entry</font>=0xffff888003956be0, <font color="#06989A">address=address@entry</font>=140737488350168, <font color="#06989A">flags=flags@entry</font>=4693) at <font color="#4E9A06">mm/memory.c</font>:5818
+5818	<font color="#CC0000">{</font>
+(gdb) <b>n</b>
+5819		<font color="#3465A4"><b>struct</b></font> <font color="#4E9A06">vm_fault</font> vmf <font color="#CC0000">=</font> <font color="#CC0000">{</font>
+(gdb)
+3133		<font color="#3465A4"><b>struct</b></font> <font color="#4E9A06">file</font> <font color="#CC0000">*</font>vm_file <font color="#CC0000">=</font> vma<font color="#CC0000">-&gt;</font>vm_file<font color="#CC0000">;</font>
+(gdb)
+5825			<font color="#CC0000">.</font>gfp_mask <font color="#CC0000">=</font> <b>__get_fault_gfp_mask</b><font color="#CC0000">(</font>vma<font color="#CC0000">),</font>
+(gdb)
+5833		pgd <font color="#CC0000">=</font> <b>pgd_offset</b><font color="#CC0000">(</font>mm<font color="#CC0000">,</font> address<font color="#CC0000">);</font>
+(gdb)
+5824			<font color="#CC0000">.</font>pgoff <font color="#CC0000">=</font> <b>linear_page_index</b><font color="#CC0000">(</font>vma<font color="#CC0000">,</font> address<font color="#CC0000">),</font>
+(gdb)
+5833		pgd <font color="#CC0000">=</font> <b>pgd_offset</b><font color="#CC0000">(</font>mm<font color="#CC0000">,</font> address<font color="#CC0000">);</font>
+(gdb)
+5834		p4d <font color="#CC0000">=</font> <b>p4d_alloc</b><font color="#CC0000">(</font>mm<font color="#CC0000">,</font> pgd<font color="#CC0000">,</font> address<font color="#CC0000">);</font>
+(gdb)
+5835		<font color="#3465A4"><b>if</b></font> <font color="#CC0000">(!</font>p4d<font color="#CC0000">)</font>
+(gdb)
+5838		vmf<font color="#CC0000">.</font>pud <font color="#CC0000">=</font> <b>pud_alloc</b><font color="#CC0000">(</font>mm<font color="#CC0000">,</font> p4d<font color="#CC0000">,</font> address<font color="#CC0000">);</font>
+(gdb)
+5839		<font color="#3465A4"><b>if</b></font> <font color="#CC0000">(!</font>vmf<font color="#CC0000">.</font>pud<font color="#CC0000">)</font>
+(gdb)
+5869		vmf<font color="#CC0000">.</font>pmd <font color="#CC0000">=</font> <b>pmd_alloc</b><font color="#CC0000">(</font>mm<font color="#CC0000">,</font> vmf<font color="#CC0000">.</font>pud<font color="#CC0000">,</font> address<font color="#CC0000">);</font>
+(gdb)
+5870		<font color="#3465A4"><b>if</b></font> <font color="#CC0000">(!</font>vmf<font color="#CC0000">.</font>pmd<font color="#CC0000">)</font>
+(gdb)
+5884			vmf<font color="#CC0000">.</font>orig_pmd <font color="#CC0000">=</font> <b>pmdp_get_lockless</b><font color="#CC0000">(</font>vmf<font color="#CC0000">.</font>pmd<font color="#CC0000">);</font>
+(gdb) <b>n</b>
+5909		<font color="#3465A4"><b>return</b></font> <b>handle_pte_fault</b><font color="#CC0000">(&amp;</font>vmf<font color="#CC0000">);</font>
+(gdb)
 </pre>
 
-We're quite close to finding out
+Okay, so it's just travelling down the page table levels, and allocating any non-existent ones (these alloc functions doesn't do anything if the entry is already present). We then end up at [`handle_pte_fault`](https://github.com/micromaomao/linux-dev/blob/5996393469d99560b7845d22c9eff00661de0724/mm/memory.c#L5732)
 
-However, for our checkpoint purpose, we don't actually want to make a copy of the page table &ndash; we want to just make the current process's pages write-protected, and when we get a page fault, do our custom logic.
+<pre>
+(gdb) <b>s</b>
+<font color="#3465A4">0xffffffff8129633e</font> in <font color="#C4A000">handle_pte_fault</font> (<font color="#06989A">vmf</font>=&lt;optimized out&gt;) at <font color="#4E9A06">mm/memory.c</font>:5752
+5752			vmf<font color="#CC0000">-&gt;</font>pte <font color="#CC0000">=</font> <b>pte_offset_map_nolock</b><font color="#CC0000">(</font>vmf<font color="#CC0000">-&gt;</font>vma<font color="#CC0000">-&gt;</font>vm_mm<font color="#CC0000">,</font> vmf<font color="#CC0000">-&gt;</font>pmd<font color="#CC0000">,</font>
+(gdb) <b>n</b>
+5909		<font color="#3465A4"><b>return</b></font> <b>handle_pte_fault</b><font color="#CC0000">(&amp;</font>vmf<font color="#CC0000">);</font>
+(gdb) <b>bt</b>
+#0  <font color="#C4A000">__handle_mm_fault</font> (<font color="#06989A">vma=vma@entry</font>=0xffff888003956be0, <font color="#06989A">address=address@entry</font>=140737488350168, <font color="#06989A">flags=flags@entry</font>=4693) at <font color="#4E9A06">mm/memory.c</font>:5909
+<span class="irrelevant">...</span>
+(gdb) <b>s</b>
+<font color="#C4A000">handle_pte_fault</font> (<font color="#06989A">vmf</font>=0xffffc90000173df0) at <font color="#4E9A06">./arch/x86/include/asm/pgtable.h</font>:1069
+1069		<font color="#3465A4"><b>return</b></font> <font color="#CC0000">(</font>val <font color="#CC0000">&amp;</font> <font color="#CC0000">~</font>_PAGE_KNL_ERRATUM_MASK<font color="#CC0000">)</font> <font color="#CC0000">==</font> <font color="#75507B">0</font><font color="#CC0000">;</font>
+<span class="comment">Hmm, we have an <i>even more</i> confusing inlining situation here.
+That &lsquo;s&rsquo; was not very confident</span>
+(gdb) <b>n</b>
+5752			vmf<font color="#CC0000">-&gt;</font>pte <font color="#CC0000">=</font> <b>pte_offset_map_nolock</b><font color="#CC0000">(</font>vmf<font color="#CC0000">-&gt;</font>vma<font color="#CC0000">-&gt;</font>vm_mm<font color="#CC0000">,</font> vmf<font color="#CC0000">-&gt;</font>pmd<font color="#CC0000">,</font>
+<!--
+(gdb) <b>n</b>
+5754			<font color="#3465A4"><b>if</b></font> <font color="#CC0000">(</font><b>unlikely</b><font color="#CC0000">(!</font>vmf<font color="#CC0000">-&gt;</font>pte<font color="#CC0000">))</font>
+(gdb) <b>n</b>
+5756			vmf<font color="#CC0000">-&gt;</font>orig_pte <font color="#CC0000">=</font> <b>ptep_get_lockless</b><font color="#CC0000">(</font>vmf<font color="#CC0000">-&gt;</font>pte<font color="#CC0000">);</font>
+(gdb) <b>n</b>
+993		<font color="#3465A4"><b>return</b></font> <font color="#CC0000">!(</font>pte<font color="#CC0000">.</font>pte <font color="#CC0000">&amp;</font> <font color="#CC0000">~(</font>_PAGE_KNL_ERRATUM_MASK<font color="#CC0000">));</font>
+(gdb) <b>bt</b>
+#0  <font color="#C4A000">handle_pte_fault</font> (<font color="#06989A">vmf</font>=0xffffc90000173df0) at <font color="#4E9A06">./arch/x86/include/asm/pgtable.h</font>:993
+<span class="irrelevant">...</span>
+(gdb) <b>n</b>
+485		<font color="#3465A4"><b>return</b></font> <b>native_pte_val</b><font color="#CC0000">(</font>pte<font color="#CC0000">)</font> <font color="#CC0000">&amp;</font> PTE_FLAGS_MASK<font color="#CC0000">;</font>
+(gdb) <b>bt</b>
+#0  <font color="#C4A000">handle_pte_fault</font> (<font color="#06989A">vmf</font>=0xffffc90000173df0) at <font color="#4E9A06">./arch/x86/include/asm/pgtable_types.h</font>:485
+<span class="irrelevant">...</span>
+(gdb) <b>n</b>
+5774		<b>spin_lock</b><font color="#CC0000">(</font>vmf<font color="#CC0000">-&gt;</font>ptl<font color="#CC0000">);</font>
+(gdb) <b>n</b>
+5775		entry <font color="#CC0000">=</font> vmf<font color="#CC0000">-&gt;</font>orig_pte<font color="#CC0000">;</font>
+(gdb) <b>n</b>
+5776		<font color="#3465A4"><b>if</b></font> <font color="#CC0000">(</font><b>unlikely</b><font color="#CC0000">(!</font><b>pte_same</b><font color="#CC0000">(</font><b>ptep_get</b><font color="#CC0000">(</font>vmf<font color="#CC0000">-&gt;</font>pte<font color="#CC0000">),</font> entry<font color="#CC0000">)))</font> <font color="#CC0000">{</font>
+--><span class="comment">Skipping over a bunch of things that has to do with getting the correct pte, we arrive at this check:</span>
+(gdb)
+5780		<font color="#3465A4"><b>if</b></font> <font color="#CC0000">(</font>vmf<font color="#CC0000">-&gt;</font>flags <font color="#CC0000">&amp;</font> <font color="#CC0000">(</font>FAULT_FLAG_WRITE<font color="#CC0000">|</font>FAULT_FLAG_UNSHARE<font color="#CC0000">))</font> <font color="#CC0000">{</font>
+<span class="comment">This is probably the part we want! It's checking if this is a write fault, and will do interesting
+write-fault specific things immediately afterwards if it is.</span>
+(gdb) <b>n</b>
+<font color="#C4A000">__handle_mm_fault</font> (<font color="#06989A">vma=vma@entry</font>=0xffff888003956be0, <font color="#06989A">address=address@entry</font>=140737488350168, <font color="#06989A">flags=flags@entry</font>=4693) at <font color="#4E9A06">mm/memory.c</font>:5909
+5909		<font color="#3465A4"><b>return</b></font> <b>handle_pte_fault</b><font color="#CC0000">(&amp;</font>vmf<font color="#CC0000">);</font>
+(gdb) <b>bt</b>
+#0  <font color="#C4A000">__handle_mm_fault</font> (<font color="#06989A">vma=vma@entry</font>=0xffff888003956be0, <font color="#06989A">address=address@entry</font>=140737488350168, <font color="#06989A">flags=flags@entry</font>=4693) at <font color="#4E9A06">mm/memory.c</font>:5909
+<span class="irrelevant">...</span>
+<span class="comment">confusing inline again</span>
+(gdb) <b>print vmf-&gt;flags</b>
+<font color="#06989A">$6</font> = (<font color="#06989A">FAULT_FLAG_WRITE</font> | <font color="#06989A">FAULT_FLAG_ALLOW_RETRY</font> | <font color="#06989A">FAULT_FLAG_KILLABLE</font> | <font color="#06989A">FAULT_FLAG_USER</font> | <font color="#06989A">FAULT_FLAG_INTERRUPTIBLE</font> | <font color="#06989A">FAULT_FLAG_ORIG_PTE_VALID</font> | <font color="#06989A">FAULT_FLAG_VMA_LOCK</font>)
+<span class="comment">ok, that if statement is going to execute. Let's go ahead.</span>
+(gdb) <b>s</b>
+<font color="#C4A000">handle_pte_fault</font> (<font color="#06989A">vmf</font>=0xffffc90000173df0) at <font color="#4E9A06">mm/memory.c</font>:5781
+5781			<font color="#3465A4"><b>if</b></font> <font color="#CC0000">(!</font><b>pte_write</b><font color="#CC0000">(</font>entry<font color="#CC0000">))</font>
+(gdb) <b>print pte_write(entry)</b>
+No symbol &quot;pte_write&quot; in current context.
+<span class="comment">I'm guessing the answer is false</span>
+(gdb) <b>n</b>
+5782				<font color="#3465A4"><b>return</b></font> <b>do_wp_page</b><font color="#CC0000">(</font>vmf<font color="#CC0000">);</font>
+(gdb)
+</pre>
+
+Remember this function &ndash; [`do_wp_page`](https://github.com/micromaomao/linux-dev/blob/5996393469d99560b7845d22c9eff00661de0724/mm/memory.c#L3655). It is extremely interesting. Let's quickly step through it and see what it does.
+
+<pre>(gdb) s
+<font color="#C4A000">do_wp_page</font> (<font color="#06989A">vmf=vmf@entry</font>=0xffffc90000173df0) at <font color="#4E9A06">mm/memory.c</font>:3657
+3657	<font color="#CC0000">{</font>
+(gdb) n
+3659		<font color="#3465A4"><b>struct</b></font> <font color="#4E9A06">vm_area_struct</font> <font color="#CC0000">*</font>vma <font color="#CC0000">=</font> vmf<font color="#CC0000">-&gt;</font>vma<font color="#CC0000">;</font>
+(gdb)
+3663		<font color="#3465A4"><b>if</b></font> <font color="#CC0000">(</font><b>likely</b><font color="#CC0000">(!</font>unshare<font color="#CC0000">))</font> <font color="#CC0000">{</font>
+(gdb)
+3664			<font color="#3465A4"><b>if</b></font> <font color="#CC0000">(</font><b>userfaultfd_pte_wp</b><font color="#CC0000">(</font>vma<font color="#CC0000">,</font> <b>ptep_get</b><font color="#CC0000">(</font>vmf<font color="#CC0000">-&gt;</font>pte<font color="#CC0000">)))</font> <font color="#CC0000">{</font>
+<span class="comment">We're not using userfaultfd, so expect to just skip</span>
+(gdb)
+3694		vmf<font color="#CC0000">-&gt;</font>page <font color="#CC0000">=</font> <b>vm_normal_page</b><font color="#CC0000">(</font>vma<font color="#CC0000">,</font> vmf<font color="#CC0000">-&gt;</font>address<font color="#CC0000">,</font> vmf<font color="#CC0000">-&gt;</font>orig_pte<font color="#CC0000">);</font>
+(gdb) n
+3696		<font color="#3465A4"><b>if</b></font> <font color="#CC0000">(</font>vmf<font color="#CC0000">-&gt;</font>page<font color="#CC0000">)</font>
+(gdb)
+3697			folio <font color="#CC0000">=</font> <b>page_folio</b><font color="#CC0000">(</font>vmf<font color="#CC0000">-&gt;</font>page<font color="#CC0000">);</font>
+(gdb)
+3703		<font color="#3465A4"><b>if</b></font> <font color="#CC0000">(</font>vma<font color="#CC0000">-&gt;</font>vm_flags <font color="#CC0000">&amp;</font> <font color="#CC0000">(</font>VM_SHARED <font color="#CC0000">|</font> VM_MAYSHARE<font color="#CC0000">))</font> <font color="#CC0000">{</font>
+<span style="opacity: 0.5;">(gdb)
+689		<font color="#3465A4"><b>return</b></font> <font color="#CC0000">((</font><font color="#4E9A06">unsigned</font> <font color="#4E9A06">long</font><font color="#CC0000">)</font>folio<font color="#CC0000">-&gt;</font>mapping <font color="#CC0000">&amp;</font> PAGE_MAPPING_ANON<font color="#CC0000">)</font> <font color="#CC0000">!=</font> <font color="#75507B">0</font><font color="#CC0000">;</font></span>
+(gdb)
+<span class="highlight">3724		    <font color="#CC0000">(</font><b>PageAnonExclusive</b><font color="#CC0000">(</font>vmf<font color="#CC0000">-&gt;</font>page<font color="#CC0000">)</font> <font color="#CC0000">||</font> <b>wp_can_reuse_anon_folio</b><font color="#CC0000">(</font>folio<font color="#CC0000">,</font> vma<font color="#CC0000">)))</font> <font color="#CC0000">{</font></span>
+(gdb)
+3738			<b>folio_get</b><font color="#CC0000">(</font>folio<font color="#CC0000">);</font>
+(gdb) n
+3740		<b>pte_unmap_unlock</b><font color="#CC0000">(</font>vmf<font color="#CC0000">-&gt;</font>pte<font color="#CC0000">,</font> vmf<font color="#CC0000">-&gt;</font>ptl<font color="#CC0000">);</font>
+(gdb)
+3745		<font color="#3465A4"><b>return</b></font> <b>wp_page_copy</b><font color="#CC0000">(</font>vmf<font color="#CC0000">);</font>
+(gdb)
+</pre>
+
+Hmm, the `PageAnonExclusive || wp_can_reuse_anon_folio` check didn't pass. Going by the code and comments in the function, a reasonable guess is that it is checking if we're the only owner of the page (see [`wp_can_reuse_anon_folio`](https://github.com/micromaomao/linux-dev/blob/5996393469d99560b7845d22c9eff00661de0724/mm/memory.c#L3585) which contains refcount checks), and &lsquo;reuse&rsquo; i.e. not copy the page. Since we just forked, this expectedly wasn't the case. However, we expect that when the parent process hits this point again (assuming the pte is still write-protected on the parent's page table), it will actually do the &lsquo;reuse&rsquo;.
+
+For now, we arrived at [`wp_page_copy`](https://github.com/micromaomao/linux-dev/blob/5996393469d99560b7845d22c9eff00661de0724/mm/memory.c#L3331). It is also quite long, but it basically boils down to allocating a new page, and copying the content over. It has checks against multiple threads running this on the same page, which complicates the code a bit. For our purpose we don't really need to go deeper at this point. It might be more interesting now to test our assumptions on the &lsquo;resue&rsquo; case. We can do that by just waiting for the parent to also fault. In fact we get it pretty quick:
+
+<pre>
+(gdb) info threads
+  Id   Target Id                      Frame
+  <span class="irrelevant">...</span>
+  40   Thread 76 (gdb)                <font color="#3465A4">0x0000000000000000</font> in <font color="#C4A000">fixed_percpu_data</font> ()
+  41   Thread 78 (gdb worker)         <font color="#3465A4">0x0000000000000000</font> in <font color="#C4A000">fixed_percpu_data</font> ()
+  42   Thread 79 (fork-test)          <font color="#3465A4">0x0000000000000000</font> in <font color="#C4A000">fixed_percpu_data</font> ()
+* 44   Thread 83 (fork-test)          <font color="#C4A000">handle_mm_fault</font> (<font color="#06989A">vma=vma@entry</font>=0xffff888003956be0, <font color="#06989A">address=address@entry</font>=140737488350168, <font color="#06989A">flags=flags@entry</font>=4693, <font color="#06989A">regs=regs@entry</font>=0xffffc90000173f58)
+    at <font color="#4E9A06">mm/memory.c</font>:6088
+(gdb) info break
+Num     Type           Disp Enb Address            What
+1       breakpoint     keep y   <font color="#3465A4">0xffffffff810833a0</font> in <font color="#C4A000">__do_sys_fork</font> at <font color="#4E9A06">kernel/fork.c</font>:2888
+	breakpoint already hit 1 time
+2       breakpoint     keep y   <font color="#3465A4">0xffffffff81296e90</font> in <font color="#C4A000">handle_mm_fault</font> at <font color="#4E9A06">mm/memory.c</font>:6044
+	breakpoint already hit 12 times
+(gdb) c
+Continuing.
+[Switching to Thread 79]
+
+Thread 42 hit Breakpoint 2, <font color="#C4A000">handle_mm_fault</font> (<font color="#06989A">vma=vma@entry</font>=0xffff8880039627b8, <font color="#06989A">address=address@entry</font>=140737488350168, <font color="#06989A">flags=flags@entry</font>=4693, <font color="#06989A">regs=regs@entry</font>=0xffffc9000016bf58)
+    at <font color="#4E9A06">mm/memory.c</font>:6044
+6044	<font color="#CC0000">{</font>
+(gdb) print/x vma-&gt;vm_start
+<font color="#06989A">$12</font> = 0x7ffffffde000
+(gdb)
+</pre>
+
+This is again the stack VMA! Let's just try to skip to the reuse check part. If we're wrong we can always restart :)
+
+<pre>
+(gdb) b mm/memory.c:3723
+<span class="code-comment">Code:
+    if (folio && folio_test_anon(folio) &&</span>
+Breakpoint 3 at <font color="#3465A4">0xffffffff81293f57</font>: file <font color="#4E9A06">mm/memory.c</font>, line 3723.
+(gdb) c
+Continuing.
+
+Thread 42 hit Breakpoint 2, <font color="#C4A000">handle_mm_fault</font> (<font color="#06989A">vma=vma@entry</font>=0xffff888003945e40, <font color="#06989A">address=address@entry</font>=140737354128056, <font color="#06989A">flags=flags@entry</font>=4693, <font color="#06989A">regs=regs@entry</font>=0xffffc9000016bf58)
+    at <font color="#4E9A06">mm/memory.c</font>:6044
+6044	<font color="#CC0000">{</font>
+(gdb) print/x vma-&gt;vm_start
+<font color="#06989A">$13</font> = 0x7ffff7ffd000
+</pre>
+
+Oops, it moved on to another VMA. However after some investigation I'm pretty sure this is just the breakpoint somehow not working. If I step through `do_wp_page` which does get hit:
+
+<pre>(gdb)
+3724		    <font color="#CC0000">(</font><b>PageAnonExclusive</b><font color="#CC0000">(</font>vmf<font color="#CC0000">-&gt;</font>page<font color="#CC0000">)</font> <font color="#CC0000">||</font> <b>wp_can_reuse_anon_folio</b><font color="#CC0000">(</font>folio<font color="#CC0000">,</font> vma<font color="#CC0000">)))</font> <font color="#CC0000">{</font>
+(gdb) s
+<font color="#C4A000">PageAnonExclusive</font> (<font color="#06989A">page</font>=0xffffea000013f280) at <font color="#4E9A06">./include/linux/page-flags.h</font>:1125
+1125		<font color="#3465A4"><b>if</b></font> <font color="#CC0000">(</font><b>PageHuge</b><font color="#CC0000">(</font>page<font color="#CC0000">))</font>
+<span class="irrelevant">...</span>
+(gdb) n
+3724		    <font color="#CC0000">(</font><b>PageAnonExclusive</b><font color="#CC0000">(</font>vmf<font color="#CC0000">-&gt;</font>page<font color="#CC0000">)</font> <font color="#CC0000">||</font> <b>wp_can_reuse_anon_folio</b><font color="#CC0000">(</font>folio<font color="#CC0000">,</font> vma<font color="#CC0000">)))</font> <font color="#CC0000">{</font>
+(gdb) n
+3630		<font color="#3465A4"><b>return</b></font> true<font color="#CC0000">;</font>
+(gdb) bt
+#0  <font color="#C4A000">do_wp_page</font> (<font color="#06989A">vmf=vmf@entry</font>=0xffffc90000163df0) at <font color="#4E9A06">mm/memory.c</font>:3630
+<span class="code-comment">  return true from wp_can_reuse_anon_folio</span>
+</pre>
+
+Anyway, things inside this `do_wp_page` is so heavily inlined that it can be hard to know whether any breakpoint will work, but I think it's time to step back and look at what we managed to learn so far. We are getting quite off-track from our original goal, which is just to trap on write to a page and copy it off. In fact, for our checkpoint purpose, we don't actually want to make a copy of the page table &ndash; we want to just make the current process's pages write-protected, and when we get a page fault, do our custom logic.
 
 ... TODO ...
 

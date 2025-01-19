@@ -465,10 +465,10 @@ root@c8c5a2904008:/# gdb my-hackme-looped
 <span class="irrelevant">GNU gdb (Debian 13.1-3) 13.1
 <i>...</i>
 Reading symbols from my-hackme-looped...</span>
-(gdb) catch syscall read
+(gdb) <b>catch syscall read</b>
 Catchpoint 1 (syscall &apos;read&apos; [0])
-(gdb) condition 1 $rdi == 0
-(gdb) r
+(gdb) <b>condition 1 $rdi == 0</b>
+(gdb) <b>r</b>
 Starting program: <font color="#4E9A06">/my-hackme-looped</font>
 [   32.349018][   T94] execveat: /my-hackme-looped[94] to be hacked
 [   32.393885][   T94] hack: 0 gave different output
@@ -479,7 +479,7 @@ Catchpoint 1 (call to syscall read), <font color="#3465A4">0x000000000053eed1</f
 
 The instruction `condition 1 $rdi == 0` makes the catchpoint only trigger on read from stdin ($rdi holds the first argument, and that is the file descriptor in the case of `read`/`write`). The catchpoint will trigger before the syscall is actually executed by the kernel (although because it uses ptrace to trap on syscalls, `$rip` will point to the instruction after the `syscall`, looking as-if the syscall has already executed).
 
-<pre>(gdb) disas $rip
+<pre>(gdb) <b>disas $rip</b>
 Dump of assembler code for function <font color="#C4A000">read</font>:
    <font color="#3465A4">0x000000000053eec0</font> &lt;+0&gt;:	<font color="#4E9A06">endbr64</font>
    <font color="#3465A4">0x000000000053eec4</font> &lt;+4&gt;:	<font color="#4E9A06">cmpb   </font><font color="#3465A4">$0x0</font>,<font color="#3465A4">0xa668d</font>(<font color="#CC0000">%rip</font>)<font color="#8D8F8A">        # 0x5e5558 &lt;__libc_single_threaded&gt;</font>
@@ -495,7 +495,7 @@ Dump of assembler code for function <font color="#C4A000">read</font>:
 
 Let's note down the registers:
 
-<pre>(gdb) info reg
+<pre>(gdb) <b>info reg</b>
 rax            0xffffffffffffffda  -38
 rbx            0x5e4a00            6179328
 rcx            0x53eed1            5500625
@@ -525,13 +525,14 @@ gs             0x0                 0
 
 Ok, let's allow the program to continue to `write`:
 
-<pre>(gdb) catch syscall write
+<pre>
+(gdb) <b>catch syscall write</b>
 Catchpoint 2 (syscall &apos;write&apos; [1])
-(gdb) c
+(gdb) <b>c</b>
 Continuing.
 
 Catchpoint 1 (returned from syscall read), <font color="#3465A4">0x000000000053eed1</font> in <font color="#C4A000">read</font> ()
-(gdb) c
+(gdb) <b>c</b>
 Continuing.
 
 Catchpoint 2 (call to syscall write), <font color="#3465A4">0x000000000053ef74</font> in <font color="#C4A000">write</font> ()
@@ -540,7 +541,7 @@ Catchpoint 2 (call to syscall write), <font color="#3465A4">0x000000000053ef74</
 
 Let's see the registers again, before we enter the syscall:
 
-<pre>(gdb) info reg
+<pre>(gdb) <b>info reg</b>
 rax            0xffffffffffffffda  -38
 rbx            0x3a                58
 rcx            0x53ef74            5500788
@@ -570,11 +571,11 @@ gs             0x0                 0
 
 Looks quite different from before! Now we let it continue, then we shall see the registers reverting to the state before the `read`:
 
-<pre>(gdb) c
+<pre>(gdb) <b>c</b>
 Continuing.
 
 Catchpoint 1 (returned from syscall read), <font color="#3465A4">0x000000000053eed1</font> in <font color="#C4A000">read</font> ()
-(gdb) info reg
+(gdb) <b>info reg</b>
 rax            0x3a                58
 rbx            0x5e4a00            6179328
 rcx            0x53eed1            5500625
@@ -606,7 +607,7 @@ Seems pretty successful - we've even confused `gdb` (it says &ldquo;returned fro
 
 We know that if we let it continue it will just crash, but let's see what happens anyway, just for fun. `ni` basically lets it run one more instruction, then stop it again:
 
-<pre>(gdb) disas $rip
+<pre>(gdb) <b>disas $rip</b>
 Dump of assembler code for function <font color="#C4A000">read</font>:
    <font color="#3465A4">0x000000000053eec0</font> &lt;+0&gt;:	<font color="#4E9A06">endbr64</font>
    <font color="#3465A4">0x000000000053eec4</font> &lt;+4&gt;:	<font color="#4E9A06">cmpb   </font><font color="#3465A4">$0x0</font>,<font color="#3465A4">0xa668d</font>(<font color="#CC0000">%rip</font>)<font color="#8D8F8A">        # 0x5e5558 &lt;__libc_single_threaded&gt;</font>
@@ -618,7 +619,7 @@ Dump of assembler code for function <font color="#C4A000">read</font>:
    <font color="#3465A4">0x000000000053eed9</font> &lt;+25&gt;:	<font color="#4E9A06">ret</font>
    <i class="irrelevant">...</i>
 
-(gdb) ni
+(gdb) <b>ni</b>
 <font color="#3465A4">0x000000000053eed7</font> in <font color="#C4A000">read</font> ()
 (gdb)
 <font color="#3465A4">0x000000000053eed9</font> in <font color="#C4A000">read</font> ()
@@ -895,7 +896,7 @@ Ok, that's great, but later on if we get a write page fault, how does the kernel
 
 Because our [fork-test.c](./fork-test.c) program (and really all the programs in general) uses a stack, we can expect that once `fork` returns it will immediately triggers a page fault due to trying to push new stuff onto the stack. Maybe looking at what happens then could answer our questions about how the kernel knows when to CoW a page? Let's continue to trace our program, after the fork:
 
-<pre>
+<pre id="trace-after-fork">
 root@9ba6f25d9dac:/# trace-cmd record -p function_graph --max-graph-depth 4 -F -c -e sys_exit_fork ./fork-test
 <span class="irrelevant">  plugin 'function_graph'
 I am the parent. Fork took 226508 ns to return
@@ -951,7 +952,7 @@ root@9ba6f25d9dac:/# grep -A 20 'sys_exit_fork' a.log <span class="code-comment"
 
 Remember [earlier](#what-does-fork-do-pre) when we did the ftrace on our little fork program without filtering, there was a bunch of [`handle_mm_fault`](https://github.com/micromaomao/linux-dev/blob/5996393469d99560b7845d22c9eff00661de0724/mm/memory.c#L6042)? (I've omitted many repeats of it in that trace dump)
 
-Now we see this again, and we can reasonably guess that it is the entry point to page faults (well, for user space). In fact, if you look at its signature, it looks like by the time we get there, we've already got the [`struct vm_area_struct`](https://github.com/micromaomao/linux-dev/blob/5996393469d99560b7845d22c9eff00661de0724/include/linux/mm_types.h#L697):
+Now we see this again, and we can reasonably guess that it is the entry point to page faults (well, for valid user space addresses). In fact, if you look at its signature, it looks like by the time we get there, we've already got the [`struct vm_area_struct`](https://github.com/micromaomao/linux-dev/blob/5996393469d99560b7845d22c9eff00661de0724/include/linux/mm_types.h#L697):
 
 ```c
 /*
@@ -975,18 +976,37 @@ Reading symbols from <font color="#4E9A06">./fork-test</font>...
 (No debugging symbols found in <font color="#4E9A06">./fork-test</font>)
 (gdb) <b>info proc mappings</b><footnote><a href="https://stackoverflow.com/a/5691536/4013790" target="_blank">stack overflow</a></footnote>
 No current process: you must name one.
-<span class="comment">oops, let's try again after the program gets to right before the fork</span>
-(gdb) <b>catch syscall fork</b>
-Catchpoint 1 (syscall &apos;fork&apos; [57])
+<span class="comment">Oops, let's try again after the program gets to right before the fork</span>
+(gdb) <b>q</b>
+<span class="comment">Re-build in the VM with source debugging ability - could also &lsquo;catch syscall fork&rsquo;
+(although note that catch traps on syscall exit too)</span>
+root@9ba6f25d9dac:/# gcc -o fork-test fork-test.c -Og -g
+root@9ba6f25d9dac:/# gdb fork-test
+<font color="#75507B"><b>GNU gdb (Debian 13.1-3) 13.1</b></font>
+<span class="irrelevant">...</span>
+Reading symbols from <font color="#4E9A06">fork-test</font>...
+(gdb) <b>l 40</b>
+35	<font color="#4E9A06">int</font> <b>main</b><font color="#CC0000">(</font><font color="#4E9A06">int</font> argc<font color="#CC0000">,</font> <font color="#4E9A06">char</font> <font color="#3465A4"><b>const</b></font> <font color="#CC0000">*</font>argv<font color="#CC0000">[])</font>
+36	<font color="#CC0000">{</font>
+37	  uint64_t start <font color="#CC0000">=</font> <b>monotonic_ns</b><font color="#CC0000">();</font>
+38	  <font color="#06989A">// libc&apos;s fork() actually uses `clone`, but if we&apos;re writing a ptrace</font>
+39	  <font color="#06989A">// supervisor we&apos;re probably using `fork` directly.</font>
+40	  <font color="#4E9A06">int</font> ret <font color="#CC0000">=</font> <b>syscall</b><font color="#CC0000">(</font>SYS_fork<font color="#CC0000">);</font>
+41	  <b>sched_yield</b><font color="#CC0000">();</font>
+42	  uint64_t end <font color="#CC0000">=</font> <b>monotonic_ns</b><font color="#CC0000">();</font>
+43	  uint64_t elapsed <font color="#CC0000">=</font> end <font color="#CC0000">-</font> start<font color="#CC0000">;</font>
+44	  <font color="#3465A4"><b>if</b></font> <font color="#CC0000">(</font>ret <font color="#CC0000">==</font> <font color="#75507B">0</font><font color="#CC0000">)</font> <font color="#CC0000">{</font>
+(gdb) <b>b fork-test.c:40</b>
+Breakpoint 1 at <font color="#3465A4">0x119f</font>: file <font color="#4E9A06">fork-test.c</font>, line 40.
 (gdb) <b>r</b>
 Starting program: <font color="#4E9A06">/fork-test</font>
 [Thread debugging using libthread_db enabled]
 Using host libthread_db library &quot;<font color="#4E9A06">/lib/x86_64-linux-gnu/libthread_db.so.1</font>&quot;.
 
-Catchpoint 1 (call to syscall fork), <font color="#C4A000">syscall</font> () at <font color="#4E9A06">../sysdeps/unix/sysv/linux/x86_64/syscall.S</font>:38
-38	../sysdeps/unix/sysv/linux/x86_64/syscall.S: No such file or directory.
+Breakpoint 1, <font color="#C4A000">main</font> (<font color="#06989A">argc</font>=&lt;optimized out&gt;, <font color="#06989A">argv</font>=&lt;optimized out&gt;) at <font color="#4E9A06">fork-test.c</font>:40
+40	  <font color="#4E9A06">int</font> ret <font color="#CC0000">=</font> <b>syscall</b><font color="#CC0000">(</font>SYS_fork<font color="#CC0000">);</font>
 (gdb) <b>info proc mappings</b>
-process 74
+process 79
 Mapped address spaces:
 
           Start Addr           End Addr       Size     Offset  Perms  objfile
@@ -1061,36 +1081,43 @@ Continuing.
 Thread 41 hit Breakpoint 2, <font color="#C4A000">handle_mm_fault</font> (<font color="#06989A">vma=vma@entry</font>=0xffff88800391ee40, <font color="#06989A">address=address@entry</font>=94342972527488, <font color="#06989A">flags=flags@entry</font>=4948, <font color="#06989A">regs=regs@entry</font>=0xffffc90000153f58) at <font color="#4E9A06">mm/memory.c</font>:6044
 6044	<font color="#CC0000">{</font>
 <span class="comment">Hmm... this doesn't look right. PID 71 is gdb...</span>
-(gdb) monitor ps
+(gdb) <b>monitor ps</b>
 36 sleeping system daemon (state [ims]) processes suppressed,
 use &apos;ps A&apos; to see all.
 Task Addr               Pid   Parent [*] cpu State Thread             Command
 0xffff888003898e80       71       70  1    0   R  0xffff888003899880 *gdb
 <span class="irrelevant">...</span>
-<span class="comment">Oops, that's not what we want. It's likely that our earlier &lsquo;syscall fork&rsquo; catchpoint triggered again.
-Let's restrict our breakpoint to the child, actually.</span>
-<span class="comment">Annoyingly we have to deal with gdb and the kernel using separate &lsquo;numbering system&rsquo; here...</span>
-(gdb) <b>info thread</b>
+</pre>
+
+Oops, that's not what we want. It's likely that our earlier &lsquo;syscall fork&rsquo; catchpoint triggered again. Let's keep doing `c`, and also go back to the gdb in the VM and do `c`, until we get to handle_mm_fault in the fork-test, either child or parent (the first one would copy memory). The confusing &lsquo;two numbering system&rsquo; for threads in kgdb definitely isn't helpful, but you can always do either a `monitor ps` or `info threads` to check. The breakpoint message uses the &lsquo;gdb numbering&rsquo;, which is the first column of `info threads`.
+
+<pre>(gdb) <b>info threads</b>
   Id   Target Id                      Frame
-  1    Thread 4294967294 (shadowCPU0) <font color="#C4A000">handle_mm_fault</font> (<font color="#06989A">vma=vma@entry</font>=0xffff88800391ee40, <font color="#06989A">address=address@entry</font>=94342972527488, <font color="#06989A">flags=flags@entry</font>=4948, <font color="#06989A">regs=regs@entry</font>=0xffffc90000153f58) at <font color="#4E9A06">mm/memory.c</font>:6044
-  2    Thread 1 (init.sh)             <font color="#3465A4">0x0000000000000000</font> in <font color="#C4A000">fixed_percpu_data</font> ()
 <span class="irrelevant">  ...</span>
-* 41   Thread 71 (gdb)                <font color="#C4A000">handle_mm_fault</font> (<font color="#06989A">vma=vma@entry</font>=0xffff88800391ee40, <font color="#06989A">address=address@entry</font>=94342972527488, <font color="#06989A">flags=flags@entry</font>=4948, <font color="#06989A">regs=regs@entry</font>=0xffffc90000153f58) at <font color="#4E9A06">mm/memory.c</font>:6044
+* 41   Thread 71 (gdb)                <font color="#C4A000">handle_mm_fault</font> (<font color="#06989A">vma=vma@entry</font>=0xffff888003912e40, <font color="#06989A">address=address@entry</font>=94440112313216, <font color="#06989A">flags=flags@entry</font>=4948, <font color="#06989A">regs=regs@entry</font>=0xffffc9000015bf58) at <font color="#4E9A06">mm/memory.c</font>:6044
   42   Thread 73 (gdb worker)         <font color="#3465A4">0x0000000000000000</font> in <font color="#C4A000">fixed_percpu_data</font> ()
   43   Thread 74 (fork-test)          <font color="#3465A4">0x0000000000000000</font> in <font color="#C4A000">fixed_percpu_data</font> ()
-  <span class="highlight">45</span>   Thread 78 (fork-test)          <font color="#3465A4">0x0000000000000000</font> in <font color="#C4A000">fixed_percpu_data</font> ()
-(gdb) <b>del 2</b>
-(gdb) <b>break handle_mm_fault thread 45</b>
-Breakpoint 4 at <font color="#3465A4">0xffffffff81296e90</font>: file <font color="#4E9A06">mm/memory.c</font>, line 6044.
+  45   Thread 78 (fork-test)          <font color="#3465A4">0x0000000000000000</font> in <font color="#C4A000">fixed_percpu_data</font> ()
+(gdb) <b>c</b>
+Continuing.
+[Thread 8 exited]
+
+Thread 41 hit Breakpoint 2, <font color="#C4A000">handle_mm_fault</font> (<font color="#06989A">vma=vma@entry</font>=0xffff888003912e40, <font color="#06989A">address=address@entry</font>=94440112313216, <font color="#06989A">flags=flags@entry</font>=884, <font color="#06989A">regs=regs@entry</font>=0xffffc9000015bf58) at <font color="#4E9A06">mm/memory.c</font>:6044
+6044	<font color="#CC0000">{</font>
+(gdb) <b>c</b>
+Continuing.
+
+<span class="irrelevant">... more repetations omitted ...</span>
+
 (gdb) <b>c</b>
 Continuing.
 [Switching to Thread 78]
 
-Thread 45 hit Breakpoint 4, <font color="#C4A000">handle_mm_fault</font> (<font color="#06989A">vma=vma@entry</font>=0xffff888003a3e260, <font color="#06989A">address=address@entry</font>=140737351884904, <font color="#06989A">flags=flags@entry</font>=533, <font color="#06989A">regs=regs@entry</font>=0xffffc9000004bda8) at <font color="#4E9A06">mm/memory.c</font>:6044
+Thread 45 hit Breakpoint 2, <font color="#C4A000">handle_mm_fault</font> (<font color="#06989A">vma=vma@entry</font>=0xffff888003a451c8, <font color="#06989A">address=address@entry</font>=140737351884904, <font color="#06989A">flags=flags@entry</font>=533, <font color="#06989A">regs=regs@entry</font>=0xffffc9000016bda8) at <font color="#4E9A06">mm/memory.c</font>:6044
 6044	<font color="#CC0000">{</font>
 (gdb) <b>monitor ps</b>
 36 sleeping system daemon (state [ims]) processes suppressed,
-use &apos;ps A&apos; to see all.
+use 'ps A' to see all.
 Task Addr               Pid   Parent [*] cpu State Thread             Command
 0xffff88800389c880       78       71  1    0   R  0xffff88800389d280 *fork-test
 
@@ -1100,22 +1127,139 @@ Task Addr               Pid   Parent [*] cpu State Thread             Command
 0xffff888003899d00       73       70  0    0   S  0xffff88800389a700  gdb worker
 0xffff88800389ab80       74       71  0    0   t  0xffff88800389b580  fork-test
 0xffff88800389c880       78       71  1    0   R  0xffff88800389d280 *fork-test
-<span class="comment">Finally! Let's check the vma</span>
+<span class="comment">ok nice, let's look at the faulted address/VMA:</span>
 (gdb) <b>print/x *vma</b>
 <font color="#06989A">$2</font> = {{{<font color="#06989A">vm_start</font> = 0x7ffff7dd9000, <font color="#06989A">vm_end</font> = 0x7ffff7ddc000}, <font color="#06989A">vm_rcu</font> = {<font color="#06989A">next</font> = 0x7ffff7dd9000, <font color="#06989A">func</font> = 0x7ffff7ddc000}}, <font color="#06989A">vm_mm</font> = 0xffff88800284cf00, <font color="#06989A">vm_page_prot</font> = {<font color="#06989A">pgprot</font> = 0x8000000000000025}, {<font color="#06989A">vm_flags</font> = 0x100073,
-    <font color="#06989A">__vm_flags</font> = 0x100073}, <font color="#06989A">detached</font> = 0x0, <font color="#06989A">vm_lock_seq</font> = 0x0, <font color="#06989A">vm_lock</font> = 0xffff888003947fc8, <font color="#06989A">shared</font> = {<font color="#06989A">rb</font> = {<font color="#06989A">__rb_parent_color</font> = 0x0, <font color="#06989A">rb_right</font> = 0x0, <font color="#06989A">rb_left</font> = 0x0}, <font color="#06989A">rb_subtree_last</font> = 0x0}, <font color="#06989A">anon_vma_chain</font> = {<font color="#06989A">next</font> = 0xffff888003a39550,
-    <font color="#06989A">prev</font> = 0xffff888003a39510}, <font color="#06989A">anon_vma</font> = 0xffff888003a3aaf8, <font color="#06989A">vm_ops</font> = 0x0, <font color="#06989A">vm_pgoff</font> = 0x7ffff7dd9, <font color="#06989A">vm_file</font> = 0x0, <font color="#06989A">vm_private_data</font> = 0x0, <font color="#06989A">swap_readahead_info</font> = {<font color="#06989A">counter</font> = 0x0}, <font color="#06989A">vm_userfaultfd_ctx</font> = {&lt;No data fields&gt;}}
-(gdb) print/x address
+    <font color="#06989A">__vm_flags</font> = 0x100073}, <font color="#06989A">detached</font> = 0x0, <font color="#06989A">vm_lock_seq</font> = 0x0, <font color="#06989A">vm_lock</font> = 0xffff88800392cd70, <font color="#06989A">shared</font> = {<font color="#06989A">rb</font> = {<font color="#06989A">__rb_parent_color</font> = 0x0, <font color="#06989A">rb_right</font> = 0x0, <font color="#06989A">rb_left</font> = 0x0}, <font color="#06989A">rb_subtree_last</font> = 0x0}, <font color="#06989A">anon_vma_chain</font> = {<font color="#06989A">next</font> = 0xffff888003a4b210,
+    <font color="#06989A">prev</font> = 0xffff888003a4b1d0}, <font color="#06989A">anon_vma</font> = 0xffff888003a37af8, <font color="#06989A">vm_ops</font> = 0x0, <font color="#06989A">vm_pgoff</font> = 0x7ffff7dd9, <font color="#06989A">vm_file</font> = 0x0, <font color="#06989A">vm_private_data</font> = 0x0, <font color="#06989A">swap_readahead_info</font> = {<font color="#06989A">counter</font> = 0x0}, <font color="#06989A">vm_userfaultfd_ctx</font> = {&lt;No data fields&gt;}}
+(gdb) <b>print/x address</b>
 <font color="#06989A">$3</font> = 0x7ffff7dda068
 </pre>
 
-Hmm&hellip; This is not the area previously marked `[stack]` in `info proc mappings`. However, do you remember
+Hmm&hellip; This is not the area previously marked `[stack]` in `info proc mappings` <img src="./thinking-face.png" class="emoji" alt="&#x1F914;">
+
+Remember [earlier](#trace-after-fork) in the `trace-cmd` result, there was a `__rseq_handle_notify_resume` right after fork, even before the first `handle_mm_fault`? After searching around I realized that this is likely here to handle restartable sequences, which after reading [some Stack Overflow](https://stackoverflow.com/a/77269567/4013790) I came to the conclusion that it is a feature that will result in the kernel doing something to the user-space (like writing to some memory) after a process switches CPU, or in this case apparently also after a fork. In that case, this fault is caused by the kernel itself writing to that CoW'd memory. I guess that's pretty cool.
+
+<pre>(gdb) <b>bt</b>
+#0  <font color="#C4A000">handle_mm_fault</font> (<font color="#06989A">vma=vma@entry</font>=0xffff888003a3e260, <font color="#06989A">address=address@entry</font>=140737351884904, <font color="#06989A">flags=flags@entry</font>=533, <font color="#06989A">regs=regs@entry</font>=0xffffc9000004bda8) at <font color="#4E9A06">mm/memory.c</font>:6044
+#1  <font color="#3465A4">0xffffffff8106f63d</font> in <font color="#C4A000">do_user_addr_fault</font> (<font color="#06989A">regs=regs@entry</font>=0xffffc9000004bda8, <font color="#06989A">error_code=error_code@entry</font>=3, <font color="#06989A">address=address@entry</font>=140737351884904) at <font color="#4E9A06">arch/x86/mm/fault.c</font>:1389
+#2  <font color="#3465A4">0xffffffff81857850</font> in <font color="#C4A000">handle_page_fault</font> (<font color="#06989A">regs</font>=0xffffc9000004bda8, <font color="#06989A">error_code</font>=3, <font color="#06989A">address</font>=140737351884904) at <font color="#4E9A06">arch/x86/mm/fault.c</font>:1481
+#3  <font color="#C4A000">exc_page_fault</font> (<font color="#06989A">regs</font>=0xffffc9000004bda8, <font color="#06989A">error_code</font>=3) at <font color="#4E9A06">arch/x86/mm/fault.c</font>:1539
+#4  <font color="#3465A4">0xffffffff81a0125b</font> in <font color="#C4A000">asm_exc_page_fault</font> () at <font color="#4E9A06">./arch/x86/include/asm/idtentry.h</font>:623
+#5  <font color="#3465A4">0x00007ffff7edd799</font> in <font color="#C4A000">??</font> ()
+#6  <font color="#3465A4">0xffffc9000004bf58</font> in <font color="#C4A000">??</font> ()
+#7  <font color="#3465A4">0x0000000000000000</font> in <font color="#C4A000">??</font> ()
+</pre>
+
+The gdb backtrace here doesn't tell us the full picture. In fact, the kernel's own `bt` does a better job when things cross an exception or interrupt boundary (which in this case would be the page fault).
+
+<pre>(gdb) <b>monitor bt</b>
+Stack traceback for pid 78
+0xffff88800389c880       78       71  1    0   R  0xffff88800389d280 *fork-test
+CPU: 0 UID: 0 PID: 78 Comm: fork-test Not tainted 6.12.9-dev-00028-ga175abc44fb9-dirty #164
+Hardware name: QEMU Standard PC (Q35 + ICH9, 2009), BIOS Arch Linux 1.16.3-1-1 04/01/2014
+Call Trace:
+ &lt;TASK&gt;
+<span class="irrelevant"> dump_stack_lvl+0x53/0x70
+ asm_exc_int3+0x3e/0x50</span>
+RIP: 0010:handle_mm_fault+0x0/0x210
+Code: 78 08 ba 01 00 00 00 48 89 de e8 8b 68 fe ff 65 ff 0d 4c 4e d9 7e 0f 85 dd fb ff ff 0f 1f 44 00 00 e9 d3 fb ff ff 0f 1f 40 00 &lt;f3&gt; 0f 1e fa 0f 1f 44 00 00 55 89 d0 83 e0 01 48 89 e5 41 57 41 56
+RSP: 0018:ffffc9000004bd28 EFLAGS: 00000246
+<span class="irrelevant">RAX: 0000000000000000 RBX: 0000000000000003 RCX: ffffc9000004bda8
+RDX: 0000000000000215 RSI: 00007ffff7dda068 RDI: ffff888003a3e260
+RBP: ffffc9000004bd68 R08: ffff888003a3e260 R09: ffff888003a3e260
+R10: ffff88800397fe08 R11: ffff88800397fe0c R12: ffffc9000004bda8
+R13: 00007ffff7dda068 R14: ffff88800284cf00 R15: 0000000000000215</span>
+ ? handle_mm_fault+0x1/0x210
+ ? do_user_addr_fault+0x16d/0x5f0
+ exc_page_fault+0x80/0x160
+ asm_exc_page_fault+0x2b/0x30
+RIP: 0010:__put_user_8+0x11/0x20
+Code: ca c3 0f 1f 80 00 00 00 00 f3 0f 1e fa 0f 01 cb 89 01 31 c9 0f 01 ca c3 90 f3 0f 1e fa 48 89 cb 48 c1 fb 3f 48 09 d9 0f 01 cb &lt;48&gt; 89 01 31 c9 0f 01 ca c3 66 0f 1f 44 00 00 f3 0f 1e fa 0f 01 cb
+RSP: 0018:ffffc9000004be58 EFLAGS: 00050202
+<span class="irrelevant">RAX: 0000000000000000 RBX: 0000000000000000 RCX: 00007ffff7dda068
+RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000000
+RBP: ffffc9000004bef8 R08: 0000000000000000 R09: 0000000000000000
+R10: 0000000000000001 R11: 0000000000000000 R12: ffff88800389c880
+R13: 0000000000000000 R14: ffffc9000004bf58 R15: 00007ffff7edd799</span>
+ ? __rseq_handle_notify_resume+0x225/0x470
+ ? arch_do_signal_or_restart+0x4a/0x270
+ syscall_exit_to_user_mode+0xe8/0x140
+ ret_from_fork+0x2d/0x60
+ ret_from_fork_asm+0x11/0x20
+RIP: 0033:0x7ffff7edd799
+Code: 08 89 e8 5b 5d c3 66 2e 0f 1f 84 00 00 00 00 00 90 48 89 f8 48 89 f7 48 89 d6 48 89 ca 4d 89 c2 4d 89 c8 4c 8b 4c 24 08 0f 05 &lt;48&gt; 3d 01 f0 ff ff 73 01 c3 48 8b 0d 37 06 0d 00 f7 d8 64 89 01 48
+RSP: 002b:00007fffffffebb8 EFLAGS: 00000306 ORIG_RAX: 0000000000000039
+<span class="irrelevant">RAX: 0000000000000000 RBX: 00007fffffffed08 RCX: 00007ffff7edd799
+RDX: 00007ffff7fc9b7f RSI: 0000000000000002 RDI: 00007fffffffebc0
+RBP: 0000000dde6dc87b R08: 00007ffff7fc5080 R09: 000000000000003b
+R10: 0000000000000000 R11: 0000000000000206 R12: 0000000000000000
+R13: 00007fffffffed18 R14: 0000555555557dd8 R15: 00007ffff7ffd020
+ &lt;/TASK&gt;</span>
+</pre>
+
+Anyway, it's not terribly important to understand the exact working of these stuff. Let's continue and see if we get another `handle_mm_fault` on the child's stack.
+
+<pre>(gdb) <b>c</b>
+Continuing.
+<span class="irrelevant">... the next one is the same thing in the parent, continuing again ...</span>
+[Switching to Thread 78]
+
+Thread 45 hit Breakpoint 2, <font color="#C4A000">handle_mm_fault</font> (<font color="#06989A">vma=vma@entry</font>=0xffff888003956be0, <font color="#06989A">address=address@entry</font>=140737488350168, <font color="#06989A">flags=flags@entry</font>=4693, <font color="#06989A">regs=regs@entry</font>=0xffffc90000173f58) at <font color="#4E9A06">mm/memory.c</font>:6044
+6044	<font color="#CC0000">{</font>
+(gdb) <b>print/x vma-&gt;vm_start</b>
+<font color="#06989A">$4</font> = 0x7ffffffde000
+<span class="code-comment">Previously:
+      0x7ffffffde000     0x7ffffffff000    0x21000        0x0  rw-p   [stack]
+</span>
+</pre>
+
+Nice! Now, this whole process was a bit fiddly. With some clever `if` statements you can probably make the kernel automatically break when the right `handle_mm_fault` happens (e.g. first time after a process called &lsquo;fork-test&rsquo; returns from fork). Alternatively you can place a bunch of `trace_printk`s to study its behaviour. Let's see how far we get in that function: (ignore the different thread IDs, I had to restart the VM and did some different things)
+
+<pre>(gdb) <b>n</b>
+47			<font color="#3465A4"><b>return</b></font> <b>this_cpu_read_const</b><font color="#CC0000">(</font>const_pcpu_hot<font color="#CC0000">.</font>current_task<font color="#CC0000">);</font>
+(gdb) <b>bt</b>
+#0  <font color="#C4A000">handle_mm_fault</font> (<font color="#06989A">vma=vma@entry</font>=0xffff888003956be0, <font color="#06989A">address=address@entry</font>=140737488350168, <font color="#06989A">flags=flags@entry</font>=4693, <font color="#06989A">regs=regs@entry</font>=0xffffc90000173f58) at <font color="#4E9A06">./arch/x86/include/asm/current.h</font>:47
+#1  <font color="#3465A4">0xffffffff8106f6f4</font> in <font color="#C4A000">do_user_addr_fault</font> (<font color="#06989A">regs=regs@entry</font>=0xffffc90000173f58, <font color="#06989A">error_code=error_code@entry</font>=7, <font color="#06989A">address=address@entry</font>=140737488350168) at <font color="#4E9A06">arch/x86/mm/fault.c</font>:1338
+#2  <font color="#3465A4">0xffffffff81857850</font> in <font color="#C4A000">handle_page_fault</font> (<font color="#06989A">regs</font>=0xffffc90000173f58, <font color="#06989A">error_code</font>=7, <font color="#06989A">address</font>=140737488350168) at <font color="#4E9A06">arch/x86/mm/fault.c</font>:1481
+#3  <font color="#C4A000">exc_page_fault</font> (<font color="#06989A">regs</font>=0xffffc90000173f58, <font color="#06989A">error_code</font>=7) at <font color="#4E9A06">arch/x86/mm/fault.c</font>:1539
+#4  <font color="#3465A4">0xffffffff81a0125b</font> in <font color="#C4A000">asm_exc_page_fault</font> () at <font color="#4E9A06">./arch/x86/include/asm/idtentry.h</font>:623
+#5  <font color="#3465A4">0x00007ffff7ffd020</font> in <font color="#C4A000">??</font> ()
+#6  <font color="#3465A4">0x0000555555557dd8</font> in <font color="#C4A000">??</font> ()
+#7  <font color="#3465A4">0x00007fffffffed18</font> in <font color="#C4A000">??</font> ()
+#8  <font color="#3465A4">0x0000000000000000</font> in <font color="#C4A000">??</font> ()
+(gdb) <b>n</b>
+6052		ret <font color="#CC0000">=</font> <b>sanitize_fault_flags</b><font color="#CC0000">(</font>vma<font color="#CC0000">,</font> <font color="#CC0000">&amp;</font>flags<font color="#CC0000">);</font>
+(gdb)
+6056		<font color="#3465A4"><b>if</b></font> <font color="#CC0000">(!</font><b>arch_vma_access_permitted</b><font color="#CC0000">(</font>vma<font color="#CC0000">,</font> flags <font color="#CC0000">&amp;</font> FAULT_FLAG_WRITE<font color="#CC0000">,</font>
+(gdb)
+6063		is_droppable <font color="#CC0000">=</font> <font color="#CC0000">!!(</font>vma<font color="#CC0000">-&gt;</font>vm_flags <font color="#CC0000">&amp;</font> VM_DROPPABLE<font color="#CC0000">);</font>
+(gdb) <b>n</b>
+11		<font color="#3465A4"><b>return</b></font> <font color="#CC0000">!!(</font>vma<font color="#CC0000">-&gt;</font>vm_flags <font color="#CC0000">&amp;</font> VM_HUGETLB<font color="#CC0000">);</font>
+(gdb) <b>bt</b>
+#0  <font color="#C4A000">handle_mm_fault</font> (<font color="#06989A">vma=vma@entry</font>=0xffff888003956be0, <font color="#06989A">address=address@entry</font>=140737488350168, <font color="#06989A">flags=flags@entry</font>=4693, <font color="#06989A">regs=regs@entry</font>=0xffffc90000173f58)
+    at <font color="#4E9A06">./include/linux/hugetlb_inline.h</font>:11
+#1  <font color="#3465A4">0xffffffff8106f6f4</font> in <font color="#C4A000">do_user_addr_fault</font> (<font color="#06989A">regs=regs@entry</font>=0xffffc90000173f58, <font color="#06989A">error_code=error_code@entry</font>=7, <font color="#06989A">address=address@entry</font>=140737488350168)
+    at <font color="#4E9A06">arch/x86/mm/fault.c</font>:1338
+#2  <font color="#3465A4">0xffffffff81857850</font> in <font color="#C4A000">handle_page_fault</font> (<font color="#06989A">regs</font>=0xffffc90000173f58, <font color="#06989A">error_code</font>=7, <font color="#06989A">address</font>=140737488350168) at <font color="#4E9A06">arch/x86/mm/fault.c</font>:1481
+#3  <font color="#C4A000">exc_page_fault</font> (<font color="#06989A">regs</font>=0xffffc90000173f58, <font color="#06989A">error_code</font>=7) at <font color="#4E9A06">arch/x86/mm/fault.c</font>:1539
+#4  <font color="#3465A4">0xffffffff81a0125b</font> in <font color="#C4A000">asm_exc_page_fault</font> () at <font color="#4E9A06">./arch/x86/include/asm/idtentry.h</font>:623
+#5  <font color="#3465A4">0x00007ffff7ffd020</font> in <font color="#C4A000">??</font> ()
+#6  <font color="#3465A4">0x0000555555557dd8</font> in <font color="#C4A000">??</font> ()
+#7  <font color="#3465A4">0x00007fffffffed18</font> in <font color="#C4A000">??</font> ()
+#8  <font color="#3465A4">0x0000000000000000</font> in <font color="#C4A000">??</font> ()
+(gdb) <b>n</b>
+6077			ret <font color="#CC0000">=</font> <b>__handle_mm_fault</b><font color="#CC0000">(</font>vma<font color="#CC0000">,</font> address<font color="#CC0000">,</font> flags<font color="#CC0000">);</font>
+(gdb)
+</pre>
+
+There
 
 We seems to have entered the child! We chose to break on `handle_mm_fault` &ndash; does it look familiar? This was the function that was spamming our ftrace earlier when we didn't filter on `__do_sys_fork`. Now, I'm again going to randomly pull out a function name: `wp_page_copy`. You should eventually find this if you follow the code path, getting past the page table allocation in `__handle_mm_fault`, then `handle_pte_fault`, getting past the swap (for now) and NUMA stuff, into [`do_wp_page`](https://github.com/micromaomao/linux-dev/blob/ick/mm/memory.c#L3657) and eventually find [`wp_page_copy`](https://github.com/micromaomao/linux-dev/blob/ick/mm/memory.c#L3333) at the bottom.
 
 <pre>(gdb) <b>b wp_page_copy</b>
 Breakpoint 8 at <font color="#3465A4">0xffffffff81295add</font>: file <font color="#4E9A06">mm/memory.c</font>, line 3333.
-(gdb) info break
+(gdb) <b>info break</b>
 Num     Type           Disp Enb Address            What
 7       breakpoint     keep y   <font color="#3465A4">0xffffffff8129db20</font> in <font color="#C4A000">handle_mm_fault</font> at <font color="#4E9A06">mm/memory.c</font>:6044
 	breakpoint already hit 1 time

@@ -654,7 +654,7 @@ Ok. now finally the exciting part! This part is going to be a bit more difficult
 - [CS 134 OS—5.7 Paging on x86](https://www.youtube.com/watch?v=dn55T2q63RU&t=11s) covers the page table structure itself. Note that in this video, the lecturer is talking about how this is on 32 bit, hence only 2 levels of indirections. On x86_64, there are 4 levels of paging, but the fundamental idea is the same.
 - [CS 134 OS—7 Paging HW: Copy-On-Write Fork](https://www.youtube.com/watch?v=ViUwLytKzTY) is especially useful for our purpose. It discusses how an OS can use write protected pages to implement _copy-on-write_ memory (used when forking a process).
 
-However, don't be alarmed by this &ndash; understanding how page tables work helps, but we won't need to do any manual manipulation to these tables! Let's start by looking at how Linux manages a process's memory.
+However, don't be alarmed by this &ndash; understanding how page tables work helps, but we won't need to do any manual manipulation to these tables. Let's start by looking at how Linux manages a process's memory.
 
 There are multiple ways we could go about this &ndash; one thing we can do is to follow what happens on a `fork`, and try to replicate that (but only the memory part). We can again use the [fork-test.c](fork-test.c) program for this.
 
@@ -773,7 +773,26 @@ Syntax highlighting baked in to make part of it less opaque, to highlight the im
 
 This is executed under a `for_each_vma`. VMA here means &lsquo;Virtual Memory Area&rsquo;, and it represents a memory mapping, which can be either a file, other exotic stuff like devices, or anonymous (i.e. &lsquo;normal&rsquo; RAM), which is what we care the most about.
 
-From [`copy_page_range`](https://github.com/micromaomao/linux-dev/blob/ick/mm/memory.c#L1358), after descending through the `copy_p?d_range` (which we can guess is dealing with lower and lower page tables), it eventually ends up in [`__copy_present_ptes`](https://github.com/micromaomao/linux-dev/blob/ick/mm/memory.c#L951), which contains this bit that should seem very interesting for what we're trying to do here:
+From [`copy_page_range`](https://github.com/micromaomao/linux-dev/blob/ick/mm/memory.c#L1358), after descending through the `copy_p?d_range` (which we can guess is dealing with lower and lower page tables), ignoring code which handles huge pages, we end up in [`copy_present_ptes`](https://github.com/micromaomao/linux-dev/blob/v6.12.9/mm/memory.c#L980). In this and related memory management functions, we see the concept of a &lsquo;_folio_&rsquo;. They are basically consecutive pages that are to be allocated, copied, and freed together.<footnote>
+See <a href="https://lwn.net/Articles/937239/"><i>Large folios for anonymous memory</i> - LWN.net</a>, or <a href="https://www.youtube.com/watch?v=nknQML80w3E"><i>Memory Folios</i> - Matthew Wilcox, Oracle</a> for an in-depth talk on folios.
+</footnote>
+For example, when you ask for a large chunk of anonymous memory via mmap, the kernel may allocate in 16 KiB chunks, instead of individual page-by-page.
+
+[`copy_present_ptes`](https://github.com/micromaomao/linux-dev/blob/v6.12.9/mm/memory.c#L980) has branches for both the single-page case and batching copying for multiple consecutive pages, but in both case it does two crucial things which might not be obvious at first glance. First we have:
+
+```c
+folio_ref_add(folio, nr);
+// or, in the single-page case:
+folio_get(folio);
+```
+
+`xxx_get` is a common naming scheme in the kernel for functions that e.g. increases a reference count. Similarly `xxx_put` will usually decrement a reference count and free resources. While I don't completely get the naming (I guess you can get stuff and &lsquo;put&rsquo; stuff back??), this pattern is also _somewhat_ consistently used for e.g. files, tasks, namespaces and other resources that can have shared ownership.
+
+Note that in this case, the reference count of this folio is used to determine how many processes<footnote>
+With tasks that shares the same address space considered the same &lsquo;process&rsquo;.
+</footnote> have this page mapped (potentially in a write-protected state) &ndash; we shall see where this is used later.
+
+It then calls [`__copy_present_ptes`](https://github.com/micromaomao/linux-dev/blob/v6.12.9/mm/memory.c#L949), which contains this bit that should seem very interesting for what we're trying to do here:
 
 <!--
 Original source code:
@@ -808,7 +827,9 @@ static __always_inline void __copy_present_ptes(struct vm_area_struct *dst_vma,
     <span class="hljs-comment">/* If it's a shared mapping, mark it clean in the child. */</span></span>
 </code></pre>
 
-Hmm, ok. This seems to just be setting the page table entries (PTEs) to be read-only (write-protect) if this page is supposed to CoW. If you drill down into either [`wrprotect_ptes`](https://github.com/micromaomao/linux-dev/blob/ick/include/linux/pgtable.h#L851) or [`pte_wrprotect`](https://github.com/micromaomao/linux-dev/blob/ick/arch/x86/include/asm/pgtable.h#L440), none of those functions does anything fancy aside from just manipulating or setting the PTE flags. Note that [`__copy_present_ptes`](https://github.com/micromaomao/linux-dev/blob/ick/mm/memory.c#L951) does 2 things at once &ndash; copy the PTEs to the child process's page table, and setting them as read-only in both the parent and the child if it is Copy-on-Write (CoW).
+Hmm, ok. This seems to just be setting the page table entries (PTEs) to be read-only (write-protect) if this page is supposed to CoW. If you drill down into either [`wrprotect_ptes`](https://github.com/micromaomao/linux-dev/blob/ick/include/linux/pgtable.h#L851) or [`pte_wrprotect`](https://github.com/micromaomao/linux-dev/blob/ick/arch/x86/include/asm/pgtable.h#L440), none of those functions does anything fancy aside from just manipulating or setting the PTE flags.
+
+Note that [`__copy_present_ptes`](https://github.com/micromaomao/linux-dev/blob/ick/mm/memory.c#L951) does 2 things at once &ndash; copy the PTEs to the child process's page table, and setting them as read-only in both the parent and the child if it is Copy-on-Write (CoW). This is slightly different from what we want to do, because we don't want to create a new page table &ndash; we just want to write-protect all the existing pages. How would we do that?
 
 If you want to have some fun, you can try breaking into the kernel debugger at a fork like this:
 
@@ -888,7 +909,7 @@ Thread 41 hit Breakpoint 2.1, <font color="#C4A000">__copy_present_ptes</font> (
 #12 <font color="#3465A4">0xffffffff81083705</font> in <font color="#C4A000">__do_sys_fork</font> (<font color="#06989A">__unused</font>=&lt;optimized out&gt;) at <font color="#4E9A06">kernel/fork.c</font>:2894
 </pre>
 
-The `copy_p?d_range` functions here are indeed just descending down the page table levels (p4d = level 4, pud = page &lsquo;upper&rsquo; directory aka. level 3, pmd = page &lsquo;middle&rsquo; directory aka. level 2, pte = page table entry)
+The `copy_p?d_range` functions here are indeed just descending down the page table levels (p4d = level 4, pud = page &lsquo;upper&rsquo; directory aka. level 3, pmd = page &lsquo;middle&rsquo; directory aka. level 2, pte = page table entry). In this case, given the backtrace above, the folio is just one page.
 
 Ok, that's great, but later on if we get a write page fault, how does the kernel know this page is supposed to be CoW'd (rather than, say, treating that fault as an error)?
 

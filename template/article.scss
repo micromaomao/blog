@@ -53,6 +53,13 @@ p a, ul a, li a, h2 a, h3 a, h4 a, body > a.home {
   }
 }
 
+pre a {
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  color: inherit;
+  text-decoration: dashed underline;
+}
+
 body > code, body :not(pre) > code {
   display: inline-block;
   background-color: white;
@@ -206,7 +213,7 @@ blockquote {
 
       > a {
         cursor: pointer;
-        color: #088da5;
+        color: $color-link;
       }
     }
   }

@@ -1,6 +1,6 @@
 ---
 title: "Using the Linux kernel to help me crack an executable quickly"
-tags: ["Linux", "systems programming", "reverse engineering", "performance", "process checkpoint"]
+tags: ["Linux", "systems programming", "reverse engineering", "memory management", "deep dives"]
 time: "2025-01-01T23:21:38+00:00"
 discuss:
   "GitHub": "https://github.com/micromaomao/linux-dev/issues"
@@ -829,9 +829,11 @@ static __always_inline void __copy_present_ptes(struct vm_area_struct *dst_vma,
 
 Hmm, ok. This seems to just be setting the page table entries (PTEs) to be read-only (write-protect) if this page is supposed to CoW. If you drill down into either [`wrprotect_ptes`](https://github.com/micromaomao/linux-dev/blob/ick/include/linux/pgtable.h#L851) or [`pte_wrprotect`](https://github.com/micromaomao/linux-dev/blob/ick/arch/x86/include/asm/pgtable.h#L440), none of those functions does anything fancy aside from just manipulating or setting the PTE flags.
 
-Note that [`__copy_present_ptes`](https://github.com/micromaomao/linux-dev/blob/ick/mm/memory.c#L951) does 2 things at once &ndash; copy the PTEs to the child process's page table, and setting them as read-only in both the parent and the child if it is Copy-on-Write (CoW). This is slightly different from what we want to do, because we don't want to create a new page table &ndash; we just want to write-protect all the existing pages. How would we do that?
+Note that [`__copy_present_ptes`](https://github.com/micromaomao/linux-dev/blob/ick/mm/memory.c#L951) does 2 things at once &ndash; copy the PTEs to the child process's page table, and setting them as read-only in both the parent and the child if it is Copy-on-Write (CoW). This is slightly different from what we want to do, because we don't want to create a new page table &ndash; we just want to write-protect all the existing pages. How would we do that? We will find out in a bit &ndash; for now let's try to find out a bit more about memory management.
 
-If you want to have some fun, you can try breaking into the kernel debugger at a fork like this:
+#### Kgdb fun
+
+Have you ever wanted to run an actual kernel debugger? We can try breaking in the kernel when our test program makes the fork syscall. First we need a debug break just so that gdb can connect to the kernel and we can set our breakpoint:
 
 <pre>
 root@f8b9ed144f52:/# <b>echo g > /proc/sysrq-trigger</b>
@@ -840,8 +842,10 @@ root@f8b9ed144f52:/# <b>echo g > /proc/sysrq-trigger</b>
 Entering kdb (current=0xffff888003898e80, pid 71) on processor 0 due to NonMaskable Interrupt @ 0xffffffff8115fb08
 [0]kdb>
 </pre>
+
+Now, in another terminal, open the linux-dev directory and do:
+
 <pre>
-<span class="comment"><i>Now, in another terminal:</i></span>
 <font color="#4E9A06">&gt; </font><font color="#3465A4">./.dev/kgdb.sh</font>
     <span class="irrelevant"># sometimes this would fail to connect. If you don't see a backtrace, do "q" then try again</span>
 <font color="#75507B"><b>GNU gdb (GDB) 15.2</b></font>
@@ -857,14 +861,18 @@ Breakpoint 1 at <font color="#3465A4">0xffffffff810836c0</font>: file <font colo
 (gdb) <b>c</b>
 Continuing.
 </pre>
+
+Now, in the VM terminal, run our test program:
+
 <pre>
-<span class="comment">Now, in the VM terminal:</span>
 root@f8b9ed144f52:/# <b>exec ./fork-test</b> <span class="code-comment"># Use exec so that we don't break on the shell's fork</span><footnote>
 Technically the shell (and libc in general) would probably use either <a href="https://man7.org/linux/man-pages/man2/clone.2.html"><code>clone</code></a>, or in some cases <a href="https://man7.org/linux/man-pages/man2/vfork.2.html"><code>vfork</code></a>, so it might not matter anyway
 </footnote>
 </pre>
+
+And back to gdb:
+
 <pre>
-<span class="comment">And back to gdb:</span>
 [Thread 8 exited]
 
 Thread 41 hit Breakpoint 1, <font color="#C4A000">__do_sys_fork</font> (<font color="#06989A">__unused</font>=0xffffc9000014bf58) at <font color="#4E9A06">kernel/fork.c</font>:2888
@@ -911,7 +919,7 @@ Thread 41 hit Breakpoint 2.1, <font color="#C4A000">__copy_present_ptes</font> (
 
 The `copy_p?d_range` functions here are indeed just descending down the page table levels (p4d = level 4, pud = page &lsquo;upper&rsquo; directory aka. level 3, pmd = page &lsquo;middle&rsquo; directory aka. level 2, pte = page table entry). In this case, given the backtrace above, the folio is just one page.
 
-Ok, that's great, but later on if we get a write page fault, how does the kernel know this page is supposed to be CoW'd (rather than, say, treating that fault as an error)?
+Ok, that's great, but later on if we get a write page fault, how does the kernel know this page is supposed to be CoW'd (rather than, say, treating that fault as an error)? What would happen if our own code manages to set the pages on a process to be write-protected, even when they're not in a CoW state?
 
 #### How does the kernel know what to do with write faults?
 
@@ -971,9 +979,9 @@ root@9ba6f25d9dac:/# grep -A 20 'sys_exit_fork' a.log <span class="code-comment"
        fork-test-74    [000]    51.507795: funcgraph_entry:        0.111 us   |    __rcu_read_lock();
 </pre>
 
-Remember [earlier](#what-does-fork-do-pre) when we did the ftrace on our little fork program without filtering, there was a bunch of [`handle_mm_fault`](https://github.com/micromaomao/linux-dev/blob/5996393469d99560b7845d22c9eff00661de0724/mm/memory.c#L6042)? (I've omitted many repeats of it in that trace dump)
+Remember [earlier](#what-does-fork-do-pre) when we did the ftrace on our little fork program without filtering, there was a bunch of [`handle_mm_fault`](https://github.com/micromaomao/linux-dev/blob/v6.12.1/mm/memory.c#L6042)? (I've omitted many repeats of it in that trace dump)
 
-Now we see this again, and we can reasonably guess that it is the entry point to page faults (well, for valid user space addresses). In fact, if you look at its signature, it looks like by the time we get there, we've already got the [`struct vm_area_struct`](https://github.com/micromaomao/linux-dev/blob/5996393469d99560b7845d22c9eff00661de0724/include/linux/mm_types.h#L697):
+Now we see this again, and we can reasonably guess that it is the entry point to page faults (well, for valid user space addresses). In fact, if you look at its signature, it looks like by the time we get there, we've already got the [`struct vm_area_struct`](https://github.com/micromaomao/linux-dev/blob/5996393469d99560b7845d22c9eff00661de0724/include/linux/mm_types.h#L697) reference:
 
 ```c
 /*
@@ -986,10 +994,9 @@ vm_fault_t handle_mm_fault(struct vm_area_struct *vma, unsigned long address,
                unsigned int flags, struct pt_regs *regs)
 ```
 
-Let's try running it again, but this time after the `fork`, we will break on it. We will first use GDB to find out the process's memory map, for our reference:
+Let's try running it again, but this time after the `fork`, we will break on it. We will first use GDB to find out the process's memory map, for our reference later. In our VM:
 
 <pre>
-<span class="comment">In our VM:</span>
 root@9ba6f25d9dac:/# gdb ./fork-test
 <font color="#75507B"><b>GNU gdb (Debian 13.1-3) 13.1</b></font>
 <span class="irrelevant">...</span>
@@ -1059,7 +1066,10 @@ Mapped address spaces:
 Entering kdb (current=0xffff88800389c880, pid 77) on processor 0 due to NonMaskable Interrupt @ 0xffffffff8115f7c8
 [0]kdb&gt;
 </pre>
-<pre><span class="comment">Now, in another terminal</span>
+
+Now, again, in another terminal in the linux-dev directory:
+
+<pre>
 <font color="#4E9A06">&gt; </font><font color="#3465A4">./.dev/kgdb.sh</font>
 <font color="#75507B"><b>GNU gdb (GDB) 15.2</b></font>
 <span class="irrelevant">...</span>
@@ -1070,16 +1080,22 @@ program loads</span>
 Breakpoint 1 at <font color="#3465A4">0xffffffff810833a0</font>: file <font color="#4E9A06">kernel/fork.c</font>, line 2888.
 (gdb) <b>c</b>
 Continuing.
-<span class="comment">Go back to the VM terminal and do a &lsquo;c&rsquo;, which will immediately break in kgdb again,
-then go back to kgdb</span>
+</pre>
+
+Now go back to the VM terminal and do a &lsquo;`c`&rsquo;, which will immediately break in the kernel gdb again as `syscall(SYS_fork)` is executed. We then go back to kgdb:
+
+<pre>
 [Thread 8 exited]
 [Thread 77 exited]
 [Switching to Thread 74]
 
-Thread 43<sup><span class="comment">ignore this, confusing gdb numbering</span></sup> hit Breakpoint 1, <font color="#C4A000">__do_sys_fork</font> (<font color="#06989A">__unused</font>=0xffffc90000163f58) at <font color="#4E9A06">kernel/fork.c</font>:2888
+Thread 43 hit Breakpoint 1, <font color="#C4A000">__do_sys_fork</font> (<font color="#06989A">__unused</font>=0xffffc90000163f58) at <font color="#4E9A06">kernel/fork.c</font>:2888
 2888	<font color="#CC0000">{</font>
-<span class="comment">Great, but are we sure this is the right fork we're looking for? Let's check the process
-we're currently on</span>
+</pre>
+
+Great, but are we sure this is the right fork we're looking for? Ignore the &ldquo;Thread 43&rdquo; &ndash; it is gdb confusingly numbering the threads in its own way. We can ask the kernel what task are we currently on:
+
+<pre>
 (gdb) <b>monitor ps</b>
 36 sleeping system daemon (state [ims]) processes suppressed,
 use 'ps A' to see all.
@@ -1091,7 +1107,11 @@ Task Addr               Pid   Parent [*] cpu State Thread             Command
 0xffff888003898e80       71       70  0    0   S  0xffff888003899880  gdb
 0xffff888003899d00       73       70  0    0   S  0xffff88800389a700  gdb worker
 0xffff88800389ab80       74       71  1    0   R  0xffff88800389b580 *fork-test
-<span class="comment">Nice, now we can break on handle_mm_fault, which could trigger in either the parent or the child.</span>
+</pre>
+
+Nice, now we can break on handle_mm_fault, which could trigger in either the parent or the child.
+
+<pre>
 (gdb) <b>b handle_mm_fault</b>
 Breakpoint 2 at <font color="#3465A4">0xffffffff81296e90</font>: file <font color="#4E9A06">mm/memory.c</font>, line 6044.
 (gdb) <b>c</b>
@@ -1110,7 +1130,7 @@ Task Addr               Pid   Parent [*] cpu State Thread             Command
 <span class="irrelevant">...</span>
 </pre>
 
-Oops, that's not what we want. Let's keep doing `c` until we get to `handle_mm_fault` in the fork-test process, either child or parent (the first one would copy memory). The confusing &lsquo;two numbering system&rsquo; for threads in kgdb definitely isn't helpful, but you can always do either a `monitor ps` or `info threads` to check. The breakpoint message uses the &lsquo;gdb numbering&rsquo;, which is the first column of `info threads`.
+Oops, that's not what we want. Let's keep doing `c` until we get to [`handle_mm_fault`](https://github.com/micromaomao/linux-dev/blob/v6.12.1/mm/memory.c#L6042) in the fork-test process, either child or parent (the first one would copy memory). The confusing &lsquo;two numbering system&rsquo; for threads in kgdb definitely isn't helpful, but you can always do either a `monitor ps` or `info threads` to check. The breakpoint message uses the &lsquo;gdb numbering&rsquo;, which is the first column of `info threads`.
 
 <pre>(gdb) <b>info threads</b>
   Id   Target Id                      Frame
@@ -1159,7 +1179,7 @@ Task Addr               Pid   Parent [*] cpu State Thread             Command
 
 Hmm&hellip; This is not the area previously marked `[stack]` in `info proc mappings` <img src="./thinking-face.png" class="emoji" alt="&#x1F914;">
 
-Remember [earlier](#trace-after-fork) in the `trace-cmd` result, there was a `__rseq_handle_notify_resume` right after fork, even before the first `handle_mm_fault`? After searching around I realized that this is likely here to handle restartable sequences, which after reading [some Stack Overflow](https://stackoverflow.com/a/77269567/4013790) I came to the conclusion that it is a feature that will result in the kernel doing something to the user-space (like writing to some memory) after a process switches CPU, or in this case apparently also after a fork. In that case, this fault is caused by the kernel itself writing to that CoW'd memory. I guess that's pretty cool.
+Remember [earlier](#trace-after-fork) in the `trace-cmd` result, there was a [`__rseq_handle_notify_resume`](https://github.com/micromaomao/linux-dev/blob/v6.12.9/kernel/rseq.c#L315) right after fork, even before the first [`handle_mm_fault`](https://github.com/micromaomao/linux-dev/blob/v6.12.1/mm/memory.c#L6042)? After searching around I realized that this is likely here to handle this thing called _restartable sequences_, which after reading [some Stack Overflow](https://stackoverflow.com/a/77269567/4013790) I came to the conclusion that it is a feature that will result in the kernel doing something to the user-space (like writing to some memory) after a process switches CPU, or in this case apparently also after a fork. In that case, this fault is caused by the kernel itself writing to that CoW'd memory. I guess that's pretty cool &ndash; the kernel is handling a fault caused by itself. Let's see if we can get a backtrace of the thing that caused the fault:
 
 <pre>(gdb) <b>bt</b>
 #0  <font color="#C4A000">handle_mm_fault</font> (<font color="#06989A">vma=vma@entry</font>=0xffff888003a3e260, <font color="#06989A">address=address@entry</font>=140737351884904, <font color="#06989A">flags=flags@entry</font>=533, <font color="#06989A">regs=regs@entry</font>=0xffffc9000004bda8) at <font color="#4E9A06">mm/memory.c</font>:6044
@@ -1172,7 +1192,7 @@ Remember [earlier](#trace-after-fork) in the `trace-cmd` result, there was a `__
 #7  <font color="#3465A4">0x0000000000000000</font> in <font color="#C4A000">??</font> ()
 </pre>
 
-The gdb backtrace here doesn't tell us the full picture. In fact, the kernel's own `bt` does a better job when things cross an exception or interrupt boundary (which in this case would be the page fault).
+The gdb backtrace here doesn't tell us the full picture (although it does tell us that there are functions above [`handle_mm_fault`](https://github.com/micromaomao/linux-dev/blob/v6.12.1/mm/memory.c#L6042) which wern't traced). In fact, the kernel's own `bt` does a better job when things cross an exception or interrupt boundary (which in this case would be the page fault):
 
 <pre>(gdb) <b>monitor bt</b>
 Stack traceback for pid 78
@@ -1203,7 +1223,7 @@ RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000000
 RBP: ffffc9000004bef8 R08: 0000000000000000 R09: 0000000000000000
 R10: 0000000000000001 R11: 0000000000000000 R12: ffff88800389c880
 R13: 0000000000000000 R14: ffffc9000004bf58 R15: 00007ffff7edd799</span>
- ? __rseq_handle_notify_resume+0x225/0x470
+ ? <span class="highlight"><a href="https://github.com/micromaomao/linux-dev/blob/v6.12.9/kernel/rseq.c#L315">__rseq_handle_notify_resume</a></span>+0x225/0x470
  ? arch_do_signal_or_restart+0x4a/0x270
  syscall_exit_to_user_mode+0xe8/0x140
  ret_from_fork+0x2d/0x60
@@ -1219,7 +1239,7 @@ R13: 00007fffffffed18 R14: 0000555555557dd8 R15: 00007ffff7ffd020
  &lt;/TASK&gt;</span>
 </pre>
 
-Anyway, it's not terribly important to understand the exact working of these stuff. Let's continue and see if we get another `handle_mm_fault` on the child's stack.
+Anyway, it's not terribly important to understand the exact working of these stuff. Let's continue and see if we get another [`handle_mm_fault`](https://github.com/micromaomao/linux-dev/blob/v6.12.1/mm/memory.c#L6042) on the child's stack.
 
 <pre>(gdb) <b>c</b>
 Continuing.
@@ -1235,7 +1255,57 @@ Thread 45 hit Breakpoint 2, <font color="#C4A000">handle_mm_fault</font> (<font 
 </span>
 </pre>
 
-Nice! Now, this whole process was a bit fiddly. With some clever `if` statements you can probably make the kernel automatically break when the right `handle_mm_fault` happens (e.g. first time after a process called &lsquo;fork-test&rsquo; returns from fork). Alternatively you can place a bunch of `trace_printk`s to study its behaviour. Let's see how far we get in that function:
+Nice! Now, this whole process was a bit fiddly. With some clever `if` statements you can probably make the kernel automatically break when the right [`handle_mm_fault`](https://github.com/micromaomao/linux-dev/blob/v6.12.1/mm/memory.c#L6042) happens (e.g. first time after a process called &lsquo;fork-test&rsquo; returns from fork). Alternatively you can place a bunch of `trace_printk`s to study its behaviour.
+
+Before we continue, remember that the function we're in, [`handle_mm_fault`](https://github.com/micromaomao/linux-dev/blob/v6.12.1/mm/memory.c#L6042), is not the first thing that the kernel enters when a page fault happens &ndash; by this point a number of checks has already been done. Most importantly for us, there is this bit in the function just one level up &ndash; [`do_user_addr_fault`](https://github.com/micromaomao/linux-dev/blob/v6.12.1/arch/x86/mm/fault.c#L1211):
+
+<!--
+```c
+    if (unlikely(access_error(error_code, vma))) {
+        bad_area_access_error(regs, error_code, address, NULL, vma);
+        count_vm_vma_lock_event(VMA_LOCK_SUCCESS);
+        return;
+    }
+    fault = handle_mm_fault(vma, address, flags | FAULT_FLAG_VMA_LOCK, regs);
+```
+-->
+<pre>
+<code class="language-c">    <span class="hljs-keyword">if</span> (unlikely(access_error(error_code, vma))) {
+        bad_area_access_error(regs, error_code, address, <span class="hljs-literal">NULL</span>, vma);
+<span style="opacity: 0.4;">        count_vm_vma_lock_event(VMA_LOCK_SUCCESS);
+        <span class="hljs-keyword">return</span>;
+    }
+    fault = handle_mm_fault(vma, address, flags | FAULT_FLAG_VMA_LOCK, regs);
+    ...</span>
+</code></pre>
+
+And in [`access_error`](https://github.com/micromaomao/linux-dev/blob/v6.12.1/arch/x86/mm/fault.c#L1053):
+
+<!--
+```c
+    if (error_code & X86_PF_WRITE) {
+        /* write, present and write, not present: */
+        if (unlikely(vma->vm_flags & VM_SHADOW_STACK))
+            return 1;
+        if (unlikely(!(vma->vm_flags & VM_WRITE)))
+            return 1;
+        return 0;
+    }
+```
+-->
+<pre><code class="language-c">    <span class="hljs-keyword">if</span> (error_code &amp; X86_PF_WRITE) {
+        <span class="hljs-comment">/* write, present and write, not present: */</span>
+<span style="opacity: 0.4;">        <span class="hljs-keyword">if</span> (unlikely(vma-&gt;vm_flags &amp; VM_SHADOW_STACK))
+            <span class="hljs-keyword">return</span> <span class="hljs-number">1</span>;</span>
+        <span class="hljs-keyword">if</span> (unlikely(!(vma-&gt;vm_flags &amp; VM_WRITE)))
+            <span class="hljs-keyword">return</span> <span class="hljs-number">1</span>;
+<span style="opacity: 0.4;">        <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;
+    }</span>
+</code></pre>
+
+This means that even though our page was write-protected, the fact that we got to [`handle_mm_fault`](https://github.com/micromaomao/linux-dev/blob/v6.12.1/mm/memory.c#L6042) means that our VMA is marked as writable, and we learn that `vm_flags` stores the permission bits like `VM_WRITE`. While the fact that our VMA is still writable (even when it is write-protected in the actual page table) might feel like a somewhat obvious fact (after all, the user did map the area as writable, they are just write-protected for CoW magic to work), it is interesting because it highlights the fact that the VMA permissions and page table permissions are decoupled. This tells us that, to achieve our initial goal of write-protecting the process's memory for checkpointing, we should not be changing any VMA permissions.
+
+Let's see how far we get in that function:
 
 <pre>(gdb) <b>n</b>
 47			<font color="#3465A4"><b>return</b></font> <b>this_cpu_read_const</b><font color="#CC0000">(</font>const_pcpu_hot<font color="#CC0000">.</font>current_task<font color="#CC0000">);</font>
@@ -1260,7 +1330,7 @@ Nice! Now, this whole process was a bit fiddly. With some clever `if` statements
 (gdb)
 </pre>
 
-This seems worthy of stepping into &ndash; there isn't much left in `handle_mm_fault` itself anyway.
+This seems worthy of stepping into &ndash; there isn't much left in [`handle_mm_fault`](https://github.com/micromaomao/linux-dev/blob/v6.12.1/mm/memory.c#L6042) itself anyway.
 
 <pre>
 (gdb) <b>s</b>
@@ -1303,80 +1373,55 @@ Okay, so it's just travelling down the page table levels, and allocating any non
 (gdb) <b>s</b>
 <font color="#3465A4">0xffffffff8129633e</font> in <font color="#C4A000">handle_pte_fault</font> (<font color="#06989A">vmf</font>=&lt;optimized out&gt;) at <font color="#4E9A06">mm/memory.c</font>:5752
 5752			vmf<font color="#CC0000">-&gt;</font>pte <font color="#CC0000">=</font> <b>pte_offset_map_nolock</b><font color="#CC0000">(</font>vmf<font color="#CC0000">-&gt;</font>vma<font color="#CC0000">-&gt;</font>vm_mm<font color="#CC0000">,</font> vmf<font color="#CC0000">-&gt;</font>pmd<font color="#CC0000">,</font>
-(gdb) <b>n</b>
-5909		<font color="#3465A4"><b>return</b></font> <b>handle_pte_fault</b><font color="#CC0000">(&amp;</font>vmf<font color="#CC0000">);</font>
-(gdb) <b>bt</b>
-#0  <font color="#C4A000">__handle_mm_fault</font> (<font color="#06989A">vma=vma@entry</font>=0xffff888003956be0, <font color="#06989A">address=address@entry</font>=140737488350168, <font color="#06989A">flags=flags@entry</font>=4693) at <font color="#4E9A06">mm/memory.c</font>:5909
-<span class="irrelevant">...</span>
-(gdb) <b>s</b>
-<font color="#C4A000">handle_pte_fault</font> (<font color="#06989A">vmf</font>=0xffffc90000173df0) at <font color="#4E9A06">./arch/x86/include/asm/pgtable.h</font>:1069
-1069		<font color="#3465A4"><b>return</b></font> <font color="#CC0000">(</font>val <font color="#CC0000">&amp;</font> <font color="#CC0000">~</font>_PAGE_KNL_ERRATUM_MASK<font color="#CC0000">)</font> <font color="#CC0000">==</font> <font color="#75507B">0</font><font color="#CC0000">;</font>
-<span class="comment">Hmm, we have an <i>even more</i> confusing inlining situation here.
-That &lsquo;s&rsquo; was not very confident</span>
-(gdb) <b>n</b>
-5752			vmf<font color="#CC0000">-&gt;</font>pte <font color="#CC0000">=</font> <b>pte_offset_map_nolock</b><font color="#CC0000">(</font>vmf<font color="#CC0000">-&gt;</font>vma<font color="#CC0000">-&gt;</font>vm_mm<font color="#CC0000">,</font> vmf<font color="#CC0000">-&gt;</font>pmd<font color="#CC0000">,</font>
-<!--
-(gdb) <b>n</b>
-5754			<font color="#3465A4"><b>if</b></font> <font color="#CC0000">(</font><b>unlikely</b><font color="#CC0000">(!</font>vmf<font color="#CC0000">-&gt;</font>pte<font color="#CC0000">))</font>
-(gdb) <b>n</b>
-5756			vmf<font color="#CC0000">-&gt;</font>orig_pte <font color="#CC0000">=</font> <b>ptep_get_lockless</b><font color="#CC0000">(</font>vmf<font color="#CC0000">-&gt;</font>pte<font color="#CC0000">);</font>
-(gdb) <b>n</b>
-993		<font color="#3465A4"><b>return</b></font> <font color="#CC0000">!(</font>pte<font color="#CC0000">.</font>pte <font color="#CC0000">&amp;</font> <font color="#CC0000">~(</font>_PAGE_KNL_ERRATUM_MASK<font color="#CC0000">));</font>
-(gdb) <b>bt</b>
-#0  <font color="#C4A000">handle_pte_fault</font> (<font color="#06989A">vmf</font>=0xffffc90000173df0) at <font color="#4E9A06">./arch/x86/include/asm/pgtable.h</font>:993
-<span class="irrelevant">...</span>
-(gdb) <b>n</b>
-485		<font color="#3465A4"><b>return</b></font> <b>native_pte_val</b><font color="#CC0000">(</font>pte<font color="#CC0000">)</font> <font color="#CC0000">&amp;</font> PTE_FLAGS_MASK<font color="#CC0000">;</font>
-(gdb) <b>bt</b>
-#0  <font color="#C4A000">handle_pte_fault</font> (<font color="#06989A">vmf</font>=0xffffc90000173df0) at <font color="#4E9A06">./arch/x86/include/asm/pgtable_types.h</font>:485
-<span class="irrelevant">...</span>
-(gdb) <b>n</b>
-5774		<b>spin_lock</b><font color="#CC0000">(</font>vmf<font color="#CC0000">-&gt;</font>ptl<font color="#CC0000">);</font>
-(gdb) <b>n</b>
-5775		entry <font color="#CC0000">=</font> vmf<font color="#CC0000">-&gt;</font>orig_pte<font color="#CC0000">;</font>
-(gdb) <b>n</b>
-5776		<font color="#3465A4"><b>if</b></font> <font color="#CC0000">(</font><b>unlikely</b><font color="#CC0000">(!</font><b>pte_same</b><font color="#CC0000">(</font><b>ptep_get</b><font color="#CC0000">(</font>vmf<font color="#CC0000">-&gt;</font>pte<font color="#CC0000">),</font> entry<font color="#CC0000">)))</font> <font color="#CC0000">{</font>
---><span class="comment">Skipping over a bunch of things that has to do with getting the correct pte, we arrive at this check:</span>
-(gdb)
-5780		<font color="#3465A4"><b>if</b></font> <font color="#CC0000">(</font>vmf<font color="#CC0000">-&gt;</font>flags <font color="#CC0000">&amp;</font> <font color="#CC0000">(</font>FAULT_FLAG_WRITE<font color="#CC0000">|</font>FAULT_FLAG_UNSHARE<font color="#CC0000">))</font> <font color="#CC0000">{</font>
-<span class="comment">This is probably the part we want! It's checking if this is a write fault, and will do interesting
-write-fault specific things immediately afterwards if it is.</span>
-(gdb) <b>n</b>
-<font color="#C4A000">__handle_mm_fault</font> (<font color="#06989A">vma=vma@entry</font>=0xffff888003956be0, <font color="#06989A">address=address@entry</font>=140737488350168, <font color="#06989A">flags=flags@entry</font>=4693) at <font color="#4E9A06">mm/memory.c</font>:5909
-5909		<font color="#3465A4"><b>return</b></font> <b>handle_pte_fault</b><font color="#CC0000">(&amp;</font>vmf<font color="#CC0000">);</font>
-(gdb) <b>bt</b>
-#0  <font color="#C4A000">__handle_mm_fault</font> (<font color="#06989A">vma=vma@entry</font>=0xffff888003956be0, <font color="#06989A">address=address@entry</font>=140737488350168, <font color="#06989A">flags=flags@entry</font>=4693) at <font color="#4E9A06">mm/memory.c</font>:5909
-<span class="irrelevant">...</span>
-<span class="comment">confusing inline again</span>
-(gdb) <b>print vmf-&gt;flags</b>
-<font color="#06989A">$6</font> = (<font color="#06989A">FAULT_FLAG_WRITE</font> | <font color="#06989A">FAULT_FLAG_ALLOW_RETRY</font> | <font color="#06989A">FAULT_FLAG_KILLABLE</font> | <font color="#06989A">FAULT_FLAG_USER</font> | <font color="#06989A">FAULT_FLAG_INTERRUPTIBLE</font> | <font color="#06989A">FAULT_FLAG_ORIG_PTE_VALID</font> | <font color="#06989A">FAULT_FLAG_VMA_LOCK</font>)
-<span class="comment">ok, that if statement is going to execute. Let's go ahead.</span>
-(gdb) <b>s</b>
-<font color="#C4A000">handle_pte_fault</font> (<font color="#06989A">vmf</font>=0xffffc90000173df0) at <font color="#4E9A06">mm/memory.c</font>:5781
-5781			<font color="#3465A4"><b>if</b></font> <font color="#CC0000">(!</font><b>pte_write</b><font color="#CC0000">(</font>entry<font color="#CC0000">))</font>
-(gdb) <b>print pte_write(entry)</b>
-No symbol &quot;pte_write&quot; in current context.
-<span class="comment">I'm guessing the answer is false</span>
-(gdb) <b>n</b>
-5782				<font color="#3465A4"><b>return</b></font> <b>do_wp_page</b><font color="#CC0000">(</font>vmf<font color="#CC0000">);</font>
-(gdb)
 </pre>
 
-Remember this function &ndash; [`do_wp_page`](https://github.com/micromaomao/linux-dev/blob/5996393469d99560b7845d22c9eff00661de0724/mm/memory.c#L3655). It is extremely interesting. Let's quickly step through it and see what it does.
+This function turned out to be quite confusing to step through due to heavily inlining and gdb not being helpful. Skipping over a bunch of things that has to do with getting the correct pte, we arrive at this check:
 
-<pre>(gdb) s
+<pre>
+<span class="irrelevant">...</span>
+(gdb) <b>n</b>
+5780		<font color="#3465A4"><b>if</b></font> <font color="#CC0000">(</font>vmf<font color="#CC0000">-&gt;</font>flags <font color="#CC0000">&amp;</font> <font color="#CC0000">(</font>FAULT_FLAG_WRITE<font color="#CC0000">|</font>FAULT_FLAG_UNSHARE<font color="#CC0000">))</font> <font color="#CC0000">{</font>
+</pre>
+
+This is probably the part we want! It's checking if this is a write fault, and will do interesting write-fault specific things immediately afterwards if it is:
+
+<!--
+```c
+    if (vmf->flags & (FAULT_FLAG_WRITE|FAULT_FLAG_UNSHARE)) {
+        if (!pte_write(entry))
+            return do_wp_page(vmf);
+        else if (likely(vmf->flags & FAULT_FLAG_WRITE))
+            entry = pte_mkdirty(entry);
+    }
+```
+-->
+<pre>
+<code class="language-c">    <span class="hljs-keyword">if</span> (vmf-&gt;flags &amp; (FAULT_FLAG_WRITE|FAULT_FLAG_UNSHARE)) {
+        <span class="hljs-keyword">if</span> (!pte_write(entry))
+            <span class="hljs-keyword">return</span> do_wp_page(vmf);
+<span style="opacity: 0.4;">        <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (likely(vmf-&gt;flags &amp; FAULT_FLAG_WRITE))
+            entry = pte_mkdirty(entry);
+    }</span>
+</code></pre>
+
+Some confusing gdb stepping output follows, again due to heavy inlining, but we do enter [`do_wp_page`](https://github.com/micromaomao/linux-dev/blob/v6.12.1/mm/memory.c#L3655):
+
+<pre>
+<span class="irrelevant">...</span>
+(gdb) <b>print vmf-&gt;flags</b>
+<font color="#06989A">$6</font> = (<font color="#06989A">FAULT_FLAG_WRITE</font> | <font color="#06989A">FAULT_FLAG_ALLOW_RETRY</font> | <font color="#06989A">FAULT_FLAG_KILLABLE</font> | <font color="#06989A">FAULT_FLAG_USER</font> | <font color="#06989A">FAULT_FLAG_INTERRUPTIBLE</font> | <font color="#06989A">FAULT_FLAG_ORIG_PTE_VALID</font> | <font color="#06989A">FAULT_FLAG_VMA_LOCK</font>)
+(gdb) <b>s</b>
 <font color="#C4A000">do_wp_page</font> (<font color="#06989A">vmf=vmf@entry</font>=0xffffc90000173df0) at <font color="#4E9A06">mm/memory.c</font>:3657
 3657	<font color="#CC0000">{</font>
-(gdb) n
+(gdb) <b>n</b>
 3659		<font color="#3465A4"><b>struct</b></font> <font color="#4E9A06">vm_area_struct</font> <font color="#CC0000">*</font>vma <font color="#CC0000">=</font> vmf<font color="#CC0000">-&gt;</font>vma<font color="#CC0000">;</font>
 (gdb)
 3663		<font color="#3465A4"><b>if</b></font> <font color="#CC0000">(</font><b>likely</b><font color="#CC0000">(!</font>unshare<font color="#CC0000">))</font> <font color="#CC0000">{</font>
 (gdb)
 3664			<font color="#3465A4"><b>if</b></font> <font color="#CC0000">(</font><b>userfaultfd_pte_wp</b><font color="#CC0000">(</font>vma<font color="#CC0000">,</font> <b>ptep_get</b><font color="#CC0000">(</font>vmf<font color="#CC0000">-&gt;</font>pte<font color="#CC0000">)))</font> <font color="#CC0000">{</font>
-<span class="comment">We're not using userfaultfd, so expect to just skip</span>
 (gdb)
 3694		vmf<font color="#CC0000">-&gt;</font>page <font color="#CC0000">=</font> <b>vm_normal_page</b><font color="#CC0000">(</font>vma<font color="#CC0000">,</font> vmf<font color="#CC0000">-&gt;</font>address<font color="#CC0000">,</font> vmf<font color="#CC0000">-&gt;</font>orig_pte<font color="#CC0000">);</font>
-(gdb) n
+(gdb) <b>n</b>
 3696		<font color="#3465A4"><b>if</b></font> <font color="#CC0000">(</font>vmf<font color="#CC0000">-&gt;</font>page<font color="#CC0000">)</font>
 (gdb)
 3697			folio <font color="#CC0000">=</font> <b>page_folio</b><font color="#CC0000">(</font>vmf<font color="#CC0000">-&gt;</font>page<font color="#CC0000">);</font>
@@ -1385,84 +1430,77 @@ Remember this function &ndash; [`do_wp_page`](https://github.com/micromaomao/lin
 <span style="opacity: 0.5;">(gdb)
 689		<font color="#3465A4"><b>return</b></font> <font color="#CC0000">((</font><font color="#4E9A06">unsigned</font> <font color="#4E9A06">long</font><font color="#CC0000">)</font>folio<font color="#CC0000">-&gt;</font>mapping <font color="#CC0000">&amp;</font> PAGE_MAPPING_ANON<font color="#CC0000">)</font> <font color="#CC0000">!=</font> <font color="#75507B">0</font><font color="#CC0000">;</font></span>
 (gdb)
+<i>3723		if (folio && folio_test_anon(folio) &&</i>    <span class="code-comment">(added for completeness)</span>
 <span class="highlight">3724		    <font color="#CC0000">(</font><b>PageAnonExclusive</b><font color="#CC0000">(</font>vmf<font color="#CC0000">-&gt;</font>page<font color="#CC0000">)</font> <font color="#CC0000">||</font> <b>wp_can_reuse_anon_folio</b><font color="#CC0000">(</font>folio<font color="#CC0000">,</font> vma<font color="#CC0000">)))</font> <font color="#CC0000">{</font></span>
 (gdb)
+<span class="code-comment"><i>(Note: if branch not taken)</i></span>
 3738			<b>folio_get</b><font color="#CC0000">(</font>folio<font color="#CC0000">);</font>
-(gdb) n
+(gdb) <b>n</b>
 3740		<b>pte_unmap_unlock</b><font color="#CC0000">(</font>vmf<font color="#CC0000">-&gt;</font>pte<font color="#CC0000">,</font> vmf<font color="#CC0000">-&gt;</font>ptl<font color="#CC0000">);</font>
 (gdb)
 3745		<font color="#3465A4"><b>return</b></font> <b>wp_page_copy</b><font color="#CC0000">(</font>vmf<font color="#CC0000">);</font>
 (gdb)
 </pre>
 
-Hmm, the `PageAnonExclusive || wp_can_reuse_anon_folio` check didn't pass. Going by the code and comments in the function, a reasonable guess is that it is checking if we're the only owner of the page (see [`wp_can_reuse_anon_folio`](https://github.com/micromaomao/linux-dev/blob/5996393469d99560b7845d22c9eff00661de0724/mm/memory.c#L3585) which contains refcount checks), and &lsquo;reuse&rsquo; i.e. not copy the page. Since we just forked, this expectedly wasn't the case. However, we expect that when the parent process hits this point again (assuming the pte is still write-protected on the parent's page table), it will actually do the &lsquo;reuse&rsquo;.
+Hmm, the `PageAnonExclusive || wp_can_reuse_anon_folio` check didn't pass. Going by the code and comments in the function, a reasonable guess is that it is checking if we're the only owner of the page (see [`wp_can_reuse_anon_folio`](https://github.com/micromaomao/linux-dev/blob/5996393469d99560b7845d22c9eff00661de0724/mm/memory.c#L3585) which contains refcount checks), and &lsquo;reuse&rsquo; i.e. not copy the page. Since we've just done `folio_get`/`folio_ref_add` earlier during the `fork`, this expectedly wasn't the case. However, we expect that when the parent process hits this point again (assuming the pte is still write-protected on the parent's page table), it will actually do the &lsquo;reuse&rsquo;.
 
 For now, we arrived at [`wp_page_copy`](https://github.com/micromaomao/linux-dev/blob/5996393469d99560b7845d22c9eff00661de0724/mm/memory.c#L3331). It is also quite long, but it basically boils down to allocating a new page, and copying the content over. It has checks against multiple threads running this on the same page, which complicates the code a bit. For our purpose we don't really need to go deeper at this point. It might be more interesting now to test our assumptions on the &lsquo;resue&rsquo; case. We can do that by just waiting for the parent to also fault. In fact we get it pretty quick:
 
 <pre>
-(gdb) info threads
+(gdb) <b>info threads</b>
   Id   Target Id                      Frame
   <span class="irrelevant">...</span>
   40   Thread 76 (gdb)                <font color="#3465A4">0x0000000000000000</font> in <font color="#C4A000">fixed_percpu_data</font> ()
   41   Thread 78 (gdb worker)         <font color="#3465A4">0x0000000000000000</font> in <font color="#C4A000">fixed_percpu_data</font> ()
-  42   Thread 79 (fork-test)          <font color="#3465A4">0x0000000000000000</font> in <font color="#C4A000">fixed_percpu_data</font> ()
+  <span class="highlight">42</span>   Thread 79 (fork-test)          <font color="#3465A4">0x0000000000000000</font> in <font color="#C4A000">fixed_percpu_data</font> ()
 * 44   Thread 83 (fork-test)          <font color="#C4A000">handle_mm_fault</font> (<font color="#06989A">vma=vma@entry</font>=0xffff888003956be0, <font color="#06989A">address=address@entry</font>=140737488350168, <font color="#06989A">flags=flags@entry</font>=4693, <font color="#06989A">regs=regs@entry</font>=0xffffc90000173f58)
     at <font color="#4E9A06">mm/memory.c</font>:6088
-(gdb) info break
-Num     Type           Disp Enb Address            What
-1       breakpoint     keep y   <font color="#3465A4">0xffffffff810833a0</font> in <font color="#C4A000">__do_sys_fork</font> at <font color="#4E9A06">kernel/fork.c</font>:2888
-	breakpoint already hit 1 time
-2       breakpoint     keep y   <font color="#3465A4">0xffffffff81296e90</font> in <font color="#C4A000">handle_mm_fault</font> at <font color="#4E9A06">mm/memory.c</font>:6044
-	breakpoint already hit 12 times
-(gdb) c
+(gdb) <b>c</b>
 Continuing.
 [Switching to Thread 79]
 
-Thread 42 hit Breakpoint 2, <font color="#C4A000">handle_mm_fault</font> (<font color="#06989A">vma=vma@entry</font>=0xffff8880039627b8, <font color="#06989A">address=address@entry</font>=140737488350168, <font color="#06989A">flags=flags@entry</font>=4693, <font color="#06989A">regs=regs@entry</font>=0xffffc9000016bf58)
+Thread <span class="highlight">42</span> hit Breakpoint 2, <font color="#C4A000">handle_mm_fault</font> (<font color="#06989A">vma=vma@entry</font>=0xffff8880039627b8, <font color="#06989A">address=address@entry</font>=140737488350168, <font color="#06989A">flags=flags@entry</font>=4693, <font color="#06989A">regs=regs@entry</font>=0xffffc9000016bf58)
     at <font color="#4E9A06">mm/memory.c</font>:6044
 6044	<font color="#CC0000">{</font>
-(gdb) print/x vma-&gt;vm_start
+(gdb) <b>print/x vma-&gt;vm_start</b>
 <font color="#06989A">$12</font> = 0x7ffffffde000
 (gdb)
 </pre>
 
-This is again the stack VMA! Let's just try to skip to the reuse check part. If we're wrong we can always restart :)
+This is again the stack VMA! At this point I realized that trying to set line number breakpoints in this function is just not reliable. So let's do a breakpoint on both `wp_page_copy` and `wp_page_reuse` &ndash; this way we can see which way that `if` branch goes:
 
 <pre>
-(gdb) b mm/memory.c:3723
-<span class="code-comment">Code:
-    if (folio && folio_test_anon(folio) &&</span>
-Breakpoint 3 at <font color="#3465A4">0xffffffff81293f57</font>: file <font color="#4E9A06">mm/memory.c</font>, line 3723.
+(gdb) b wp_page_reuse
+Breakpoint 3 at <font color="#3465A4">0xffffffff8129017a</font>: wp_page_reuse. (3 locations)
+(gdb) b wp_page_copy
+Breakpoint 4 at <font color="#3465A4">0xffffffff812937cd</font>: file <font color="#4E9A06">mm/memory.c</font>, line 3333.
 (gdb) c
 Continuing.
 
-Thread 42 hit Breakpoint 2, <font color="#C4A000">handle_mm_fault</font> (<font color="#06989A">vma=vma@entry</font>=0xffff888003945e40, <font color="#06989A">address=address@entry</font>=140737354128056, <font color="#06989A">flags=flags@entry</font>=4693, <font color="#06989A">regs=regs@entry</font>=0xffffc9000016bf58)
-    at <font color="#4E9A06">mm/memory.c</font>:6044
-6044	<font color="#CC0000">{</font>
-(gdb) print/x vma-&gt;vm_start
-<font color="#06989A">$13</font> = 0x7ffff7ffd000
+Thread 42 hit Breakpoint 3.3, <font color="#C4A000">wp_page_reuse</font> (<font color="#06989A">folio</font>=&lt;optimized out&gt;, <font color="#06989A">vmf</font>=0xffffc90000163df0) at <font color="#4E9A06">mm/memory.c</font>:3240
+3240		<font color="#3465A4"><b>struct</b></font> <font color="#4E9A06">vm_area_struct</font> <font color="#CC0000">*</font>vma <font color="#CC0000">=</font> vmf<font color="#CC0000">-&gt;</font>vma<font color="#CC0000">;</font>
+(gdb)
 </pre>
 
-Oops, it moved on to another VMA. However after some investigation I'm pretty sure this is just the breakpoint somehow not working. If I step through `do_wp_page` which does get hit:
+Great success! This also confirms that it is completely normal for a process to hit a write fault on a page which already completely belongs to it. The kernel determines if copying is needed by checking if the reference count is 1 (usually), and if yes, basically does nothing (except making the pte writable before returning to user, so we don't get more faults). If we find a way to make the process's page write-protected, we can then simply add our own logic to this [`do_wp_page`](https://github.com/micromaomao/linux-dev/blob/v6.12.1/mm/memory.c#L3655) function that will copy off the page content somewhere else.
 
-<pre>(gdb)
-3724		    <font color="#CC0000">(</font><b>PageAnonExclusive</b><font color="#CC0000">(</font>vmf<font color="#CC0000">-&gt;</font>page<font color="#CC0000">)</font> <font color="#CC0000">||</font> <b>wp_can_reuse_anon_folio</b><font color="#CC0000">(</font>folio<font color="#CC0000">,</font> vma<font color="#CC0000">)))</font> <font color="#CC0000">{</font>
-(gdb) s
-<font color="#C4A000">PageAnonExclusive</font> (<font color="#06989A">page</font>=0xffffea000013f280) at <font color="#4E9A06">./include/linux/page-flags.h</font>:1125
-1125		<font color="#3465A4"><b>if</b></font> <font color="#CC0000">(</font><b>PageHuge</b><font color="#CC0000">(</font>page<font color="#CC0000">))</font>
-<span class="irrelevant">...</span>
-(gdb) n
-3724		    <font color="#CC0000">(</font><b>PageAnonExclusive</b><font color="#CC0000">(</font>vmf<font color="#CC0000">-&gt;</font>page<font color="#CC0000">)</font> <font color="#CC0000">||</font> <b>wp_can_reuse_anon_folio</b><font color="#CC0000">(</font>folio<font color="#CC0000">,</font> vma<font color="#CC0000">)))</font> <font color="#CC0000">{</font>
-(gdb) n
-3630		<font color="#3465A4"><b>return</b></font> true<font color="#CC0000">;</font>
-(gdb) bt
-#0  <font color="#C4A000">do_wp_page</font> (<font color="#06989A">vmf=vmf@entry</font>=0xffffc90000163df0) at <font color="#4E9A06">mm/memory.c</font>:3630
-<span class="code-comment">  return true from wp_can_reuse_anon_folio</span>
-</pre>
+There is another case, relevant to us, where the kernel will make a page writable for the user following a write fault. This is when an anonymous page is first accessed. In this case, we will hit this `if` branch in [`handle_pte_fault`](https://github.com/micromaomao/linux-dev/blob/5996393469d99560b7845d22c9eff00661de0724/mm/memory.c#L5732), rather than going to [`do_wp_page`](https://github.com/micromaomao/linux-dev/blob/v6.12.1/mm/memory.c#L3655):
 
-Anyway, things inside this `do_wp_page` is so heavily inlined that it can be hard to know whether any breakpoint will work, but I think it's time to step back and look at what we managed to learn so far. We are getting quite off-track from our original goal, which is just to trap on write to a page and copy it off. In fact, for our checkpoint purpose, we don't actually want to make a copy of the page table &ndash; we want to just make the current process's pages write-protected, and when we get a page fault, do our custom logic.
+```c
+    if (!vmf->pte)
+        return do_pte_missing(vmf);
+```
 
-... TODO ...
+And for an anonymous mappings, the kernel will allocate a new zero-filed page on write (see [`do_anonymous_page`](https://github.com/micromaomao/linux-dev/blob/v6.12.1/mm/memory.c#L4735)). We therefore need our own logic there to also track newly allocated pages, and either deallocate them or revert them to be zero-filled on reverting the checkpoint.
+
+In summary, ignoring the problem of how do we write-protect these pages in the first place, there are two places we need to hook into, in order to copy off page content:
+
+- [`do_wp_page`](https://github.com/micromaomao/linux-dev/blob/v6.12.1/mm/memory.c#L3655) for pages that are modified after the checkpoint.
+- [`do_anonymous_page`](https://github.com/micromaomao/linux-dev/blob/v6.12.1/mm/memory.c#L4735) for pages newly allocated after the checkpoint.
+
+This doesn't deal with shared pages at all, or file-mapped pages, but we will set that aside for now. With the knowledge we gaind through all this, we should be in a good position to support those, if we need to in the future.
+
+#### Ok, so how do we write-protect the pages?
 
 Mention about vm_flags and `vma_set_page_prot` used by `mprotect` - `VM_WRITE` not resulting in `__RW`
 
@@ -1503,8 +1541,6 @@ static pgprot_t protection_map[16] __ro_after_init = {
 ```
 
 `do_swap_page` also calls `do_wp_page`. Not sure about huge pages so will disable that.
-
-#### Printing page faults
 
 ### Blocking off other syscalls
 

@@ -1,4 +1,4 @@
-From 4a0e7a308da68c5f4eaff47f2b5d92d339f825c2 Mon Sep 17 00:00:00 2001
+From 46411dab3a5c25c23e0cd3030c3dd95c6e8de645 Mon Sep 17 00:00:00 2001
 From: Mao <m@maowtm.org>
 Date: Sat, 4 Jan 2025 00:05:28 +0000
 Subject: [PATCH 3/7] set hack_target
@@ -60,5 +60,5 @@ index 136a8231355a..7aeb9882d171 100644
  EXPORT_SYMBOL(init_task);
  
 -- 
-2.48.0
+2.48.1
 

@@ -1,4 +1,4 @@
-From b361f050bf46e4cb81976bfae0138c5f8446b131 Mon Sep 17 00:00:00 2001
+From 4e163a50d67315b5ba41f0d45d8ae34d453aa281 Mon Sep 17 00:00:00 2001
 From: Mao <m@maowtm.org>
 Date: Sat, 4 Jan 2025 00:03:02 +0000
 Subject: [PATCH 1/7] hide TracerPid
@@ -21,5 +21,5 @@ index 34a47fb0c57f..141121505a37 100644
  	seq_put_decimal_ull(m, "\t", from_kuid_munged(user_ns, cred->euid));
  	seq_put_decimal_ull(m, "\t", from_kuid_munged(user_ns, cred->suid));
 -- 
-2.48.0
+2.48.1
 

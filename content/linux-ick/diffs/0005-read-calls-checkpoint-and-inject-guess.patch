@@ -1,4 +1,4 @@
-From 5805179adec63389df7ec1709f43d4f1e1c6b3ae Mon Sep 17 00:00:00 2001
+From b2a66d1f9b9c01b5d8aa26e8230f737cfd3c17cb Mon Sep 17 00:00:00 2001
 From: Mao <m@maowtm.org>
 Date: Sun, 5 Jan 2025 00:34:12 +0000
 Subject: [PATCH 5/7] read calls checkpoint and inject guess
@@ -89,5 +89,5 @@ index 5d0146cbae2a..16a1b41418cb 100644
  
  int ick_revert_proc(void) {
 -- 
-2.48.0
+2.48.1
 

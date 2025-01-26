@@ -1,4 +1,4 @@
-From 49c7a412588bd3aa3e266d7b78fa708ccf20f602 Mon Sep 17 00:00:00 2001
+From f740124e4d891e4b9c507021f3ba9d215cfca112 Mon Sep 17 00:00:00 2001
 From: Mao <m@maowtm.org>
 Date: Sun, 5 Jan 2025 02:10:57 +0000
 Subject: [PATCH 6/7] write checks result and revert if wrong
@@ -65,5 +65,5 @@ index 16a1b41418cb..ceae3ca4be33 100644
  
  void ick_cleanup(struct task_struct *task) {
 -- 
-2.48.0
+2.48.1
 

@@ -1,4 +1,4 @@
-From b5e70b06b8fc05c18e6e942ce0ef863bb7e59eab Mon Sep 17 00:00:00 2001
+From 415a0f17926268cf3c7875cbf61e559f92cf2c05 Mon Sep 17 00:00:00 2001
 From: Mao <m@maowtm.org>
 Date: Sat, 4 Jan 2025 20:24:48 +0000
 Subject: [PATCH 4/7] basic files for ick
@@ -16,10 +16,10 @@ Subject: [PATCH 4/7] basic files for ick
  create mode 100644 kernel/ick.c
 
 diff --git a/.config b/.config
-index eaada7b552ab..bead8c813d47 100644
+index c0d1a7505177..651bd63becee 100644
 --- a/.config
 +++ b/.config
-@@ -3450,3 +3450,5 @@ CONFIG_ARCH_USE_MEMTEST=y
+@@ -3454,3 +3454,5 @@ CONFIG_ARCH_USE_MEMTEST=y
  #
  # end of Rust hacking
  # end of Kernel hacking

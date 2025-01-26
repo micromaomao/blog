@@ -1,7 +1,7 @@
-all: fork-test my-hackme my-hackme-looped fork-debug
+all: fork-test my-hackme my-hackme-looped fork-debug mem_overcommit_test
 
 clean:
-	rm -f fork-test my-hackme my-hackme-looped syscall_regs_test syscall_regs_test.o
+	rm -f fork-test my-hackme my-hackme-looped syscall_regs_test syscall_regs_test.o fork-debug mem_overcommit_test
 
 fork-test: fork-test.c
 	gcc -o fork-test fork-test.c -O3
@@ -18,3 +18,6 @@ syscall_regs_test: syscall_regs_test.S
 
 fork-debug: fork-debug.c
 	gcc -o fork-debug fork-debug.c -Og -g
+
+mem_overcommit_test: mem_overcommit_test.c
+	gcc -o mem_overcommit_test -static mem_overcommit_test.c -Og -g

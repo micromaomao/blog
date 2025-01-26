@@ -1484,14 +1484,34 @@ Thread 42 hit Breakpoint 3.3, <font color="#C4A000">wp_page_reuse</font> (<font 
 
 Great success! This also confirms that it is completely normal for a process to hit a write fault on a page which already completely belongs to it. The kernel determines if copying is needed by checking if the reference count is 1 (usually), and if yes, basically does nothing (except making the pte writable before returning to user, so we don't get more faults). If we find a way to make the process's page write-protected, we can then simply add our own logic to this [`do_wp_page`](https://github.com/micromaomao/linux-dev/blob/v6.12.1/mm/memory.c#L3655) function that will copy off the page content somewhere else.
 
-There is another case, relevant to us, where the kernel will make a page writable for the user following a write fault. This is when an anonymous page is first accessed. In this case, we will hit this `if` branch in [`handle_pte_fault`](https://github.com/micromaomao/linux-dev/blob/5996393469d99560b7845d22c9eff00661de0724/mm/memory.c#L5732), rather than going to [`do_wp_page`](https://github.com/micromaomao/linux-dev/blob/v6.12.1/mm/memory.c#L3655):
+There is another case, relevant to us, where the kernel will make a page writable for the user following a write fault. This is when an anonymous page is first accessed (either being written to or being read from). This is due to memory overcommitment, in which pages are not actually &lsquo;allocated&rsquo; until the user program tries to use it. In this case, we will hit this `if` branch in [`handle_pte_fault`](https://github.com/micromaomao/linux-dev/blob/5996393469d99560b7845d22c9eff00661de0724/mm/memory.c#L5732), rather than going to [`do_wp_page`](https://github.com/micromaomao/linux-dev/blob/v6.12.1/mm/memory.c#L3655):
 
 ```c
     if (!vmf->pte)
         return do_pte_missing(vmf);
 ```
 
-And for an anonymous mappings, the kernel will allocate a new zero-filed page on write (see [`do_anonymous_page`](https://github.com/micromaomao/linux-dev/blob/v6.12.1/mm/memory.c#L4735)). We therefore need our own logic there to also track newly allocated pages, and either deallocate them or revert them to be zero-filled on reverting the checkpoint.
+<!--
+```c
+static vm_fault_t do_pte_missing(struct vm_fault *vmf)
+{
+    if (vma_is_anonymous(vmf->vma))
+        return do_anonymous_page(vmf);
+    else
+        return do_fault(vmf);
+}
+```
+-->
+<pre><code class="language-c"><span class="hljs-type">static</span> <span class="hljs-type">vm_fault_t</span> <span class="hljs-title function_">do_pte_missing</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> vm_fault *vmf)</span>
+{
+    <span class="hljs-keyword">if</span> (<a href="https://github.com/micromaomao/linux-dev/blob/v6.12.1/include/linux/mm.h#L924">vma_is_anonymous</a>(vmf-&gt;vma))
+        <span class="hljs-keyword">return</span> <a href="https://github.com/micromaomao/linux-dev/blob/v6.12.1/mm/memory.c#L4735">do_anonymous_page</a>(vmf);
+<span style="opacity: 0.5">    <span class="hljs-keyword">else</span>
+        <span class="hljs-keyword">return</span> do_fault(vmf);</span>
+}
+</code></pre>
+
+And for an anonymous mappings, the kernel will allocate a new zero-filed page on write. We therefore need our own logic there to also track newly allocated pages, and either deallocate them or revert them to be zero-filled on reverting the checkpoint.
 
 In summary, ignoring the problem of how do we write-protect these pages in the first place, there are two places we need to hook into, in order to copy off page content:
 

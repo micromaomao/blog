@@ -917,7 +917,7 @@ Thread 41 hit Breakpoint 2.1, <font color="#C4A000">__copy_present_ptes</font> (
 #12 <font color="#3465A4">0xffffffff81083705</font> in <font color="#C4A000">__do_sys_fork</font> (<font color="#06989A">__unused</font>=&lt;optimized out&gt;) at <font color="#4E9A06">kernel/fork.c</font>:2894
 </pre>
 
-The `copy_p?d_range` functions here are indeed just descending down the page table levels (p4d = level 4, pud = page &lsquo;upper&rsquo; directory aka. level 3, pmd = page &lsquo;middle&rsquo; directory aka. level 2, pte = page table entry). In this case, given the backtrace above, the folio is just one page.
+The `copy_p?d_range` functions here are indeed just descending down the page table levels (p4d = level 4, pud = page &lsquo;upper&rsquo; directory aka. level 3, pmd = page &lsquo;middle&rsquo; directory aka. level 2, and `copy_pte_range` copies the first level table). In this case, given the backtrace above, the folio is just one page.
 
 Ok, that's great, but later on if we get a write page fault, how does the kernel know this page is supposed to be CoW'd (rather than, say, treating that fault as an error)? What would happen if our own code manages to set the pages on a process to be write-protected, even when they're not in a CoW state?
 
@@ -1507,7 +1507,7 @@ static vm_fault_t do_pte_missing(struct vm_fault *vmf)
     <span class="hljs-keyword">if</span> (<a href="https://github.com/micromaomao/linux-dev/blob/v6.12.1/include/linux/mm.h#L924">vma_is_anonymous</a>(vmf-&gt;vma))
         <span class="hljs-keyword">return</span> <a href="https://github.com/micromaomao/linux-dev/blob/v6.12.1/mm/memory.c#L4735">do_anonymous_page</a>(vmf);
 <span style="opacity: 0.5">    <span class="hljs-keyword">else</span>
-        <span class="hljs-keyword">return</span> do_fault(vmf);</span>
+        <span class="hljs-keyword">return</span> do_fault(vmf);   <span class="comment-box">(this is for files and stuff)</span></span>
 }
 </code></pre>
 
@@ -1518,11 +1518,238 @@ In summary, ignoring the problem of how do we write-protect these pages in the f
 - [`do_wp_page`](https://github.com/micromaomao/linux-dev/blob/v6.12.1/mm/memory.c#L3655) for pages that are modified after the checkpoint.
 - [`do_anonymous_page`](https://github.com/micromaomao/linux-dev/blob/v6.12.1/mm/memory.c#L4735) for pages newly allocated after the checkpoint.
 
-This doesn't deal with shared pages at all, or file-mapped pages, but we will set that aside for now. With the knowledge we gaind through all this, we should be in a good position to support those, if we need to in the future.
+This doesn't deal with shared pages at all, or file-mapped pages, or huge pages, but we will set that aside for now. With the knowledge we gaind through all this, we should be in a good position to support those, if we need to in the future.
+
+Since we don't want to deal with huge pages, we will disable them in further testing (otherwise our code will miss write faults on huge pages). This can be done by disabling the kernel feature `CONFIG_TRANSPARENT_HUGEPAGE`. You can do that with the `make nconfig` tool, or with the following patch:
+
+<a class="make-diff" href="./diffs/0008-disable-transparent-huge-pages.patch"></a>
+
+Let's add some `trace_printk`s and see how often they are being called now, again using our test program:
+
+<a class="make-diff" href="./diffs/0009-trace_printk-on-do_wp_page-and-do_anonymous_page.patch"></a>
+
+And don't forget to recompile the kernel.
+
+For useful reference, I will use `gdb` to launch the test program, break on `main`, then print out the memory mappings before continuing. We can then cross-reference this with the trace output to see if the pages being write-faulted make sense:
+
+<pre>
+<span class="irrelevant">root@ca88e916e28d:/# </span>trace-cmd record -p nop \
+  -e console /usr/bin/gdb -q --batch ./my-hackme \
+    -ex 'starti' -ex 'b main' -ex 'c' \
+    -ex 'info proc mappings' \
+    -ex 'c'
+<span class="irrelevant">[    7.211177][   T90] execveat: /my-hackme[90] to be hacked
+
+Program stopped.
+0x00000000004061c0 in _start ()
+Breakpoint 1 at 0x4062e5: file my-hackme.cpp, line 7.
+
+Breakpoint 1, main (argc=1, argv=0x7fffffffecf8) at my-hackme.cpp:7
+7	int main(int argc, char const *argv[]) {
+process 90
+</span>
+Mapped address spaces:
+
+          Start Addr           End Addr       Size     Offset  Perms  objfile
+            0x400000           0x401000     0x1000        0x0  r--p   /my-hackme
+            0x401000           0x583000   0x182000     0x1000  r-xp   /my-hackme
+            0x583000           0x5d8000    0x55000   0x183000  r--p   /my-hackme
+            0x5d8000           0x5e4000     0xc000   0x1d7000  r--p   /my-hackme
+            0x5e4000           0x5e6000     0x2000   0x1e3000  rw-p   /my-hackme
+            0x5e6000           0x5ef000     0x9000        0x0  rw-p
+            0x5ef000           0x611000    0x22000        0x0  rw-p   [heap]
+      0x7ffff7ff9000     0x7ffff7ffd000     0x4000        0x0  r--p   [vvar]
+      0x7ffff7ffd000     0x7ffff7fff000     0x2000        0x0  r-xp   [vdso]
+      0x7ffffffde000     0x7ffffffff000    0x21000        0x0  rw-p   [stack]
+  0xffffffffff600000 0xffffffffff601000     0x1000        0x0  --xp   [vsyscall]
+<span class="irrelevant">[    7.310599][   T90] hack: 0 gave different output
+Enter number:
+Program received signal SIGSEGV, Segmentation fault.
+0x000000000000003a in ?? ()
+CPU0 data recorded at offset=0xaa000
+    470 bytes in size (4096 uncompressed)
+CPU1 data recorded at offset=0xab000
+    0 bytes in size (0 uncompressed)</span>
+</pre>
+
+(`-e console` makes Linux include our console prints in the trace)
+
+And now the trace output:
+
+<pre>
+root@ca88e916e28d:/# trace-cmd report
+cpus=2
+       my-hackme-90    [000]     7.211182: console:              execveat: /my-hackme[90] to be hacked
+       my-hackme-90    [000]     7.212482: bprint:               do_anonymous_page: faulting on non-present anonymous page 7fffffffe000
+       my-hackme-90    [000]     7.254486: bprint:               do_wp_page: faulting on write-protected page 5ed000
+       my-hackme-90    [000]     7.255538: bprint:               do_wp_page: faulting on write-protected page 5e2000
+       my-hackme-90    [000]     7.255672: bprint:               do_anonymous_page: faulting on non-present anonymous page 5e8000
+       my-hackme-90    [000]     7.257253: bprint:               do_anonymous_page: faulting on non-present anonymous page 5ef000
+       my-hackme-90    [000]     7.257777: bprint:               do_anonymous_page: faulting on non-present anonymous page 5ee000
+       my-hackme-90    [000]     7.258034: bprint:               do_anonymous_page: faulting on non-present anonymous page 5e9000
+       my-hackme-90    [000]     7.258194: bprint:               do_anonymous_page: faulting on non-present anonymous page 7fffffffd000
+       my-hackme-90    [000]     7.259049: bprint:               do_anonymous_page: faulting on non-present anonymous page 5f0000
+       my-hackme-90    [000]     7.261284: bprint:               do_wp_page: faulting on write-protected page 5e9000
+       my-hackme-90    [000]     7.261595: bprint:               do_anonymous_page: faulting on non-present anonymous page 5e6000
+       my-hackme-90    [000]     7.261596: bprint:               do_wp_page: faulting on write-protected page 5e6000
+       my-hackme-90    [000]     7.262312: bprint:               do_anonymous_page: faulting on non-present anonymous page 5e7000
+       my-hackme-90    [000]     7.267858: bprint:               do_anonymous_page: faulting on non-present anonymous page 602000
+       my-hackme-90    [000]     7.310312: bprint:               do_anonymous_page: faulting on non-present anonymous page 603000
+       my-hackme-90    [000]     7.310598: bprint:               ksys_write: hacked process attempted write with data Enter number:
+       my-hackme-90    [000]     7.310603: console:              hack: 0 gave different output
+       my-hackme-90    [000]     7.311935: bprint:               do_anonymous_page: faulting on non-present anonymous page 604000
+       my-hackme-90    [000]     7.311938: bprint:               ksys_read: ick checkpoint on hacked process my-hackme[90]
+       my-hackme-90    [000]     7.311939: bprint:               ick_checkpoint_proc: ick: Checkpointed my-hackme[90]
+       my-hackme-90    [000]     7.311939: bprint:               ksys_read: Providing number 1 to hacked process my-hackme[90]
+       my-hackme-90    [000]     7.313393: bprint:               ksys_write: hacked process attempted write with data Nope! 1 was a wrong guess. The correct number is 2037191.
+       my-hackme-90    [000]     7.313394: bprint:               ick_revert_proc: Restored process my-hackme[90]
+</pre>
+
+Since we haven't done anything to write-protect the data, nothing happens after `ick_checkpoint_proc`.
 
 #### Ok, so how do we write-protect the pages?
 
+We can't exactly re-use the `copy_???_range` code used by `fork`, since that creates a copy of the page table, while we want to modify it &lsquo;in-place&rsquo;. However, there is another syscall which we can reasonably guess will do something very similar to what we want: [`mprotect`](https://man7.org/linux/man-pages/man2/mprotect.2.html). It just changes the current process's memory mapping, and so must contain code which alters the page table without also copying it. Let's have a look.
+
+To get started, you can again use `trace-cmd` with the appropriate function / function_graph tracer flags. However this time, given we have already read a good amount of memory management code, let's just see if we can figure it out &lsquo;statically&rsquo; &mdash; just by reading the code.
+
+The first thing to do is to find the entrypoint for `mprotect`. We can search for the regex `SYSCALL_DEFINE.\(mprotect` (there is a number in the macro name after `SYSCALL_DEFINE` specifying the number of arguments), which lead us to [`mm/mprotect.c:856`](https://github.com/micromaomao/linux-dev/blob/dev/mm/mprotect.c#L856):
+
+```c
+SYSCALL_DEFINE3(mprotect, unsigned long, start, size_t, len,
+        unsigned long, prot)
+{
+    return do_mprotect_pkey(start, len, prot, -1);
+}
+```
+
+Some `man`-page browsing would tell us that &lsquo;pkey&rsquo; is a hardware feature to allow &lsquo;switching&rsquo; memory protections within the same process, and we can ignore any code that has to do with it in [`do_mprotect_pkey`](https://github.com/micromaomao/linux-dev/blob/dev/mm/mprotect.c#L709). Skipping some error checking, we have this (with my own comments in boxes):
+
+<!-- original code: mm/mprotect.c:709 @ 0fb4a7ad270b3b209e510eb9dc5b07bf02b7edaf -->
+
+<pre>
+<code class="language-c">    tlb_gather_mmu(&amp;tlb, current-&gt;mm);
+    <div class="comment-box">
+      Initalize a structure which will track page table modifications to flush the TLB. We will need this too.</div>
+    nstart = start;
+    tmp = vma-&gt;vm_start;
+    <b>for_each_vma_range(vmi, vma, end) {</b>
+        <div class="comment-box">
+          Previously we saw <code>for_each_vma</code>, now we have one that takes an end point (previously it passed the start point to `vma_iter_init`)<br />
+          This is likely the interesting part as it's doing the mprotect thing for each VMA.</div>
+        <span class="hljs-type">unsigned</span> <span class="hljs-type">long</span> mask_off_old_flags;
+        <span class="hljs-type">unsigned</span> <span class="hljs-type">long</span> newflags;
+        <span class="hljs-type">int</span> new_vma_pkey;
+        ...
+
+<span style="opacity: 0.4;">        <span class="hljs-comment">/*
+         * Each mprotect() call explicitly passes r/w/x permissions.
+         * If a permission is not passed to mprotect(), it must be
+         * cleared from the VMA.
+         */</span>
+        mask_off_old_flags = VM_ACCESS_FLAGS | VM_FLAGS_CLEAR;
+
+        new_vma_pkey = arch_override_mprotect_pkey(vma, prot, pkey);</span>
+        newflags = calc_vm_prot_bits(prot, new_vma_pkey);
+        <div class="comment-box">
+          Simply turns the <code>PROT_READ</code>/<code>PROT_WRITE</code>/<code>PROT_EXEC</code> passed in by user-space into <code>VM_READ</code>/<code>VM_WRITE</code>/<code>VM_EXEC</code><br />
+          Contains some hand-&lsquo;optimized&rsquo; bit manipulation C code from before the first Linux git commit, and is basically nop since PROT_... == VM_....</div>
+        newflags |= (vma-&gt;vm_flags &amp; ~mask_off_old_flags);
+
+<span style="opacity: 0.4;">        <span class="hljs-comment">/* newflags &gt;&gt; 4 shift VM_MAY% in place of VM_% */</span>
+        <span class="hljs-keyword">if</span> ((newflags &amp; ~(newflags &gt;&gt; <span class="hljs-number">4</span>)) &amp; VM_ACCESS_FLAGS) {
+            error = -EACCES;
+            <span class="hljs-keyword">break</span>;
+        }
+
+        ...
+
+        tmp = vma-&gt;vm_end;
+        <span class="hljs-keyword">if</span> (tmp &gt; end)
+            tmp = end;</span>
+
+        <span class="hljs-keyword">if</span> (vma-&gt;vm_ops &amp;&amp; vma-&gt;vm_ops-&gt;mprotect) {
+            <div class="comment-box">
+              <code>vma->vm_ops</code> is (only) defined for file/device mappings, and these drivers/fs code might want to do something special.<br />
+              Not relevant to us.</div>
+            <span style="opacity: 0.4;">error = vma-&gt;vm_ops-&gt;mprotect(vma, nstart, tmp, newflags);
+            <span class="hljs-keyword">if</span> (error)
+                <span class="hljs-keyword">break</span>;</span>
+        }
+
+        error = mprotect_fixup(&amp;vmi, &amp;tlb, vma, &amp;prev, nstart, tmp, newflags);
+        <div class="comment-box">
+          <b>This is the bit that actually does the thing.</b> Why is it called ..._fixup?? </div>
+        <span class="hljs-keyword">if</span> (error)
+            <span class="hljs-keyword">break</span>;
+
+        tmp = vma_iter_end(&amp;vmi);
+        nstart = tmp;
+        prot = reqprot;
+    }
+    tlb_finish_mmu(&amp;tlb);
+</code></pre>
+
+Now, inside [`mprotect_fixup`](https://github.com/micromaomao/linux-dev/blob/dev/mm/mprotect.c#L603):
+
+<pre>
+<code class="language-c"><span class="hljs-type">int</span>
+<span class="hljs-title function_">mprotect_fixup</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> vma_iterator *vmi, <span class="hljs-keyword">struct</span> mmu_gather *tlb,
+           <span class="hljs-keyword">struct</span> vm_area_struct *vma, <span class="hljs-keyword">struct</span> vm_area_struct **pprev,
+           <span class="hljs-type">unsigned</span> <span class="hljs-type">long</span> start, <span class="hljs-type">unsigned</span> <span class="hljs-type">long</span> end, <span class="hljs-type">unsigned</span> <span class="hljs-type">long</span> newflags)</span>
+{
+    <span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">mm_struct</span> *<span class="hljs-title">mm</span> =</span> vma-&gt;vm_mm;
+    <span class="hljs-type">unsigned</span> <span class="hljs-type">long</span> oldflags = vma-&gt;vm_flags;
+    <span class="hljs-type">long</span> nrpages = (end - start) &gt;&gt; PAGE_SHIFT;
+    <span class="hljs-type">unsigned</span> <span class="hljs-type">int</span> mm_cp_flags = <span class="hljs-number">0</span>;
+    <span class="hljs-type">unsigned</span> <span class="hljs-type">long</span> charged = <span class="hljs-number">0</span>;
+    <span class="hljs-type">int</span> error;
+
+    <span class="hljs-keyword">if</span> (!can_modify_vma(vma))
+        <span class="hljs-keyword">return</span> -EPERM;
+
+    <span class="hljs-keyword">if</span> (newflags == oldflags) {
+        *pprev = vma;
+        <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;
+    }
+
+    ...
+
+    vma = vma_modify_flags(vmi, *pprev, vma, start, end, newflags);
+    <div class="comment-box">
+      This merges adjacent VMAs when possible.</div>
+<span style="opacity: 0.4;">    <span class="hljs-keyword">if</span> (IS_ERR(vma)) {
+        error = PTR_ERR(vma);
+        <span class="hljs-keyword">goto</span> fail;
+    }
+
+    *pprev = vma;
+
+    <span class="hljs-comment">/*
+     * vm_flags and vm_page_prot are protected by the mmap_lock
+     * held in write mode.
+     */</span></span>
+    vma_start_write(vma);
+    vm_flags_reset(vma, newflags);
+    <div class="comment-box">
+      This changes the VMA flags, with lock taken in <code>vma_start_write</code>.<br />
+      However, we don't need this bit (nor the <code>vma_start_write</code>) if we don't change the VMA flags.</div>
+    <span class="hljs-keyword">if</span> (vma_wants_manual_pte_write_upgrade(vma))
+        mm_cp_flags |= MM_CP_TRY_CHANGE_WRITABLE;
+    vma_set_page_prot(vma);
+
+    change_protection(tlb, vma, start, end, mm_cp_flags);
+
+    <span class="hljs-keyword">if</span> ((oldflags &amp; VM_ACCOUNT) &amp;&amp; !(newflags &amp; VM_ACCOUNT))
+        vm_unacct_memory(nrpages);
+</code>
+</pre>
+
+
 Mention about vm_flags and `vma_set_page_prot` used by `mprotect` - `VM_WRITE` not resulting in `__RW`
+
+`MM_CP_TRY_CHANGE_WRITABLE` to `change_protection`
+mm/mprotect.c:63
 
 ```c
 static pgprot_t protection_map[16] __ro_after_init = {

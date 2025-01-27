@@ -2,6 +2,7 @@
  * 1. In the kernel, add `noinline` to handle_pte_fault and do_anonymous_page
  *   (alternatively, figure out the offset using gdb and kprobe on that in trace_mem_overcommit.bt)
  * 2. Run:
+ *   echo never > /sys/kernel/mm/transparent_hugepage/enabled
  *   bpftrace trace_mem_overcommit.bt -c ./mem_overcommit_test
  */
 #include <stdint.h>
@@ -11,10 +12,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
+#include <errno.h>
 
 void detect_hugepage_warn(void) {
   int fd = open("/sys/kernel/mm/transparent_hugepage/enabled", O_RDONLY);
   if (fd == -1) {
+    if (errno == ENOENT) {
+      return;
+    }
     perror("open");
     exit(1);
   }
@@ -46,5 +51,5 @@ int main(int argc, char const *argv[]) {
   }
   address[len / 2] = 0x33;
   munmap(address, len);
-  _exit(1);
+  _exit(0);
 }

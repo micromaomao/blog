@@ -357,7 +357,6 @@ async function main() {
             let curr_level = 1;
             $("h2,h3,h4,h5,h6").each((_, heading_elem) => {
               let level = parseInt(heading_elem.tagName.substring(1));
-              console.log(`level=${level}, text=${$(heading_elem).text()}`);
               while (level <= curr_level) {
                 if (curr_level <= 1) {
                   throw new Error("unreachable");

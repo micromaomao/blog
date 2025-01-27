@@ -1,7 +1,7 @@
 From 415a0f17926268cf3c7875cbf61e559f92cf2c05 Mon Sep 17 00:00:00 2001
 From: Mao <m@maowtm.org>
 Date: Sat, 4 Jan 2025 20:24:48 +0000
-Subject: [PATCH 4/7] basic files for ick
+Subject: [PATCH 4/9] basic files for ick
 
 ---
  .config               |  2 ++

@@ -1,0 +1,9 @@
+f:handle_mm_fault {
+  @started[curtask] = nsecs;
+}
+
+fr:handle_mm_fault {
+  $took = nsecs - @started[curtask];
+  @mm_took_nsecs[comm] = hist($took);
+  delete(@started[curtask]);
+}

@@ -1723,12 +1723,12 @@ Now, inside [`mprotect_fixup`](https://github.com/micromaomao/linux-dev/blob/dev
         <span class="hljs-keyword">goto</span> fail;
     }
 
-    *pprev = vma;
+    *pprev = vma;</span>
 
     <span class="hljs-comment">/*
      * vm_flags and vm_page_prot are protected by the mmap_lock
      * held in write mode.
-     */</span></span>
+     */</span>
     vma_start_write(vma);
     vm_flags_reset(vma, newflags);
     <div class="comment-box">
@@ -1736,15 +1736,33 @@ Now, inside [`mprotect_fixup`](https://github.com/micromaomao/linux-dev/blob/dev
       However, we don't need this bit (nor the <code>vma_start_write</code>) if we don't change the VMA flags.</div>
     <span class="hljs-keyword">if</span> (vma_wants_manual_pte_write_upgrade(vma))
         mm_cp_flags |= MM_CP_TRY_CHANGE_WRITABLE;
+        <div class="comment-box">
+          Hmm&hellip; Interesting flag. If you read into it, it suggests that <code>change_protection</code> will &lsquo;<i>try</i>&rsquo; to change the page to writable,<br /> which implies that it might not always do it. We will find out more (although you might have guessed what's going on already)</div>
     vma_set_page_prot(vma);
+    <div class="comment-box">
+      Comment says &ldquo;Update <code>vma->vm_page_prot</code> to reflect <code>vma->vm_flags</code>&rdquo;.
+    </div>
 
     change_protection(tlb, vma, start, end, mm_cp_flags);
-
+    <div class="comment-box">
+Ok, this is basically changing the actual page table to reflect <code>vma->vm_page_prot</code>. Inside it:<br />
+<pre>
+pgprot_t newprot = vma->vm_page_prot;
+...
+pages = change_protection_range(tlb, vma, start, end, newprot,
+          cp_flags);
+</pre>
+and this eventually flows through to
+<pre>
+ptent = pte_modify(oldpte, newprot);
+</pre>
+in <a href="https://github.com/micromaomao/linux-dev/blob/dev/mm/mprotect.c#L86"><code>change_pte_range</code></a></div><br />
     <span class="hljs-keyword">if</span> ((oldflags &amp; VM_ACCOUNT) &amp;&amp; !(newflags &amp; VM_ACCOUNT))
         vm_unacct_memory(nrpages);
 </code>
 </pre>
 
+TODO
 
 Mention about vm_flags and `vma_set_page_prot` used by `mprotect` - `VM_WRITE` not resulting in `__RW`
 

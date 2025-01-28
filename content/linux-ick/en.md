@@ -242,7 +242,7 @@ Ok, technically there is another way that can be basically as fast, and which do
 - While correctly write-protecting the memory pages, saving them off on write fault, and restoring them might sound tricky, with the way Linux manages writable pages it is actually surprisingly straightforward. This is because even for a writable mapping, pages starts off write-protected, and the kernel only makes them actually writable on the first write attempt. This means that there are very natural places we can add our code to, and we don't even have to actually change any permissions, etc.
 - Hacking the kernel is fun, at least to me <img src="./init.png" alt="Small Yuki Nagato emote" class="emoji">, and I learn a lot this way. In the future if I have a similar problem but a lot larger input space, what we did here might prove to be useful again.
 
-I will now walk through each step one by one, as laid out above. If you as the reader don't have a lot of kernel experience (I certainly don't), hopefully by going like this, this will not be too difficult to follow:
+I will now walk through each step one by one, as laid out above. If you as the reader don't have a lot of kernel experience (I don't claim to have), hopefully by going like this, this will not be too difficult to follow:
 
 ### Identify and mark the target process
 

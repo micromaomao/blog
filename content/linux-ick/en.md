@@ -239,7 +239,7 @@ Insert _girl will literally invent new kernel feature instead of doing actual re
 Compared to alternative, user-space approach with ptrace (which I will explore at the end of this article), we avoid any overhead from ptrace-ing &ndash; there is no context switching or waiting between processes, and we can truly run the brute-force loop at the fastest possible speed.<footnote>
 Ok, technically there is another way that can be basically as fast, and which doesn't involve kernel modifications. You can instead use `SECCOMP_RET_TRAP` with a seccomp bpf filter to have the kernel turn the syscall you're interested into a `SIGSYS`, and inject code into the program to handle this signal. This gives you the functionality of a ptrace-based syscall interceptor (your injected code can save/restore registers via the `ucontext` reference, and of course memory too) without the cost of ptrace. But this is arguably getting into wilder territory than some not-too-complex kernel modifications. There are real world projects which does this for a very good reason &ndash; sandboxing. See [gVisor Systrap](https://gvisor.dev/blog/2023/04/28/systrap-release/) for more detail.
 </footnote> From my testing, when the input-checking code is ran in a tight loop this way, it is even faster and often takes aound 5us. 5us <tex>\times</tex> 3,000,000 is _15 seconds_.
-- While correctly write-protecting the memory pages, saving them off on write fault, and restoring them might sound tricky, with the way Linux manages writable pages it is actually surprisingly straightforward. This is because even for a writable mapping, pages starts off write-protected, and the kernel only makes them actually writable on the first write attempt. This means that there are very natural places we can add our code to, and we don't even have to actually change any permissions, etc.
+- While correctly write-protecting the memory pages, saving them off on write fault, and restoring them might sound tricky, with the way Linux manages writable pages it is actually not bad. This is because even for a writable mapping, pages can start off write-protected, and the kernel can make them actually writable on the first write attempt (without coupling it with a copy). This is the case in, for example, the second process that gets scheduled after a fork, where its memory is still all in a write-protected state. This means that there are very natural places we can add our code to, and we don't even have to actually change any permissions, etc.
 - Hacking the kernel is fun, at least to me <img src="./init.png" alt="Small Yuki Nagato emote" class="emoji">, and I learn a lot this way. In the future if I have a similar problem but a lot larger input space, what we did here might prove to be useful again.
 
 I will now walk through each step one by one, as laid out above. If you as the reader don't have a lot of kernel experience (I don't claim to have), hopefully by going like this, this will not be too difficult to follow:
@@ -981,7 +981,7 @@ root@9ba6f25d9dac:/# grep -A 20 'sys_exit_fork' a.log <span class="code-comment"
 
 Remember [earlier](#what-does-fork-do-pre) when we did the ftrace on our little fork program without filtering, there was a bunch of [`handle_mm_fault`](https://github.com/micromaomao/linux-dev/blob/v6.12.1/mm/memory.c#L6042)? (I've omitted many repeats of it in that trace dump)
 
-Now we see this again, and we can reasonably guess that it is the entry point to page faults (well, for valid user space addresses). In fact, if you look at its signature, it looks like by the time we get there, we've already got the [`struct vm_area_struct`](https://github.com/micromaomao/linux-dev/blob/5996393469d99560b7845d22c9eff00661de0724/include/linux/mm_types.h#L697) reference:
+Now we see this again, and we can reasonably guess that it is the entry point to page faults (well, for valid user space addresses that permits the access). In fact, if you look at its signature, it looks like by the time we get there, we've already got the [`struct vm_area_struct`](https://github.com/micromaomao/linux-dev/blob/5996393469d99560b7845d22c9eff00661de0724/include/linux/mm_types.h#L697) reference:
 
 ```c
 /*
@@ -1635,7 +1635,7 @@ Some `man`-page browsing would tell us that &lsquo;pkey&rsquo; is a hardware fea
     tmp = vma-&gt;vm_start;
     <b>for_each_vma_range(vmi, vma, end) {</b>
         <div class="comment-box">
-          Previously we saw <code>for_each_vma</code>, now we have one that takes an end point (previously it passed the start point to `vma_iter_init`)<br />
+          Previously we saw <code>for_each_vma</code>, now we have one that takes an end point (earlier in the function it passed the start point to <code>vma_iter_init</code>)<br />
           This is likely the interesting part as it's doing the mprotect thing for each VMA.</div>
         <span class="hljs-type">unsigned</span> <span class="hljs-type">long</span> mask_off_old_flags;
         <span class="hljs-type">unsigned</span> <span class="hljs-type">long</span> newflags;
@@ -1717,7 +1717,7 @@ Now, inside [`mprotect_fixup`](https://github.com/micromaomao/linux-dev/blob/dev
 
     vma = vma_modify_flags(vmi, *pprev, vma, start, end, newflags);
     <div class="comment-box">
-      This merges adjacent VMAs when possible.</div>
+      This merges adjacent VMAs when possible, potentially also changing the flag?</div>
 <span style="opacity: 0.4;">    <span class="hljs-keyword">if</span> (IS_ERR(vma)) {
         error = PTR_ERR(vma);
         <span class="hljs-keyword">goto</span> fail;
@@ -1733,7 +1733,7 @@ Now, inside [`mprotect_fixup`](https://github.com/micromaomao/linux-dev/blob/dev
     vm_flags_reset(vma, newflags);
     <div class="comment-box">
       This changes the VMA flags, with lock taken in <code>vma_start_write</code>.<br />
-      However, we don't need this bit (nor the <code>vma_start_write</code>) if we don't change the VMA flags.</div>
+      However, we don't need this lock if we don't change the VMA flags.</div>
     <span class="hljs-keyword">if</span> (vma_wants_manual_pte_write_upgrade(vma))
         mm_cp_flags |= MM_CP_TRY_CHANGE_WRITABLE;
         <div class="comment-box">

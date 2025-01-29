@@ -1739,7 +1739,7 @@ Now, inside [`mprotect_fixup`](https://github.com/micromaomao/linux-dev/blob/dev
         <div class="comment-box">
           Hmm&hellip; Interesting flag. If you read into it, it suggests that <code>change_protection</code> will &lsquo;<i>try</i>&rsquo; to change the page to writable,<br /> which implies that it might not always do it. We will find out more (although you might have guessed what's going on already)</div>
     vma_set_page_prot(vma);
-    <div class="comment-box">
+    <div class="comment-box" style="font-weight: bold;">
       Comment says &ldquo;Update <code>vma->vm_page_prot</code> to reflect <code>vma->vm_flags</code>&rdquo;.
     </div>
 
@@ -1761,6 +1761,43 @@ in <a href="https://github.com/micromaomao/linux-dev/blob/dev/mm/mprotect.c#L86"
         vm_unacct_memory(nrpages);
 </code>
 </pre>
+
+Now, `vma->vm_page_prot` is basically the actual page protection flags that will get put in the page table. How does [`vma_set_page_prot`](https://github.com/micromaomao/linux-dev/blob/dev/mm/mmap.c#L81) calculate it? You might have thought that it would simply do a &lsquo;translation&rsquo; of `vma->vm_flags`, turning e.g. read-only pages to read-only, and read-write pages to RW. However, that's not the case. Let's look at the function:
+
+<!-- ```c
+/* Update vma->vm_page_prot to reflect vma->vm_flags. */
+void vma_set_page_prot(struct vm_area_struct *vma)
+{
+	unsigned long vm_flags = vma->vm_flags;
+	pgprot_t vm_page_prot;
+
+	vm_page_prot = vm_pgprot_modify(vma->vm_page_prot, vm_flags);
+	if (vma_wants_writenotify(vma, vm_page_prot)) {
+		vm_flags &= ~VM_SHARED;
+		vm_page_prot = vm_pgprot_modify(vm_page_prot, vm_flags);
+	}
+	/* remove_protection_ptes reads vma->vm_page_prot without mmap_lock */
+	WRITE_ONCE(vma->vm_page_prot, vm_page_prot);
+}
+``` -->
+<pre>
+<code class="language-c"><span class="hljs-comment">/* Update vma-&gt;vm_page_prot to reflect vma-&gt;vm_flags. */</span>
+<span class="hljs-type">void</span> <span class="hljs-title function_">vma_set_page_prot</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> vm_area_struct *vma)</span>
+{
+<span style="opacity: 0.4;">    <span class="hljs-type">unsigned</span> <span class="hljs-type">long</span> vm_flags = vma-&gt;vm_flags;
+    <span class="hljs-type">pgprot_t</span> vm_page_prot;</span>
+
+    vm_page_prot = vm_pgprot_modify(vma-&gt;vm_page_prot, vm_flags);
+    <span class="hljs-keyword">if</span> (vma_wants_writenotify(vma, vm_page_prot)) {
+        <div class="comment-box">Hmm&hellip; <code>vma_wants_writenotify</code> &mdash; That's a very interesting function name!</div>
+        vm_flags &amp;= ~VM_SHARED;
+        <div class="comment-box">If we want to be &lsquo;notified&rsquo; of writes, we pretend it's a private mapping?</div>
+        vm_page_prot = vm_pgprot_modify(vm_page_prot, vm_flags);
+    }
+    <span class="hljs-comment">/* remove_protection_ptes reads vma-&gt;vm_page_prot without mmap_lock */</span>
+    WRITE_ONCE(vma-&gt;vm_page_prot, vm_page_prot);
+}
+</code></pre>
 
 TODO
 

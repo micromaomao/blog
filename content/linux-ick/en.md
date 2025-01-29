@@ -1788,25 +1788,29 @@ void vma_set_page_prot(struct vm_area_struct *vma)
     <span class="hljs-type">pgprot_t</span> vm_page_prot;</span>
 
     vm_page_prot = vm_pgprot_modify(vma-&gt;vm_page_prot, vm_flags);
-    <span class="hljs-keyword">if</span> (vma_wants_writenotify(vma, vm_page_prot)) {
+    <span class="hljs-keyword">if</span> (<a href="https://github.com/micromaomao/linux-dev/blob/dev/mm/vma.c#L1845">vma_wants_writenotify</a>(vma, vm_page_prot)) {
         <div class="comment-box">Hmm&hellip; <code>vma_wants_writenotify</code> &mdash; That's a very interesting function name!</div>
         vm_flags &amp;= ~VM_SHARED;
         <div class="comment-box">If we want to be &lsquo;notified&rsquo; of writes, we pretend it's a private mapping?</div>
         vm_page_prot = vm_pgprot_modify(vm_page_prot, vm_flags);
+        <div class="comment-box">Now we get the correct <code>pgprot_t</code> for this <code>vma->vm_flags</code>&hellip;</div>
     }
     <span class="hljs-comment">/* remove_protection_ptes reads vma-&gt;vm_page_prot without mmap_lock */</span>
     WRITE_ONCE(vma-&gt;vm_page_prot, vm_page_prot);
+    <div class="comment-box">&hellip;and assign it here to our <code>vma</code></div>
 }
 </code></pre>
 
-TODO
-
-Mention about vm_flags and `vma_set_page_prot` used by `mprotect` - `VM_WRITE` not resulting in `__RW`
-
-`MM_CP_TRY_CHANGE_WRITABLE` to `change_protection`
-mm/mprotect.c:63
+In this case `vm_pgprot_modify` is another &ldquo;calculate what's the `pgprot_t` for this `vm_flags_t`&rdquo; function, which calls [`vm_pgprot_modify`](https://github.com/micromaomao/linux-dev/blob/dev/arch/x86/mm/pgprot.c#L35) which has this code:
 
 ```c
+unsigned long val = pgprot_val(protection_map[vm_flags &
+                  (VM_READ|VM_WRITE|VM_EXEC|VM_SHARED)]);
+```
+
+And what is in [`protection_map`](https://github.com/micromaomao/linux-dev/blob/dev/arch/x86/mm/pgprot.c#L8)?
+
+<!-- ```c
 static pgprot_t protection_map[16] __ro_after_init = {
     [VM_NONE]                                    = PAGE_NONE,
     [VM_READ]                                    = PAGE_READONLY,
@@ -1825,24 +1829,55 @@ static pgprot_t protection_map[16] __ro_after_init = {
     [VM_SHARED | VM_EXEC | VM_WRITE]             = PAGE_SHARED_EXEC,
     [VM_SHARED | VM_EXEC | VM_WRITE | VM_READ]   = PAGE_SHARED_EXEC
 };
-```
+``` -->
+
+<pre>
+<code class="language-c"><span class="hljs-type">static</span> <span class="hljs-type">pgprot_t</span> protection_map[<span class="hljs-number">16</span>] __ro_after_init = {
+<span style="opacity: 0.4;">    [VM_NONE]                                    = PAGE_NONE,</span>
+    [VM_READ]                                    = PAGE_READONLY,
+<span style="opacity: 0.4;">    [VM_WRITE]                                   = PAGE_COPY,</span>
+    <b>[VM_WRITE | VM_READ]                         = PAGE_COPY,</b>
+<span style="opacity: 0.4;">    [VM_EXEC]                                    = PAGE_READONLY_EXEC,
+    [VM_EXEC | VM_READ]                          = PAGE_READONLY_EXEC,
+    [VM_EXEC | VM_WRITE]                         = PAGE_COPY_EXEC,
+    [VM_EXEC | VM_WRITE | VM_READ]               = PAGE_COPY_EXEC,
+    [VM_SHARED]                                  = PAGE_NONE,</span>
+    [VM_SHARED | VM_READ]                        = PAGE_READONLY,
+<span style="opacity: 0.4;">    [VM_SHARED | VM_WRITE]                       = PAGE_SHARED,</span>
+    [VM_SHARED | VM_WRITE | VM_READ]             = PAGE_SHARED,
+<span style="opacity: 0.4;">    [VM_SHARED | VM_EXEC]                        = PAGE_READONLY_EXEC,
+    [VM_SHARED | VM_EXEC | VM_READ]              = PAGE_READONLY_EXEC,
+    [VM_SHARED | VM_EXEC | VM_WRITE]             = PAGE_SHARED_EXEC,
+    [VM_SHARED | VM_EXEC | VM_WRITE | VM_READ]   = PAGE_SHARED_EXEC</span>
+};
+</code>
+</pre>
+
+`PAGE_COPY` is a suspicious name given what we know already. It is defined as:
 
 ```c
-#define pgprot_val(x)		((x).pgprot)
-#define __pgprot(x)		((pgprot_t) { (x) } )
-#define __pg(x)			__pgprot(x)
-
-#define PAGE_NONE	     __pg(   0|   0|   0|___A|   0|   0|   0|___G)
-#define PAGE_SHARED	     __pg(__PP|__RW|_USR|___A|__NX|   0|   0|   0)
-#define PAGE_SHARED_EXEC     __pg(__PP|__RW|_USR|___A|   0|   0|   0|   0)
-#define PAGE_COPY_NOEXEC     __pg(__PP|   0|_USR|___A|__NX|   0|   0|   0)
-#define PAGE_COPY_EXEC	     __pg(__PP|   0|_USR|___A|   0|   0|   0|   0)
 #define PAGE_COPY	     __pg(__PP|   0|_USR|___A|__NX|   0|   0|   0)
-#define PAGE_READONLY	     __pg(__PP|   0|_USR|___A|__NX|   0|   0|   0)
-#define PAGE_READONLY_EXEC   __pg(__PP|   0|_USR|___A|   0|   0|   0|   0)
 ```
 
+whereas for a shared writable mapping, `PAGE_SHARED` is defined as:
+
+```c
+#define PAGE_SHARED	     __pg(__PP|__RW|_USR|___A|__NX|   0|   0|   0)
+```
+
+Note that `PAGE_COPY` doesn't have `_RW`! Remember earlier there is some code which pretends our VMA is **not** `VM_SHARED` if we want to be &lsquo;notified&rsquo; of writes? This is why &mdash; non-shared mappings don't get to have write permission set. I also wish this code is not so convoluted.
+
+Ok, what does this leave us with? We can find a way to make [`vma_wants_writenotify`](https://github.com/micromaomao/linux-dev/blob/dev/mm/vma.c#L1845) return true, then somehow get the VMA to &lsquo;re-sync&rsquo; its page permissions. Alternatively, even easier, we can override `vma->vm_page_prot` ourselves, then call [`change_protection`](https://github.com/micromaomao/linux-dev/blob/dev/mm/mprotect.c#L541) **without** passing the `MM_CP_TRY_CHANGE_WRITABLE` flag. (In case you're curious, that flag basically makes it make the page writable for exclusively-held, i.e. refcount=0, pages.)
+
+#### Let's actually trap writes, copy the pages, then restore them!
+
+TODO
+
+Add code to `do_wp_page`
+
 `do_swap_page` also calls `do_wp_page`. Not sure about huge pages so will disable that.
+
+Build a rbtree, allocate with `kmalloc` (let's not worry about folios)
 
 ### Blocking off other syscalls
 

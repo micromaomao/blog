@@ -38,7 +38,7 @@ h4 {
   margin: 1em 0 0.5em 0;
 }
 
-p a, ul a, li a, h2 a, h3 a, h4 a, body > a.home {
+p a, ul a, li a, h2 a, h3 a, h4 a, body > a.home, .comment-box a {
   outline: none;
   -webkit-tap-highlight-color: transparent;
   color: $color-link;

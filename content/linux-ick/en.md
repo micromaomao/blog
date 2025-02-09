@@ -1605,7 +1605,7 @@ cpus=2
        my-hackme-90    [000]     7.313394: bprint:               ick_revert_proc: Restored process my-hackme[90]
 </pre>
 
-Since we haven't done anything to write-protect the data, nothing happens after `ick_checkpoint_proc`.
+Since we haven't done anything to write-protect the data, nothing happens after `ick_checkpoint_proc`, but we do see our `trace_printk`s in `do_wp_page` / `do_anonymous_page` in the initial phase of the execution!
 
 #### Ok, so how do we write-protect the pages?
 
@@ -1733,14 +1733,16 @@ Now, inside [`mprotect_fixup`](https://github.com/micromaomao/linux-dev/blob/dev
     vm_flags_reset(vma, newflags);
     <div class="comment-box">
       This changes the VMA flags, with lock taken in <code>vma_start_write</code>.<br />
-      However, we don't need this lock if we don't change the VMA flags.</div>
-    <span class="hljs-keyword">if</span> (vma_wants_manual_pte_write_upgrade(vma))
+      However, we don't need this lock (the one that the comment above mentions) if we don't change the VMA flags.</div>
+    <span class="hljs-keyword">if</span> (<a href="https://github.com/micromaomao/linux-dev/blob/dev/mm/vma.h#L339">vma_wants_manual_pte_write_upgrade</a>(vma))
         mm_cp_flags |= MM_CP_TRY_CHANGE_WRITABLE;
         <div class="comment-box">
           Hmm&hellip; Interesting flag. If you read into it, it suggests that <code>change_protection</code> will &lsquo;<i>try</i>&rsquo; to change the page to writable,<br /> which implies that it might not always do it. We will find out more (although you might have guessed what's going on already)</div>
     vma_set_page_prot(vma);
-    <div class="comment-box" style="font-weight: bold;">
-      Comment says &ldquo;Update <code>vma->vm_page_prot</code> to reflect <code>vma->vm_flags</code>&rdquo;.
+    <div class="comment-box">
+      <b>&ldquo;Update <code>vma->vm_page_prot</code> to reflect <code>vma->vm_flags</code>&rdquo;</b>.<br>
+      <code>vma->vm_page_prot</code> is basically the actual page protection flags that will get put in the page table.<br>
+      More on this later
     </div>
 
     change_protection(tlb, vma, start, end, mm_cp_flags);
@@ -1752,17 +1754,16 @@ pgprot_t newprot = vma->vm_page_prot;
 pages = change_protection_range(tlb, vma, start, end, newprot,
           cp_flags);
 </pre>
-and this eventually flows through to
+and inside <a href="https://github.com/micromaomao/linux-dev/blob/dev/mm/mprotect.c#L511">change_protection_range</a>, we descend down the page table again (like in copy_page_range earlier when forking),<br>
+and eventually changes the PTE:
 <pre>
 ptent = pte_modify(oldpte, newprot);
 </pre>
 in <a href="https://github.com/micromaomao/linux-dev/blob/dev/mm/mprotect.c#L86"><code>change_pte_range</code></a></div><br />
-    <span class="hljs-keyword">if</span> ((oldflags &amp; VM_ACCOUNT) &amp;&amp; !(newflags &amp; VM_ACCOUNT))
-        vm_unacct_memory(nrpages);
-</code>
-</pre>
+<span style="opacity: 0.4;">    <span class="hljs-keyword">if</span> ((oldflags &amp; VM_ACCOUNT) &amp;&amp; !(newflags &amp; VM_ACCOUNT))
+        vm_unacct_memory(nrpages);</span></code></pre>
 
-Now, `vma->vm_page_prot` is basically the actual page protection flags that will get put in the page table. How does [`vma_set_page_prot`](https://github.com/micromaomao/linux-dev/blob/dev/mm/mmap.c#L81) calculate it? You might have thought that it would simply do a &lsquo;translation&rsquo; of `vma->vm_flags`, turning e.g. read-only pages to read-only, and read-write pages to RW. However, that's not the case. Let's look at the function:
+How does [`vma_set_page_prot`](https://github.com/micromaomao/linux-dev/blob/dev/mm/mmap.c#L81) derives the actual page protection flags? You might have thought that it would simply do a &lsquo;translation&rsquo; of `vma->vm_flags`, turning e.g. read-only pages to read-only, and read-write pages to RW. However, that's not the case. Let's look at the function:
 
 <!-- ```c
 /* Update vma->vm_page_prot to reflect vma->vm_flags. */
@@ -1787,13 +1788,14 @@ void vma_set_page_prot(struct vm_area_struct *vma)
 <span style="opacity: 0.4;">    <span class="hljs-type">unsigned</span> <span class="hljs-type">long</span> vm_flags = vma-&gt;vm_flags;
     <span class="hljs-type">pgprot_t</span> vm_page_prot;</span>
 
-    vm_page_prot = vm_pgprot_modify(vma-&gt;vm_page_prot, vm_flags);
+    vm_page_prot = <a href="https://github.com/micromaomao/linux-dev/blob/dev/mm/vma.h#L353">vm_pgprot_modify</a>(vma-&gt;vm_page_prot, vm_flags);
+    <div class="comment-box">Gets the correct <code>vma->vm_page_prot</code> for this <code>vma->vm_flags</code>&hellip;</div>
     <span class="hljs-keyword">if</span> (<a href="https://github.com/micromaomao/linux-dev/blob/dev/mm/vma.c#L1845">vma_wants_writenotify</a>(vma, vm_page_prot)) {
         <div class="comment-box">Hmm&hellip; <code>vma_wants_writenotify</code> &mdash; That's a very interesting function name!</div>
         vm_flags &amp;= ~VM_SHARED;
-        <div class="comment-box">If we want to be &lsquo;notified&rsquo; of writes, we pretend it's a private mapping?</div>
-        vm_page_prot = vm_pgprot_modify(vm_page_prot, vm_flags);
-        <div class="comment-box">Now we get the correct <code>pgprot_t</code> for this <code>vma->vm_flags</code>&hellip;</div>
+        <div class="comment-box">If we want to be &lsquo;notified&rsquo; of writes, we pretend it's a private mapping&hellip;?</div>
+        vm_page_prot = <a href="https://github.com/micromaomao/linux-dev/blob/dev/mm/vma.h#L353">vm_pgprot_modify</a>(vm_page_prot, vm_flags);
+        <div class="comment-box">&hellip;and get the correct <code>pgprot_t</code> for this <code>vma->vm_flags</code> again.</div>
     }
     <span class="hljs-comment">/* remove_protection_ptes reads vma-&gt;vm_page_prot without mmap_lock */</span>
     WRITE_ONCE(vma-&gt;vm_page_prot, vm_page_prot);
@@ -1801,7 +1803,7 @@ void vma_set_page_prot(struct vm_area_struct *vma)
 }
 </code></pre>
 
-In this case `vm_pgprot_modify` is another &ldquo;calculate what's the `pgprot_t` for this `vm_flags_t`&rdquo; function, which calls [`vm_pgprot_modify`](https://github.com/micromaomao/linux-dev/blob/dev/arch/x86/mm/pgprot.c#L35) which has this code:
+In this case [`vm_pgprot_modify`](https://github.com/micromaomao/linux-dev/blob/dev/mm/vma.h#L353) is the inner &ldquo;calculate what's the `pgprot_t` for this `vm_flags_t`&rdquo; function (it doesn't actually &lsquo;modify&rsquo; anything, but it preserves unchanged bits in the old flag), which calls [`vm_get_page_prot`](https://github.com/micromaomao/linux-dev/blob/dev/arch/x86/mm/pgprot.c#L35) which has this code:
 
 ```c
 unsigned long val = pgprot_val(protection_map[vm_flags &
@@ -1867,9 +1869,13 @@ whereas for a shared writable mapping, `PAGE_SHARED` is defined as:
 
 Note that `PAGE_COPY` doesn't have `_RW`! Remember earlier there is some code which pretends our VMA is **not** `VM_SHARED` if we want to be &lsquo;notified&rsquo; of writes? This is why &mdash; non-shared mappings don't get to have write permission set. I also wish this code is not so convoluted.
 
-Ok, what does this leave us with? We can find a way to make [`vma_wants_writenotify`](https://github.com/micromaomao/linux-dev/blob/dev/mm/vma.c#L1845) return true, then somehow get the VMA to &lsquo;re-sync&rsquo; its page permissions. Alternatively, even easier, we can override `vma->vm_page_prot` ourselves, then call [`change_protection`](https://github.com/micromaomao/linux-dev/blob/dev/mm/mprotect.c#L541) **without** passing the `MM_CP_TRY_CHANGE_WRITABLE` flag. (In case you're curious, that flag basically makes it make the page writable for exclusively-held, i.e. refcount=0, pages.)
+Ok, what does this leave us with? We can find a way to make [`vma_wants_writenotify`](https://github.com/micromaomao/linux-dev/blob/dev/mm/vma.c#L1845) return true, then somehow get the VMA to &lsquo;re-sync&rsquo; its page permissions. Alternatively, even easier, we can override `vma->vm_page_prot` ourselves, then call [`change_protection`](https://github.com/micromaomao/linux-dev/blob/dev/mm/mprotect.c#L541) **without** passing the `MM_CP_TRY_CHANGE_WRITABLE` flag. (That flag basically tells it to make the page writable for exclusively-held, i.e. refcount=0, pages)
 
-#### Let's actually trap writes, copy the pages, then restore them!
+We're now excitingly close to our final goal!
+
+
+
+#### Let's actually copy the pages, then restore them!
 
 TODO
 

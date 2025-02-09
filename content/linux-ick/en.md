@@ -1628,7 +1628,17 @@ Some `man`-page browsing would tell us that &lsquo;pkey&rsquo; is a hardware fea
 <!-- original code: mm/mprotect.c:709 @ 0fb4a7ad270b3b209e510eb9dc5b07bf02b7edaf -->
 
 <pre>
-<code class="language-c">    tlb_gather_mmu(&amp;tlb, current-&gt;mm);
+<code class="language-c"><span class="hljs-type">static</span> <span class="hljs-type">int</span> <span class="hljs-title function_">do_mprotect_pkey</span><span class="hljs-params">(<span class="hljs-type">unsigned</span> <span class="hljs-type">long</span> start, <span class="hljs-type">size_t</span> len,
+        <span class="hljs-type">unsigned</span> <span class="hljs-type">long</span> prot, <span class="hljs-type">int</span> pkey)</span>
+{
+<span style="opacity: 0.4;">    ...</span>
+    <span class="hljs-keyword">if</span> (mmap_write_lock_killable(current-&gt;mm))
+        <div class="comment-box">
+          We might need to call this too in our own code!
+        </div>
+        <span class="hljs-keyword">return</span> -EINTR;
+<span style="opacity: 0.4;">    ...</span>
+    tlb_gather_mmu(&amp;tlb, current-&gt;mm);
     <div class="comment-box">
       Initalize a structure which will track page table modifications to flush the TLB. We will need this too.</div>
     nstart = start;
@@ -1640,9 +1650,9 @@ Some `man`-page browsing would tell us that &lsquo;pkey&rsquo; is a hardware fea
         <span class="hljs-type">unsigned</span> <span class="hljs-type">long</span> mask_off_old_flags;
         <span class="hljs-type">unsigned</span> <span class="hljs-type">long</span> newflags;
         <span class="hljs-type">int</span> new_vma_pkey;
-        ...
+<span style="opacity: 0.4;">        ...
 
-<span style="opacity: 0.4;">        <span class="hljs-comment">/*
+        <span class="hljs-comment">/*
          * Each mprotect() call explicitly passes r/w/x permissions.
          * If a permission is not passed to mprotect(), it must be
          * cleared from the VMA.
@@ -1688,6 +1698,8 @@ Some `man`-page browsing would tell us that &lsquo;pkey&rsquo; is a hardware fea
         prot = reqprot;
     }
     tlb_finish_mmu(&amp;tlb);
+<span style="opacity: 0.4;">    ...</span>
+    mmap_write_unlock(current-&gt;mm);
 </code></pre>
 
 Now, inside [`mprotect_fixup`](https://github.com/micromaomao/linux-dev/blob/dev/mm/mprotect.c#L603):
@@ -1713,7 +1725,7 @@ Now, inside [`mprotect_fixup`](https://github.com/micromaomao/linux-dev/blob/dev
         <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;
     }
 
-    ...
+<span style="opacity: 0.4;">    ...</span>
 
     vma = vma_modify_flags(vmi, *pprev, vma, start, end, newflags);
     <div class="comment-box">
@@ -1730,10 +1742,15 @@ Now, inside [`mprotect_fixup`](https://github.com/micromaomao/linux-dev/blob/dev
      * held in write mode.
      */</span>
     vma_start_write(vma);
+    <div class="comment-box">
+      Earlier in <code>do_mprotect_pkey</code> we have taken the mmap_lock by calling <code>mmap_write_lock_killable</code>.<br>
+      This call increments a sequence number on the VMA so that readers trying to opportunistically avoid taking the<br> mmap_lock when reading will actually fallback to taking it (and hence waiting until this mprotect call is done).<br>
+      This means that if we want to modify <code>vma->vm_flags</code> or <code>vma->vm_page_prot</code>, we need to both take the<br> mmap_lock, and call this function.
+    </div>
     vm_flags_reset(vma, newflags);
     <div class="comment-box">
-      This changes the VMA flags, with lock taken in <code>vma_start_write</code>.<br />
-      However, we don't need this lock (the one that the comment above mentions) if we don't change the VMA flags.</div>
+      This changes the VMA flags.
+    </div>
     <span class="hljs-keyword">if</span> (<a href="https://github.com/micromaomao/linux-dev/blob/dev/mm/vma.h#L339">vma_wants_manual_pte_write_upgrade</a>(vma))
         mm_cp_flags |= MM_CP_TRY_CHANGE_WRITABLE;
         <div class="comment-box">
@@ -1871,15 +1888,11 @@ Note that `PAGE_COPY` doesn't have `_RW`! Remember earlier there is some code wh
 
 Ok, what does this leave us with? We can find a way to make [`vma_wants_writenotify`](https://github.com/micromaomao/linux-dev/blob/dev/mm/vma.c#L1845) return true, then somehow get the VMA to &lsquo;re-sync&rsquo; its page permissions. Alternatively, even easier, we can override `vma->vm_page_prot` ourselves, then call [`change_protection`](https://github.com/micromaomao/linux-dev/blob/dev/mm/mprotect.c#L541) **without** passing the `MM_CP_TRY_CHANGE_WRITABLE` flag. (That flag basically tells it to make the page writable for exclusively-held, i.e. refcount=0, pages)
 
+<a class="make-diff" href="diffs/0010-mark-pages-as-non-writable.patch"></a>
+
 We're now excitingly close to our final goal!
 
-
-
 #### Let's actually copy the pages, then restore them!
-
-TODO
-
-Add code to `do_wp_page`
 
 `do_swap_page` also calls `do_wp_page`. Not sure about huge pages so will disable that.
 

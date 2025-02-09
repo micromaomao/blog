@@ -1,7 +1,7 @@
-From cc44abf914a2b7ca9d9f7e9369fe64d43c31c004 Mon Sep 17 00:00:00 2001
+From 403cdcebaeb54eea5321613a8d2a96dde4b8cb17 Mon Sep 17 00:00:00 2001
 From: Mao <m@maowtm.org>
 Date: Sat, 11 Jan 2025 20:22:04 +0000
-Subject: [PATCH 7/9] save and restore registers
+Subject: [PATCH 07/10] save and restore registers
 
 ---
  include/linux/ick.h |  3 +-

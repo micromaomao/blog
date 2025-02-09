@@ -1,7 +1,7 @@
-From fdbfc6a61eade4ceeddc7f4c1b79194398c71583 Mon Sep 17 00:00:00 2001
+From 6015998f5b906cdc0c1e7fd25bf4843d6631599a Mon Sep 17 00:00:00 2001
 From: Mao <m@maowtm.org>
 Date: Sun, 26 Jan 2025 23:06:26 +0000
-Subject: [PATCH 8/9] disable transparent huge pages
+Subject: [PATCH 08/10] disable transparent huge pages
 
 ---
  .config | 12 +-----------

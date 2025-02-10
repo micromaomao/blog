@@ -1526,6 +1526,8 @@ Since we don't want to deal with huge pages, we will disable them in further tes
 
 Let's add some `trace_printk`s and see how often they are being called now, again using our test program:
 
+<div id="do-wp-page-trace_printk"></div>
+
 <a class="make-diff" href="./diffs/0009-trace_printk-on-do_wp_page-and-do_anonymous_page.patch"></a>
 
 And don't forget to recompile the kernel.
@@ -1890,13 +1892,87 @@ Ok, what does this leave us with? We can find a way to make [`vma_wants_writenot
 
 <a class="make-diff" href="diffs/0010-mark-pages-as-non-writable.patch"></a>
 
-We're now excitingly close to our final goal!
+Using the same command we used in the last section we can print the memory maps, and verify that the correct areas are getting write-protected:
+
+<pre>
+<span class="irrelevant">root@42bd2e1ffd95:/# </span>trace-cmd record -p nop \
+  -e console /usr/bin/gdb -q --batch ./my-hackme \
+    -ex 'starti' -ex 'b main' -ex 'c' \
+    -ex 'info proc mappings' \
+    -ex 'c'
+<span class="irrelevant">[    5.489927][   T90] execveat: /my-hackme[90] to be hacked
+
+Program stopped.
+0x00000000004061c0 in _start ()
+Breakpoint 1 at 0x4062e5: file my-hackme.cpp, line 7.
+
+Breakpoint 1, main (argc=1, argv=0x7fffffffecf8) at my-hackme.cpp:7
+7	int main(int argc, char const *argv[]) {
+process 90</span>
+Mapped address spaces:
+
+          Start Addr           End Addr       Size     Offset  Perms  objfile
+            0x400000           0x401000     0x1000        0x0  r--p   /my-hackme
+            0x401000           0x583000   0x182000     0x1000  r-xp   /my-hackme
+            0x583000           0x5d8000    0x55000   0x183000  r--p   /my-hackme
+            0x5d8000           0x5e4000     0xc000   0x1d7000  r--p   /my-hackme
+            0x5e4000           0x5e6000     0x2000   0x1e3000  rw-p   /my-hackme
+            0x5e6000           0x5ef000     0x9000        0x0  rw-p
+            0x5ef000           0x611000    0x22000        0x0  rw-p   [heap]
+      0x7ffff7ff9000     0x7ffff7ffd000     0x4000        0x0  r--p   [vvar]
+      0x7ffff7ffd000     0x7ffff7fff000     0x2000        0x0  r-xp   [vdso]
+      0x7ffffffde000     0x7ffffffff000    0x21000        0x0  rw-p   [stack]
+  0xffffffffff600000 0xffffffffff601000     0x1000        0x0  --xp   [vsyscall]
+<span class="irrelevant">[    5.546769][   T90] hack: 0 gave different output
+Enter number:
+Program received signal SIGSEGV, Segmentation fault.
+0x000000000000003a in ?? ()
+CPU0 data recorded at offset=0xa4000
+    675 bytes in size (4096 uncompressed)
+CPU1 data recorded at offset=0xa5000
+    0 bytes in size (0 uncompressed)
+root@42bd2e1ffd95:/# trace-cmd report
+cpus=2
+       my-hackme-90    [000]     5.498556: console:              execveat: /my-hackme[90] to be hacked
+       ...</span>
+       my-hackme-90    [000]     5.555393: bprint:               ksys_write: hacked process attempted write with data Enter number:
+       my-hackme-90    [000]     5.555397: console:              hack: 0 gave different output
+       my-hackme-90    [000]     5.556869: bprint:               __handle_mm_fault: faulting on non-present anonymous page 604000
+       my-hackme-90    [000]     5.556871: bprint:               ksys_read: ick checkpoint on hacked process my-hackme[90]
+       my-hackme-90    [000]     5.556872: bprint:               mark_pages: Skipping non-writable VMA 400000-401000 (my-hackme)
+       my-hackme-90    [000]     5.556873: bprint:               mark_pages: Skipping non-writable VMA 401000-583000 (my-hackme)
+       my-hackme-90    [000]     5.556873: bprint:               mark_pages: Skipping non-writable VMA 583000-5d8000 (my-hackme)
+       my-hackme-90    [000]     5.556873: bprint:               mark_pages: Skipping non-writable VMA 5d8000-5e4000 (my-hackme)
+       my-hackme-90    [000]     5.556874: bprint:               mark_pages: Marking VMA 5e4000-5e6000 (8 KiB) as read-only
+       my-hackme-90    [000]     5.556875: bprint:               mark_pages: Marking VMA 5e6000-5ef000 (36 KiB) as read-only
+       my-hackme-90    [000]     5.556876: bprint:               mark_pages: Marking VMA 5ef000-611000 (136 KiB) as read-only
+       my-hackme-90    [000]     5.556877: bprint:               mark_pages: Skipping non-writable VMA 7ffff7ff9000-7ffff7ffd000 (anon)
+       my-hackme-90    [000]     5.556877: bprint:               mark_pages: Skipping non-writable VMA 7ffff7ffd000-7ffff7fff000 (anon)
+       my-hackme-90    [000]     5.556877: bprint:               mark_pages: Marking VMA 7ffffffde000-7ffffffff000 (132 KiB) as read-only
+       my-hackme-90    [000]     5.556878: bprint:               ick_checkpoint_proc: ick: Checkpointed my-hackme[90]
+       my-hackme-90    [000]     5.556878: bprint:               ksys_read: Providing number 1 to hacked process my-hackme[90]
+       my-hackme-90    [000]     5.556880: bprint:               do_wp_page: faulting on write-protected page 603000
+       my-hackme-90    [000]     5.556881: bprint:               do_wp_page: faulting on write-protected page 5e4000
+       my-hackme-90    [000]     5.556882: bprint:               do_wp_page: faulting on write-protected page 7fffffffd000
+       my-hackme-90    [000]     5.556957: bprint:               do_wp_page: faulting on write-protected page 5ef000
+       my-hackme-90    [000]     5.557387: bprint:               do_wp_page: faulting on write-protected page 5e6000
+       my-hackme-90    [000]     5.557388: bprint:               do_wp_page: faulting on write-protected page 602000
+       my-hackme-90    [000]     5.557390: bprint:               do_wp_page: faulting on write-protected page 5e9000
+       my-hackme-90    [000]     5.557457: bprint:               do_wp_page: faulting on write-protected page 5e7000
+       my-hackme-90    [000]     5.557457: bprint:               do_wp_page: faulting on write-protected page 5e8000
+       my-hackme-90    [000]     5.557719: bprint:               ksys_write: hacked process attempted write with data Nope! 1 was a wrong guess. The correct number is 1118849.
+       my-hackme-90    [000]     5.557719: bprint:               ick_revert_proc: Restored process my-hackme[90]
+</pre>
+
+It's still segfaulting as we aren't actually copying off and restoring the memory, but we are seeing prints from our earlier [modified `do_wp_page`](#do-wp-page-trace_printk) function after the checkpoint. We're now excitingly close to our final goal!
 
 #### Let's actually copy the pages, then restore them!
 
-`do_swap_page` also calls `do_wp_page`. Not sure about huge pages so will disable that.
+The kernel includes definition for some very useful data structures, one of which is a [red-black tree](https://en.wikipedia.org/wiki/Red%E2%80%93black_tree) &mdash; a type of binary search tree commonly used to implement key-value stores. In our case, we can use it to map the user space's modified page addresses to (pointer to) the page's original content, at the time of the checkpoint. There is very good [kernel documentation](https://www.kernel.org/doc/html/v6.12/core-api/rbtree.html) for using this data structure, with code examples.
 
-Build a rbtree, allocate with `kmalloc` (let's not worry about folios)
+<!-- `do_swap_page` also calls `do_wp_page`. Not sure about huge pages so will disable that.
+
+Build a rbtree, allocate with `kmalloc` (let's not worry about folios) -->
 
 ### Blocking off other syscalls
 

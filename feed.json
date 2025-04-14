@@ -1,0 +1,15 @@
+[
+  {
+    "title": "Hiding ‘Easter Eggs’ in your Hypervisor",
+    "url": "https://draft.blog.maowtm.org/hypervisor-easter-egg/en.html",
+    "date": "2025-01-26T12:48:17.000Z",
+    "tags": [
+      "systems programming",
+      "virtualization",
+      "cloud-hypervisor",
+      "Linux"
+    ],
+    "cover_image": null,
+    "snippet": "TODO ./configure --prefix=$HOME/qemu-build --sysconfdir=$HOME/qemu-build/etc --libexecdir=$HOME/qemu-build/usr/lib/qemu --localstatedir=$HOME/qemu-build/var --disable-bpf --disable-bsd-user --disable-capstone --disable-docs --disable-fdt --disable-gcrypt --disable-glusterfs --disable-gnutls --disable-gtk..."
+  }
+]

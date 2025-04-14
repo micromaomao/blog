@@ -38,7 +38,7 @@ h4 {
   margin: 1em 0 0.5em 0;
 }
 
-p a, ul a, li a, h2 a, h3 a, h4 a, body > a.home {
+p a, ul a, li a, h2 a, h3 a, h4 a, body > a.home, .comment-box a {
   outline: none;
   -webkit-tap-highlight-color: transparent;
   color: $color-link;
@@ -51,6 +51,13 @@ p a, ul a, li a, h2 a, h3 a, h4 a, body > a.home {
   &:active {
     background-color: rgba($color-link, 0.1);
   }
+}
+
+pre a {
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  color: inherit;
+  text-decoration: dashed underline;
 }
 
 body > code, body :not(pre) > code {
@@ -206,7 +213,7 @@ blockquote {
 
       > a {
         cursor: pointer;
-        color: #088da5;
+        color: $color-link;
       }
     }
   }
@@ -218,6 +225,9 @@ blockquote {
 
   ol > li > ol {
     list-style-type: lower-alpha;
+    & > li ol {
+      list-style-type: none;
+    }
   }
 
   &.docked {

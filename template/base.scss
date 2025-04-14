@@ -34,6 +34,19 @@ pre {
   padding: 0.5em 1em;
   margin: 1em 0;
   overflow-x: auto;
+
+  .comment-box {
+    white-space: nowrap;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 18px;
+    line-height: 28px;
+    padding: 5px 10px;
+    margin: 5px 0;
+    display: inline-block;
+    text-align: left;
+    width: auto;
+    border: solid 1px #444;
+  }
 }
 
 .tags {
@@ -92,7 +105,7 @@ body > a.blogtitle {
   color: #fff;
   text-align: center;
   font-weight: bold;
-  z-index: 1000;
+  z-index: 99;
 
   a {
     color: #fff;

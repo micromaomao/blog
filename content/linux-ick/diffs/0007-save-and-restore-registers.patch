@@ -1,0 +1,116 @@
+From 514d508080e16627119640190c38aacbc0f74933 Mon Sep 17 00:00:00 2001
+From: Mao <m@maowtm.org>
+Date: Sat, 11 Jan 2025 20:22:04 +0000
+Subject: [PATCH 07/11] save and restore registers
+
+---
+ include/linux/ick.h |  3 +-
+ kernel/ick.c        | 69 +++++++++++++++++++++++++++++++++++++++++----
+ 2 files changed, 66 insertions(+), 6 deletions(-)
+
+diff --git a/include/linux/ick.h b/include/linux/ick.h
+index 640d46e3a223..1fa2a0f4a3b7 100644
+--- a/include/linux/ick.h
++++ b/include/linux/ick.h
+@@ -8,7 +8,8 @@
+ 
+ #ifdef CONFIG_ICK
+ struct ick_checked_process {
+-	// ???
++	struct pt_regs saved_regs;
++	// ... more to come ...
+ };
+ 
+ /**
+diff --git a/kernel/ick.c b/kernel/ick.c
+index ceae3ca4be33..c242185f519f 100644
+--- a/kernel/ick.c
++++ b/kernel/ick.c
+@@ -2,20 +2,79 @@
+ 
+ #include <linux/ick.h>
+ #include <linux/errno.h>
++#include <linux/ptrace.h>
++#include <linux/sched/task_stack.h>
+ 
+ int ick_checkpoint_proc(void) {
+-	// TODO: implement
+-	// We just return 0 for now to make the code in `read` work.
++	struct ick_checked_process *ick_data;
++	struct pt_regs *regs;
++
++	if (current->ick_data) {
++		pr_alert("ick: %s[%d] already has a checkpoint\n",
++				current->comm, current->pid);
++		return -EEXIST;
++	}
++
++	ick_data = kzalloc(sizeof(*ick_data), GFP_KERNEL);
++	if (!ick_data) {
++		return -ENOMEM;
++	}
++
++	// Save registers
++#if defined(__x86_64__)
++	regs = current_pt_regs();
++	memcpy(&ick_data->saved_regs, regs, sizeof(struct pt_regs));
++#else
++#error "Unsupported architecture"
++#endif
++
++	// TODO: implement rest
++
++	current->ick_data = ick_data;
++	trace_printk("ick: Checkpointed %s[%d]\n", current->comm, current->pid);
++
+ 	return 0;
+ }
+ 
+ int ick_revert_proc(void) {
+-	// TODO: implement
+-	// We just return 0 for now to make the code in `write` work.
++	struct ick_checked_process *ick_data;
++	struct pt_regs *regs;
++
++	ick_data = current->ick_data;
++	if (!ick_data) {
++		pr_alert("ick: ick_revert_proc called on %s[%d] which is not under ick checkpoint\n",
++				current->comm, current->pid);
++		return -EINVAL;
++	}
++
++	// Restore registers
++#if defined(__x86_64__)
++	regs = current_pt_regs();
++	memcpy(regs, &ick_data->saved_regs, sizeof(struct pt_regs));
++#else
++#error "Unsupported architecture"
++#endif
++
++	// TODO: implement rest
++
++	trace_printk("Restored process %s[%d]\n",
++			current->comm, current->pid);
++
+ 	return 0;
+ }
+ 
+ void ick_cleanup(struct task_struct *task) {
+-	// TODO: implement
++	struct ick_checked_process *ick_data = task->ick_data;
++
++	if (!ick_data) {
++		return;
++	}
++
++	trace_printk("Cleaning up ick data for %s[%d]\n", task->comm, task->pid);
++
++	// TODO: add more clean-up code here
++
++	kfree(ick_data);
++	task->ick_data = NULL;
+ 	return;
+ }
+-- 
+2.39.5
+

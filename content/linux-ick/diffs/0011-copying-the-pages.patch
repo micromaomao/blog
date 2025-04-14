@@ -1,0 +1,159 @@
+From 36bf504f0767aef8b6dc097f0eaff818a582d4a1 Mon Sep 17 00:00:00 2001
+From: Tingmao Wang <m@maowtm.org>
+Date: Mon, 14 Apr 2025 01:43:42 +0100
+Subject: [PATCH 11/11] copying the pages
+
+---
+ include/linux/ick.h | 19 +++++++++++++-
+ kernel/ick.c        | 60 +++++++++++++++++++++++++++++++++++++++++++++
+ mm/memory.c         | 13 +++++++---
+ 3 files changed, 88 insertions(+), 4 deletions(-)
+
+diff --git a/include/linux/ick.h b/include/linux/ick.h
+index 1fa2a0f4a3b7..e79173ec3bae 100644
+--- a/include/linux/ick.h
++++ b/include/linux/ick.h
+@@ -5,13 +5,30 @@
+ 
+ #include <linux/types.h>
+ #include <linux/sched.h>
++#include <linux/mm_types.h>
+ 
+ #ifdef CONFIG_ICK
+ struct ick_checked_process {
+ 	struct pt_regs saved_regs;
+-	// ... more to come ...
++	struct rb_root modified_pages_tree;
++	struct spinlock tree_lock;
++	bool reverting;
+ };
+ 
++struct ick_modified_page {
++	unsigned long addr;
++	struct rb_node node;
++	// Don't include a whole page of data here, otherwise this struct will be just
++	// a bit over PAGE_SIZE, which makes memory allocation inefficient
++	u8 *orig_page_content;
++};
++
++/**
++ * Called from page fault handler to copy off page content before allowing
++ * it to be modified.
++ */
++vm_fault_t ick_do_wp_page(struct vm_fault *vmf);
++
+ /**
+  * Initialize the ick data structures on the current task and checkpoint it.
+  */
+diff --git a/kernel/ick.c b/kernel/ick.c
+index 6e45ce5c0608..d922b40ec3f2 100644
+--- a/kernel/ick.c
++++ b/kernel/ick.c
+@@ -4,6 +4,7 @@
+ #include <linux/errno.h>
+ #include <linux/ptrace.h>
+ #include <linux/sched/task_stack.h>
++#include <linux/vmalloc.h>
+ #include <asm/tlb.h>
+ 
+ // Mark pages as write-protected
+@@ -51,6 +52,65 @@ static void mark_pages(void) {
+ 	mmap_write_unlock(mm);
+ }
+ 
++vm_fault_t ick_do_wp_page(struct vm_fault *vmf) {
++	unsigned long addr = (unsigned long)vmf->address;
++	unsigned long page_addr = addr & PAGE_MASK;
++	struct task_struct *task = current;
++	struct ick_checked_process *ick_data = task->ick_data;
++	struct ick_modified_page *mod_page;
++	struct rb_node **new;
++	struct rb_node *parent = NULL;
++	long ret;
++
++	BUG_ON(!ick_data);
++	BUG_ON(!(vmf->flags & FAULT_FLAG_WRITE));
++
++	if (READ_ONCE(ick_data->reverting)) {
++		return VM_FAULT_LOCKED;
++	}
++
++	spin_lock(&ick_data->tree_lock);
++	new = &ick_data->modified_pages_tree.rb_node;
++	while (*new) {
++		parent = *new;
++		mod_page = rb_entry(parent, struct ick_modified_page, node);
++
++		if (page_addr < mod_page->addr)
++			new = &parent->rb_left;
++		else if (page_addr > mod_page->addr)
++			new = &parent->rb_right;
++		else {
++			// Page already in tree, so it's already copied before. Ignore.
++			trace_printk("Already in tree page 0x%px hti wp fault at 0x%px again\n", (void*)page_addr, (void*)addr);
++			spin_unlock(&ick_data->tree_lock);
++			return VM_FAULT_LOCKED;
++		}
++	}
++
++	u8 *copied_page_content = vmalloc(PAGE_SIZE);
++	if (!copied_page_content) {
++		spin_unlock(&ick_data->tree_lock);
++		return VM_FAULT_OOM;
++	}
++
++	mod_page = vmalloc(sizeof(*mod_page));
++	mod_page->addr = page_addr;
++	rb_link_node(&mod_page->node, parent, new);
++	rb_insert_color(&mod_page->node, &ick_data->modified_pages_tree);
++	mod_page->orig_page_content = copied_page_content;
++	trace_printk("CoWing page 0x%px following wp fault at 0x%px\n", (void*) page_addr, (void*) addr);
++	ret = copy_from_user_nofault(copied_page_content, (void *)page_addr, PAGE_SIZE);
++	if (ret) {
++		pr_alert("ick: Failed to copy page 0x%px following wp fault at 0x%px: %pe\n", (void*)page_addr, (void*)addr, ERR_PTR(ret));
++		spin_unlock(&ick_data->tree_lock);
++		return VM_FAULT_SIGBUS;
++	}
++
++	spin_unlock(&ick_data->tree_lock);
++
++	return VM_FAULT_LOCKED;
++}
++
+ int ick_checkpoint_proc(void) {
+ 	struct ick_checked_process *ick_data;
+ 	struct pt_regs *regs;
+diff --git a/mm/memory.c b/mm/memory.c
+index 81874aaa72b5..ef527d89adbc 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -92,6 +92,8 @@
+ #include "internal.h"
+ #include "swap.h"
+ 
++#include <linux/ick.h>
++
+ #if defined(LAST_CPUPID_NOT_IN_PAGE_FLAGS) && !defined(CONFIG_COMPILE_TEST)
+ #warning Unfortunate NUMA and NUMA Balancing config, growing page-frame for last_cpupid.
+ #endif
+@@ -3661,9 +3663,14 @@ static vm_fault_t do_wp_page(struct vm_fault *vmf)
+ 	pte_t pte;
+ 
+ #ifdef CONFIG_ICK
+-	if (current->hack_target.hack) {
+-		trace_printk("faulting on write-protected page %lx\n", vmf->address);
+-		// TODO: add ick checkpoint code here
++	if (current->ick_data) {
++		vm_fault_t ret = ick_do_wp_page(vmf);
++		if (ret & (VM_FAULT_ERROR|VM_FAULT_OOM|VM_FAULT_NOPAGE)) {
++			pr_alert("ick_do_wp_page failed on address %px, ret = (vm_fault_t)0x%x\n", (void *)vmf->address, ret);
++			if (!(ret & VM_FAULT_LOCKED))
++				pte_unmap_unlock(vmf->pte, vmf->ptl);
++			return ret;
++		}
+ 	}
+ #endif
+ 
+-- 
+2.39.5
+

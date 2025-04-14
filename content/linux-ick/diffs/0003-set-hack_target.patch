@@ -1,7 +1,7 @@
-From ff8eb6f98538fba08f2eaa6216173eeecf8e42ce Mon Sep 17 00:00:00 2001
+From e17af504d11338872cdc4c36848e30555a0513ca Mon Sep 17 00:00:00 2001
 From: Mao <m@maowtm.org>
 Date: Sat, 4 Jan 2025 00:05:28 +0000
-Subject: [PATCH 3/6] set hack_target
+Subject: [PATCH 03/11] set hack_target
 
 ---
  fs/exec.c             |  6 ++++++
@@ -10,10 +10,10 @@ Subject: [PATCH 3/6] set hack_target
  3 files changed, 17 insertions(+)
 
 diff --git a/fs/exec.c b/fs/exec.c
-index 6c53920795c2..f07ef9841380 100644
+index 9c349a74f385..926c1b60a706 100644
 --- a/fs/exec.c
 +++ b/fs/exec.c
-@@ -1884,6 +1884,12 @@ static int do_execveat_common(int fd, struct filename *filename,
+@@ -1891,6 +1891,12 @@ static int do_execveat_common(int fd, struct filename *filename,
  	if (IS_ERR(filename))
  		return PTR_ERR(filename);
  
@@ -27,10 +27,10 @@ index 6c53920795c2..f07ef9841380 100644
  	 * We move the actual failure in case of RLIMIT_NPROC excess from
  	 * set*uid() to execve() because too many poorly written programs
 diff --git a/include/linux/sched.h b/include/linux/sched.h
-index bb343136ddd0..6adc1add5288 100644
+index 02eaf84c8626..9f58f1db4632 100644
 --- a/include/linux/sched.h
 +++ b/include/linux/sched.h
-@@ -1592,6 +1592,16 @@ struct task_struct {
+@@ -1599,6 +1599,16 @@ struct task_struct {
  	struct user_event_mm		*user_event_mm;
  #endif
  
@@ -60,5 +60,5 @@ index 136a8231355a..7aeb9882d171 100644
  EXPORT_SYMBOL(init_task);
  
 -- 
-2.47.1
+2.39.5
 

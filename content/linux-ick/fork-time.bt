@@ -1,0 +1,12 @@
+t:syscalls:sys_enter_fork {
+  @fork_started[curtask] = nsecs;
+}
+
+t:syscalls:sys_exit_fork {
+  if (args->ret == 0) {
+    $parent = curtask->parent;
+    $usecs = (nsecs - @fork_started[$parent]) / 1000;
+    @fork_took_usecs[comm] = lhist($usecs, 1, 300, 5);
+    delete(@fork_started[$parent]);
+  }
+}

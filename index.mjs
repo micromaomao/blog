@@ -128,6 +128,7 @@ async function main() {
   const index_template = get_template("template/index.pug");
   const cc_ext_template = get_template("template/request_cc_extension.pug");
   const not_found_template = get_template("template/404.pug");
+  const draft_redirect_template = get_template("template/draft_redirect.pug");
 
   let articles = [];
   let orig_renderer = new marked.Renderer();
@@ -135,6 +136,18 @@ async function main() {
   function tryMkdirp(path) {
     fs.mkdirSync(path, { recursive: true });
     print_verbose(`mkdir -p ${path}`);
+  }
+
+  let MAIN_SITE_BASE_URL = new URL("https://blog.maowtm.org/");
+  let BASE_URL = MAIN_SITE_BASE_URL;
+  if (draft_mode) {
+    BASE_URL = new URL("https://draft.blog.maowtm.org/");
+  }
+
+  function emit_draft_redirect(codename, lang, title) {
+    print_status(`emit ${codename}/${lang}.html (redirect to main site)`);
+    let html = draft_redirect_template({ target_url: new URL(`${codename}/${lang}.html`, MAIN_SITE_BASE_URL), title });
+    fs.writeFileSync(path.resolve(output_dir, codename, `${lang}.html`), html);
   }
 
   class ScannedArticle {
@@ -151,8 +164,7 @@ async function main() {
       article.assets = new Map();
       article.codename = codename;
       let dist_dir_path = path.resolve(output_dir, codename);
-      let article_base_url = "https://blog.maowtm.org/" + codename;
-      article.base_url = article_base_url;
+      article.base_url = new URL(codename, BASE_URL).toString();
       article.output_path = dist_dir_path;
       tryMkdirp(dist_dir_path);
       function transform_local_asset_href(href) {
@@ -224,7 +236,11 @@ async function main() {
           throw new Error(`${mdpath}: invalid yaml front matter: ${e.message}`);
         }
         if (!!front_matter.draft != draft_mode) {
-          print_verbose(`Skipping ${codename}:${l}`);
+          if (draft_mode) {
+            emit_draft_redirect(codename, l, front_matter.title);
+          } else {
+            print_verbose(`Skipping ${codename} (is draft)`);
+          }
           continue;
         }
         first_language_done = true;
@@ -357,7 +373,6 @@ async function main() {
             let curr_level = 1;
             $("h2,h3,h4,h5,h6").each((_, heading_elem) => {
               let level = parseInt(heading_elem.tagName.substring(1));
-              console.log(`level=${level}, text=${$(heading_elem).text()}`);
               while (level <= curr_level) {
                 if (curr_level <= 1) {
                   throw new Error("unreachable");

@@ -1,0 +1,44 @@
+From dce2e37a1449e11822620d3237a739765d08c262 Mon Sep 17 00:00:00 2001
+From: Mao <m@maowtm.org>
+Date: Sun, 26 Jan 2025 23:15:49 +0000
+Subject: [PATCH 09/11] trace_printk on do_wp_page and do_anonymous_page
+
+---
+ mm/memory.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/mm/memory.c b/mm/memory.c
+index d322ddfe6791..81874aaa72b5 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3660,6 +3660,13 @@ static vm_fault_t do_wp_page(struct vm_fault *vmf)
+ 	struct folio *folio = NULL;
+ 	pte_t pte;
+ 
++#ifdef CONFIG_ICK
++	if (current->hack_target.hack) {
++		trace_printk("faulting on write-protected page %lx\n", vmf->address);
++		// TODO: add ick checkpoint code here
++	}
++#endif
++
+ 	if (likely(!unshare)) {
+ 		if (userfaultfd_pte_wp(vma, ptep_get(vmf->pte))) {
+ 			if (!userfaultfd_wp_async(vma)) {
+@@ -4741,6 +4748,13 @@ static vm_fault_t do_anonymous_page(struct vm_fault *vmf)
+ 	int nr_pages = 1;
+ 	pte_t entry;
+ 
++#ifdef CONFIG_ICK
++	if (current->hack_target.hack) {
++		trace_printk("faulting on non-present anonymous page %lx\n", addr);
++		// TODO: add ick checkpoint code here
++	}
++#endif
++
+ 	/* File mapping without ->vm_ops ? */
+ 	if (vma->vm_flags & VM_SHARED)
+ 		return VM_FAULT_SIGBUS;
+-- 
+2.39.5
+

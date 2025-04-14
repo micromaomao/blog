@@ -1,25 +1,25 @@
-From 789d4ce67bd57753c5be99c1c80022483903bd3b Mon Sep 17 00:00:00 2001
+From d5731afdd7e7633aef7314943efb245e212f4400 Mon Sep 17 00:00:00 2001
 From: Mao <m@maowtm.org>
 Date: Sat, 4 Jan 2025 20:24:48 +0000
-Subject: [PATCH 4/6] basic files for ick
+Subject: [PATCH 04/11] basic files for ick
 
 ---
  .config               |  2 ++
  Kconfig               |  6 ++++++
- include/linux/ick.h   | 19 +++++++++++++++++++
+ include/linux/ick.h   | 32 ++++++++++++++++++++++++++++++++
  include/linux/sched.h |  4 ++++
  init/init_task.c      |  3 +++
  kernel/Makefile       |  2 ++
  kernel/ick.c          | 19 +++++++++++++++++++
- 7 files changed, 55 insertions(+)
+ 7 files changed, 68 insertions(+)
  create mode 100644 include/linux/ick.h
  create mode 100644 kernel/ick.c
 
 diff --git a/.config b/.config
-index c7846156e302..b3c57b92579c 100644
+index c0d1a7505177..651bd63becee 100644
 --- a/.config
 +++ b/.config
-@@ -3452,3 +3452,5 @@ CONFIG_ARCH_USE_MEMTEST=y
+@@ -3454,3 +3454,5 @@ CONFIG_ARCH_USE_MEMTEST=y
  #
  # end of Rust hacking
  # end of Kernel hacking
@@ -41,10 +41,10 @@ index 745bc773f567..9b13ab8e4f29 100644
 +		instant checkpoint
 diff --git a/include/linux/ick.h b/include/linux/ick.h
 new file mode 100644
-index 000000000000..c6faaa1cbd51
+index 000000000000..640d46e3a223
 --- /dev/null
 +++ b/include/linux/ick.h
-@@ -0,0 +1,19 @@
+@@ -0,0 +1,32 @@
 +/* SPDX-License-Identifier: GPL-2.0 */
 +
 +#ifndef _LINUX_ICK_H
@@ -58,17 +58,30 @@ index 000000000000..c6faaa1cbd51
 +	// ???
 +};
 +
++/**
++ * Initialize the ick data structures on the current task and checkpoint it.
++ */
 +int ick_checkpoint_proc(void);
++
++/**
++ * Revert the current task to the state checkpointed by ick_checkpoint_proc.
++ */
 +int ick_revert_proc(void);
++
++/**
++ * Clean up any saved ick checkpoints from the current task, if there is any.
++ * Call before a task exits.
++ */
 +void ick_cleanup(struct task_struct *task);
++
 +#endif
 +
 +#endif
 diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 6adc1add5288..8a631848512c 100644
+index 9f58f1db4632..b20a4ced71f8 100644
 --- a/include/linux/sched.h
 +++ b/include/linux/sched.h
-@@ -1592,6 +1592,10 @@ struct task_struct {
+@@ -1599,6 +1599,10 @@ struct task_struct {
  	struct user_event_mm		*user_event_mm;
  #endif
  
@@ -129,5 +142,5 @@ index 000000000000..5d0146cbae2a
 +	return;
 +}
 -- 
-2.47.1
+2.39.5
 

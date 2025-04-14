@@ -1,0 +1,32 @@
+#include <unistd.h>
+#define SPECIAL_ADDR 0x1234567000
+
+BEGIN {
+  @target_pid = (uint64)0;
+}
+
+t:syscalls:sys_enter_mmap / @target_pid == 0 / {
+  printf("%s[%d] mmap addr = %p, len = %lu\n", comm, pid, args->addr, args->len);
+  if (args->addr == SPECIAL_ADDR) {
+    @target_pid = pid;
+  }
+}
+
+t:syscalls:sys_enter_munmap / @target_pid == pid / {
+  if (args->addr == SPECIAL_ADDR) {
+    exit();
+  }
+}
+
+f:__handle_mm_fault / @target_pid == pid / {
+  printf("%s addr = %p\n", probe, args->address);
+}
+
+f:handle_pte_fault / @target_pid == pid / {
+  printf("%s addr = %p\n", probe, args->vmf->address);
+}
+
+f:do_anonymous_page / @target_pid == pid / {
+  printf("do_anonymous_page addr = %p\n", args->vmf->address);
+  print(kstack());
+}

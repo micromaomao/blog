@@ -90,3 +90,51 @@ if (toc) {
     }
   });
 }
+
+let code_blocks = document.querySelectorAll("body > pre, body > .diff-block-container");
+
+function measureCodeBlocks() {
+  for (let elem of code_blocks) {
+    if (!(elem instanceof HTMLElement)) continue;
+    let tmp = elem.cloneNode(true);
+    try {
+      if (!(tmp instanceof HTMLElement)) continue;
+      tmp.style.width = "max-content";
+      tmp.style.maxWidth = "unset";
+      document.body.appendChild(tmp);
+      let measuredMaxWidth = tmp.getBoundingClientRect().width;
+      elem.dataset.measuredMaxWidth = measuredMaxWidth;
+    } finally {
+      document.body.removeChild(tmp);
+    }
+  }
+}
+
+measureCodeBlocks();
+
+function layoutTryStretchPreBlocks() {
+  let winwidth = window.innerWidth;
+  let body_maxw = 1200;
+  let margin_one_side = 40;
+  let stretch_thres = body_maxw + margin_one_side * 2;
+  if (winwidth < stretch_thres) {
+    for (let elem of code_blocks) {
+      if (!(elem instanceof HTMLElement)) continue;
+      elem.style.marginLeft = "";
+      elem.style.marginRight = "";
+    }
+  } else {
+    let stretch_px_max = winwidth - stretch_thres;
+    for (let elem of code_blocks) {
+      if (!(elem instanceof HTMLElement)) continue;
+      let max_width = parseInt(elem.dataset.measuredMaxWidth);
+      let stretch_px = Math.min(stretch_px_max, max_width - (body_maxw - 40));
+      let one_side = stretch_px / 2;
+      elem.style.marginLeft = `-${one_side}px`;
+      elem.style.marginRight = `-${one_side}px`;
+    }
+  }
+}
+
+layoutTryStretchPreBlocks();
+window.addEventListener("resize", layoutTryStretchPreBlocks);

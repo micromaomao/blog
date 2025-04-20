@@ -1,0 +1,26 @@
+From a4b23952042a0f2e7b3e77674ef3b2ecf6b11a4d Mon Sep 17 00:00:00 2001
+From: Tingmao Wang <m@maowtm.org>
+Date: Mon, 14 Apr 2025 23:47:36 +0100
+Subject: [PATCH 16/16] restart_syscall
+
+---
+ fs/read_write.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/fs/read_write.c b/fs/read_write.c
+index 17e6ab568c02..45c0a8a80ebc 100644
+--- a/fs/read_write.c
++++ b/fs/read_write.c
+@@ -790,8 +790,7 @@ ssize_t ksys_write(unsigned int fd, const char __user *buf, size_t count)
+ 				return ret;
+ 			}
+ 
+-			/* Hmm... what do we do now? Let's just return for now. */
+-			return count;
++			return restart_syscall();
+ 		} else {
+ 			pr_info("hack: %u gave different output\n", current->hack_target.next_number - 1);
+ 			/*
+-- 
+2.39.5
+

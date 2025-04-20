@@ -1,7 +1,7 @@
-From 75fdb9b539d6d6e7bcfa205f2369fc667fdbf91d Mon Sep 17 00:00:00 2001
-From: Mao <m@maowtm.org>
+From cdf6614d388a8e5ef4449b705621d620f191efc7 Mon Sep 17 00:00:00 2001
+From: Tingmao Wang <m@maowtm.org>
 Date: Sat, 4 Jan 2025 00:03:02 +0000
-Subject: [PATCH 01/11] hide TracerPid
+Subject: [PATCH 01/16] hide TracerPid
 
 ---
  fs/proc/array.c | 2 +-

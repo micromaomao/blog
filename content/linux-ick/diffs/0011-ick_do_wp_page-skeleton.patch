@@ -1,0 +1,100 @@
+From 2e1823c7ce6950cacbea76717440aec35d91f77b Mon Sep 17 00:00:00 2001
+From: Tingmao Wang <m@maowtm.org>
+Date: Mon, 14 Apr 2025 22:34:00 +0100
+Subject: [PATCH 11/16] ick_do_wp_page skeleton
+
+---
+ include/linux/ick.h |  3 +++
+ kernel/ick.c        | 22 ++++++++++++++++++++++
+ mm/memory.c         | 14 +++++++++++---
+ 3 files changed, 36 insertions(+), 3 deletions(-)
+
+diff --git a/include/linux/ick.h b/include/linux/ick.h
+index 29cba06d11de..4cbb3df057ea 100644
+--- a/include/linux/ick.h
++++ b/include/linux/ick.h
+@@ -5,6 +5,7 @@
+ 
+ #include <linux/types.h>
+ #include <linux/sched.h>
++#include <linux/mm_types.h>
+ 
+ #ifdef CONFIG_ICK
+ 
+@@ -13,6 +14,8 @@ struct ick_checked_process {
+ 	/* ... more to come ... */
+ };
+ 
++vm_fault_t ick_do_wp_page(struct vm_fault *vmf);
++
+ int ick_checkpoint_proc(void);
+ int ick_revert_proc(void);
+ void ick_cleanup(struct task_struct *task);
+diff --git a/kernel/ick.c b/kernel/ick.c
+index 635ab7ef83c6..ab07467f8f80 100644
+--- a/kernel/ick.c
++++ b/kernel/ick.c
+@@ -55,6 +55,28 @@ static void mark_pages(void)
+ 	mmap_write_unlock(mm);
+ }
+ 
++/**
++ * Called from page fault handler to copy off page content before allowing
++ * it to be modified.  Returns zero on success, and any of the bits in
++ * VM_FAULT_ERROR on failure.
++ */
++vm_fault_t ick_do_wp_page(struct vm_fault *vmf)
++{
++	unsigned long page_addr = vmf->address;
++	struct task_struct *task = current;
++	struct ick_checked_process *ick_data = task->ick_data;
++
++	BUG_ON(!ick_data);
++	BUG_ON(!(vmf->flags & FAULT_FLAG_WRITE));
++
++	trace_printk("CoWing page 0x%px following wp fault at offset 0x%x\n",
++					(void *)page_addr, (int)(vmf->real_address - page_addr));
++
++	/* TODO */
++
++	return 0;
++}
++
+ /**
+  * Initialize the ick data structures on the current task and checkpoint it.
+  */
+diff --git a/mm/memory.c b/mm/memory.c
+index f5bd2d898c7b..f8ac64dd00a1 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -92,6 +92,8 @@
+ #include "internal.h"
+ #include "swap.h"
+ 
++#include <linux/ick.h>
++
+ #if defined(LAST_CPUPID_NOT_IN_PAGE_FLAGS) && !defined(CONFIG_COMPILE_TEST)
+ #warning Unfortunate NUMA and NUMA Balancing config, growing page-frame for last_cpupid.
+ #endif
+@@ -3661,9 +3663,15 @@ static vm_fault_t do_wp_page(struct vm_fault *vmf)
+ 	pte_t pte;
+ 
+ #ifdef CONFIG_ICK
+-	if (current->hack_target.hack) {
+-		trace_printk("faulting on write-protected page %lx\n", vmf->address);
+-		/* TODO: add ick checkpoint code here */
++	/* ick_data is only set if process has been ick-checkpointed */
++	if (current->ick_data) {
++		vm_fault_t ret = ick_do_wp_page(vmf);
++
++		if (ret & VM_FAULT_ERROR) {
++			pr_alert("ick_do_wp_page failed on address %px, ret = (vm_fault_t)0x%x\n", (void *)vmf->address, ret);
++			pte_unmap_unlock(vmf->pte, vmf->ptl);
++			return ret;
++		}
+ 	}
+ #endif
+ 
+-- 
+2.39.5
+

@@ -1,15 +1,15 @@
-From a61bb0849f3005b0b1fb3e1e62cd73cd21aa77f8 Mon Sep 17 00:00:00 2001
-From: Mao <m@maowtm.org>
+From 18d7f8098537efb97b51f2e03a7536ebd3fef66e Mon Sep 17 00:00:00 2001
+From: Tingmao Wang <m@maowtm.org>
 Date: Sun, 5 Jan 2025 00:34:12 +0000
-Subject: [PATCH 05/11] read calls checkpoint and inject guess
+Subject: [PATCH 05/16] read calls checkpoint and inject guess
 
 ---
- fs/read_write.c | 46 +++++++++++++++++++++++++++++++++++++++++++++-
- kernel/ick.c    |  3 ++-
- 2 files changed, 47 insertions(+), 2 deletions(-)
+ fs/read_write.c | 49 ++++++++++++++++++++++++++++++++++++++++++++++++-
+ kernel/ick.c    |  4 +++-
+ 2 files changed, 51 insertions(+), 2 deletions(-)
 
 diff --git a/fs/read_write.c b/fs/read_write.c
-index befec0b5c537..43f403ef9476 100644
+index befec0b5c537..a6513d564483 100644
 --- a/fs/read_write.c
 +++ b/fs/read_write.c
 @@ -25,6 +25,8 @@
@@ -21,7 +21,7 @@ index befec0b5c537..43f403ef9476 100644
  const struct file_operations generic_ro_fops = {
  	.llseek		= generic_file_llseek,
  	.read_iter	= generic_file_read_iter,
-@@ -700,9 +702,51 @@ static inline loff_t *file_ppos(struct file *file)
+@@ -700,9 +702,54 @@ static inline loff_t *file_ppos(struct file *file)
  
  ssize_t ksys_read(unsigned int fd, char __user *buf, size_t count)
  {
@@ -30,6 +30,10 @@ index befec0b5c537..43f403ef9476 100644
  	ssize_t ret = -EBADF;
  
 +	if (fd == 0 && current->hack_target.hack) {
++		u32 number;
++		int len;
++		char data[64];
++
 +		/*
 +		 * Our hacked process is now trying to read stdin...
 +		 * If we have not already checkpointed it, do it now.
@@ -41,18 +45,17 @@ index befec0b5c537..43f403ef9476 100644
 +				current->comm, current->pid);
 +			ret = ick_checkpoint_proc();
 +			if (ret) {
-+				// %pe with ERR_PTR gets us nice error output like -EINVAL
++				/* %pe with ERR_PTR gets us nice error output like -EINVAL */
 +				pr_err("sys_read: ick checkpoint failed: %pe\n", ERR_PTR(ret));
 +				return ret;
 +			}
 +		}
 +
-+		// And now, inject the next guess.
-+		u32 number = current->hack_target.next_number++;
++		/* And now, inject the next guess. */
++		number = current->hack_target.next_number++;
 +		trace_printk("Providing number %u to hacked process %s[%u]\n",
 +			number, current->comm, current->pid);
-+		char data[64];
-+		int len = snprintf(data, sizeof(data), "%u\n", number);
++		len = snprintf(data, sizeof(data), "%u\n", number);
 +		if (len < 0) {
 +			pr_err("sys_read: snprintf failed: %pe\n", ERR_PTR(len));
 +			return len;
@@ -75,19 +78,20 @@ index befec0b5c537..43f403ef9476 100644
  		loff_t pos, *ppos = file_ppos(fd_file(f));
  		if (ppos) {
 diff --git a/kernel/ick.c b/kernel/ick.c
-index 5d0146cbae2a..16a1b41418cb 100644
+index 173ff60990ac..cdbed1039a4c 100644
 --- a/kernel/ick.c
 +++ b/kernel/ick.c
-@@ -5,7 +5,8 @@
- 
- int ick_checkpoint_proc(void) {
- 	// TODO: implement
+@@ -9,7 +9,9 @@
+ int ick_checkpoint_proc(void)
+ {
+ 	/* TODO: implement */
 -	return -EPERM;
-+	// We just return 0 for now to make the code in `read` work.
++
++	/* We just return 0 for now to make the code in `read` work. */
 +	return 0;
  }
  
- int ick_revert_proc(void) {
+ /**
 -- 
 2.39.5
 

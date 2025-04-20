@@ -1,30 +1,34 @@
-From 604adc947d5f1d510c060ffa32660a5e0bea3399 Mon Sep 17 00:00:00 2001
-From: Mao <m@maowtm.org>
+From 1836d52e8fd506b73be3b5b3ee370c1e2b4ceb4b Mon Sep 17 00:00:00 2001
+From: Tingmao Wang <m@maowtm.org>
 Date: Sun, 9 Feb 2025 19:43:07 +0000
-Subject: [PATCH 10/11] mark pages as non-writable
+Subject: [PATCH 10/16] mark pages as non-writable
 
 ---
- kernel/ick.c | 48 ++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 48 insertions(+)
+ kernel/ick.c | 52 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 52 insertions(+)
 
 diff --git a/kernel/ick.c b/kernel/ick.c
-index c242185f519f..6e45ce5c0608 100644
+index dff7dce04fc9..635ab7ef83c6 100644
 --- a/kernel/ick.c
 +++ b/kernel/ick.c
-@@ -4,6 +4,52 @@
+@@ -4,6 +4,56 @@
  #include <linux/errno.h>
  #include <linux/ptrace.h>
  #include <linux/sched/task_stack.h>
 +#include <asm/tlb.h>
 +
-+// Mark pages as write-protected
-+static void mark_pages(void) {
++/* Mark pages as write-protected */
++static void mark_pages(void)
++{
 +	struct mm_struct *mm = current->mm;
-+	// Kernel threads don't have their own `mm`, and we can't checkpoint a kernel
-+	// thread anyway
-+	BUG_ON(!mm);
 +	struct vm_area_struct *vma;
 +	struct mmu_gather tlb;
++
++	/*
++	 * Kernel threads don't have their own `mm`, and we can't checkpoint a kernel
++	 * thread anyway
++	 */
++	BUG_ON(!mm);
 +	VMA_ITERATOR(vmi, mm, 0);
 +	pgprotval_t vm_page_prot;
 +
@@ -62,15 +66,15 @@ index c242185f519f..6e45ce5c0608 100644
 +	mmap_write_unlock(mm);
 +}
  
- int ick_checkpoint_proc(void) {
- 	struct ick_checked_process *ick_data;
-@@ -28,6 +74,8 @@ int ick_checkpoint_proc(void) {
+ /**
+  * Initialize the ick data structures on the current task and checkpoint it.
+@@ -31,6 +81,8 @@ int ick_checkpoint_proc(void)
  #error "Unsupported architecture"
  #endif
  
 +	mark_pages();
 +
- 	// TODO: implement rest
+ 	/* TODO: implement rest */
  
  	current->ick_data = ick_data;
 -- 

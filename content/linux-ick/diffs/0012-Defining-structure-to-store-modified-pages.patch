@@ -1,0 +1,36 @@
+From 9a4cf5d2f21284b16293bc0af8e5013989d98d34 Mon Sep 17 00:00:00 2001
+From: Tingmao Wang <m@maowtm.org>
+Date: Thu, 17 Apr 2025 16:06:55 +0100
+Subject: [PATCH 12/16] Defining structure to store modified pages
+
+---
+ include/linux/ick.h | 13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
+
+diff --git a/include/linux/ick.h b/include/linux/ick.h
+index 4cbb3df057ea..2ad57223ade6 100644
+--- a/include/linux/ick.h
++++ b/include/linux/ick.h
+@@ -11,7 +11,18 @@
+ 
+ struct ick_checked_process {
+ 	struct pt_regs saved_regs;
+-	/* ... more to come ... */
++	struct rb_root modified_pages_tree;
++	spinlock_t tree_lock;
++};
++
++struct ick_modified_page {
++	unsigned long addr;
++	struct rb_node node;
++	/*
++	 * Don't include a whole page of data here, otherwise this struct will be just
++	 * a bit over PAGE_SIZE, which makes memory allocation inefficient.
++	 */
++	u8 *orig_page_content;
+ };
+ 
+ vm_fault_t ick_do_wp_page(struct vm_fault *vmf);
+-- 
+2.39.5
+

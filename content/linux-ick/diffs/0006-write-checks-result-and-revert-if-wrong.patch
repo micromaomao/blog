@@ -1,18 +1,18 @@
-From 7c9f4474a3ed9051fbd36eed71804923a1bde222 Mon Sep 17 00:00:00 2001
+From 114d7764449004f04192e03c3b3ca9f188a66e50 Mon Sep 17 00:00:00 2001
 From: Mao <m@maowtm.org>
 Date: Sun, 5 Jan 2025 02:10:57 +0000
-Subject: [PATCH 06/11] write checks result and revert if wrong
+Subject: [PATCH 06/16] write checks result and revert if wrong
 
 ---
- fs/read_write.c | 29 ++++++++++++++++++++++++++++-
- kernel/ick.c    |  3 ++-
- 2 files changed, 30 insertions(+), 2 deletions(-)
+ fs/read_write.c | 31 ++++++++++++++++++++++++++++++-
+ kernel/ick.c    |  4 +++-
+ 2 files changed, 33 insertions(+), 2 deletions(-)
 
 diff --git a/fs/read_write.c b/fs/read_write.c
-index 43f403ef9476..f5a10ff795aa 100644
+index a6513d564483..17e6ab568c02 100644
 --- a/fs/read_write.c
 +++ b/fs/read_write.c
-@@ -768,9 +768,36 @@ SYSCALL_DEFINE3(read, unsigned int, fd, char __user *, buf, size_t, count)
+@@ -771,9 +771,38 @@ SYSCALL_DEFINE3(read, unsigned int, fd, char __user *, buf, size_t, count)
  
  ssize_t ksys_write(unsigned int fd, const char __user *buf, size_t count)
  {
@@ -36,12 +36,14 @@ index 43f403ef9476..f5a10ff795aa 100644
 +				return ret;
 +			}
 +
-+			// Hmm... what do we do now? Let's just return for now.
++			/* Hmm... what do we do now? Let's just return for now. */
 +			return count;
 +		} else {
 +			pr_info("hack: %u gave different output\n", current->hack_target.next_number - 1);
-+			// No indication that the number was incorrect - let's just take this
-+			// `write` as normal (so e.g. we will see the flag on the console)
++			/*
++			 * No indication that the number was incorrect - let's just take this
++			 * `write` as normal (so e.g. we will see the flag on the console)
++			 */
 +		}
 +	}
 +
@@ -51,19 +53,20 @@ index 43f403ef9476..f5a10ff795aa 100644
  		loff_t pos, *ppos = file_ppos(fd_file(f));
  		if (ppos) {
 diff --git a/kernel/ick.c b/kernel/ick.c
-index 16a1b41418cb..ceae3ca4be33 100644
+index cdbed1039a4c..8d1e2c326a11 100644
 --- a/kernel/ick.c
 +++ b/kernel/ick.c
-@@ -11,7 +11,8 @@ int ick_checkpoint_proc(void) {
- 
- int ick_revert_proc(void) {
- 	// TODO: implement
+@@ -20,7 +20,9 @@ int ick_checkpoint_proc(void)
+ int ick_revert_proc(void)
+ {
+ 	/* TODO: implement */
 -	return -EPERM;
-+	// We just return 0 for now to make the code in `write` work.
++
++	/* We just return 0 for now to make the code in `write` work. */
 +	return 0;
  }
  
- void ick_cleanup(struct task_struct *task) {
+ /**
 -- 
 2.39.5
 

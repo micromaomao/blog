@@ -1,7 +1,7 @@
 ---
 title: "Using the Linux kernel to help me crack an executable quickly"
 tags: ["Linux", "systems programming", "reverse engineering", "memory management", "deep dives"]
-time: "2025-01-01T23:21:38+00:00"
+time: "2025-04-20T03:04:25+01:00"
 discuss:
   "GitHub": "https://github.com/micromaomao/linux-dev/issues"
 snippet: >-
@@ -294,6 +294,8 @@ While this is not really necessary, let's also add a proper config option for ou
 ### Patching `read`, inject our guess
 
 Next, we can finish off the relatively easier part of step 2 &ndash; handling `read`, calling the checkpoint function, and injecting our next guess. Again, we can use `ftrace` to figure out the best function to change. There are more &lsquo;complicated&rsquo; variant of the `read` syscall that takes a `struct iovec`, but that's not what our target binary uses, so we won't worry about that.
+
+<div id="read-calls-checkpoint"></div>
 
 <a class="make-diff" href="./diffs/0005-read-calls-checkpoint-and-inject-guess.patch"></a>
 
@@ -1193,6 +1195,12 @@ Remember [earlier](#trace-after-fork) in the `trace-cmd` result, there was a [`_
 
 The gdb backtrace here doesn't tell us the full picture (although it does tell us that there are functions above [`handle_mm_fault`](https://github.com/micromaomao/linux-dev/blob/v6.12.1/mm/memory.c#L6042) which wern't traced). In fact, the kernel's own `bt` does a better job when things cross an exception or interrupt boundary (which in this case would be the page fault):
 
+<!--
+Code: ([0-9a-f]{2} )+(([0-9a-f]{2} ){16}&lt;[0-9a-f]{2}&gt; ([0-9a-f]{2} ){16})([0-9a-f]{2} )+[0-9a-f]{2}
+Replaced with
+Code: <i>&hellip;</i> $2 <i>&hellip;</i>
+-->
+
 <pre>(gdb) <b>monitor bt</b>
 Stack traceback for pid 78
 0xffff88800389c880       78       71  1    0   R  0xffff88800389d280 *fork-test
@@ -1203,7 +1211,7 @@ Call Trace:
 <span class="irrelevant"> dump_stack_lvl+0x53/0x70
  asm_exc_int3+0x3e/0x50</span>
 RIP: 0010:handle_mm_fault+0x0/0x210
-Code: 78 08 ba 01 00 00 00 48 89 de e8 8b 68 fe ff 65 ff 0d 4c 4e d9 7e 0f 85 dd fb ff ff 0f 1f 44 00 00 e9 d3 fb ff ff 0f 1f 40 00 &lt;f3&gt; 0f 1e fa 0f 1f 44 00 00 55 89 d0 83 e0 01 48 89 e5 41 57 41 56
+Code: <i>&hellip;</i> ff ff 0f 1f 44 00 00 e9 d3 fb ff ff 0f 1f 40 00 &lt;f3&gt; 0f 1e fa 0f 1f 44 00 00 55 89 d0 83 e0 01 48 89  <i>&hellip;</i>
 RSP: 0018:ffffc9000004bd28 EFLAGS: 00000246
 <span class="irrelevant">RAX: 0000000000000000 RBX: 0000000000000003 RCX: ffffc9000004bda8
 RDX: 0000000000000215 RSI: 00007ffff7dda068 RDI: ffff888003a3e260
@@ -1215,7 +1223,7 @@ R13: 00007ffff7dda068 R14: ffff88800284cf00 R15: 0000000000000215</span>
  exc_page_fault+0x80/0x160
  asm_exc_page_fault+0x2b/0x30
 RIP: 0010:__put_user_8+0x11/0x20
-Code: ca c3 0f 1f 80 00 00 00 00 f3 0f 1e fa 0f 01 cb 89 01 31 c9 0f 01 ca c3 90 f3 0f 1e fa 48 89 cb 48 c1 fb 3f 48 09 d9 0f 01 cb &lt;48&gt; 89 01 31 c9 0f 01 ca c3 66 0f 1f 44 00 00 f3 0f 1e fa 0f 01 cb
+Code: <i>&hellip;</i> 0f 1e fa 48 89 cb 48 c1 fb 3f 48 09 d9 0f 01 cb &lt;48&gt; 89 01 31 c9 0f 01 ca c3 66 0f 1f 44 00 00 f3 0f  <i>&hellip;</i>
 RSP: 0018:ffffc9000004be58 EFLAGS: 00050202
 <span class="irrelevant">RAX: 0000000000000000 RBX: 0000000000000000 RCX: 00007ffff7dda068
 RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000000
@@ -1228,7 +1236,7 @@ R13: 0000000000000000 R14: ffffc9000004bf58 R15: 00007ffff7edd799</span>
  ret_from_fork+0x2d/0x60
  ret_from_fork_asm+0x11/0x20
 RIP: 0033:0x7ffff7edd799
-Code: 08 89 e8 5b 5d c3 66 2e 0f 1f 84 00 00 00 00 00 90 48 89 f8 48 89 f7 48 89 d6 48 89 ca 4d 89 c2 4d 89 c8 4c 8b 4c 24 08 0f 05 &lt;48&gt; 3d 01 f0 ff ff 73 01 c3 48 8b 0d 37 06 0d 00 f7 d8 64 89 01 48
+Code: <i>&hellip;</i> 48 89 ca 4d 89 c2 4d 89 c8 4c 8b 4c 24 08 0f 05 &lt;48&gt; 3d 01 f0 ff ff 73 01 c3 48 8b 0d 37 06 0d 00 f7  <i>&hellip;</i>
 RSP: 002b:00007fffffffebb8 EFLAGS: 00000306 ORIG_RAX: 0000000000000039
 <span class="irrelevant">RAX: 0000000000000000 RBX: 00007fffffffed08 RCX: 00007ffff7edd799
 RDX: 00007ffff7fc9b7f RSI: 0000000000000002 RDI: 00007fffffffebc0
@@ -1772,7 +1780,7 @@ pgprot_t newprot = vma->vm_page_prot;
 pages = change_protection_range(tlb, vma, start, end, newprot,
           cp_flags);
 </pre>
-and inside <a href="https://github.com/micromaomao/linux-dev/blob/v6.12.1/mm/mprotect.c#L511">change_protection_range</a>, we descend down the page table again (like in copy_page_range earlier when forking),<br>
+and inside <a href="https://github.com/micromaomao/linux-dev/blob/v6.12.1/mm/mprotect.c#L511"><code>change_protection_range</code></a>, we descend down the page table again (like in copy_page_range earlier when forking),<br>
 and eventually changes the PTE:
 <pre>
 ptent = pte_modify(oldpte, newprot);
@@ -1965,9 +1973,168 @@ cpus=2
 
 It's still segfaulting as we aren't actually copying off and restoring the memory, but we are seeing prints from our earlier [modified `do_wp_page`](#do-wp-page-trace_printk) function after the checkpoint. We're now excitingly close to our final goal!
 
-#### Let's actually copy the pages, then restore them!
+Let's fill in the [TODOs we left in `do_wp_page`](#do-wp-page-trace_printk) with calls to a ick function which we shall implement later. We will not worry about `do_anonymous_page` for now, and if it turns out the application triggers it, we can fill it in later.
 
-The kernel includes definition for some very useful data structures, one of which is a [red-black tree](https://en.wikipedia.org/wiki/Red%E2%80%93black_tree) &mdash; a type of binary search tree commonly used to implement key-value stores. In our case, we can use it to map the user space's modified page addresses to (pointer to) the page's original content, at the time of the checkpoint. There is very good [kernel documentation](https://www.kernel.org/doc/html/v6.12/core-api/rbtree.html) for using this data structure, with code examples.
+<a class="make-diff" href="diffs/0011-ick_do_wp_page-skeleton.patch"></a>
+
+Note that I've changed `current->hack_target.hack` to `current->ick_data` so that we only call ick_do_wp_page to save the pages after the application tries to read the user input, and [our code in read_write.c](#read-calls-checkpoint) has called the checkpoint function.
+
+We haven't actually implemented the copy-on-write yet, but we added a `trace_printk` &mdash; let's see if it gets called:
+
+<pre>
+<span class="irrelevant">root@9e340995f2d3:/# </span>./my-hackme; cat /sys/kernel/tracing/trace
+<span class="irrelevant">[    9.899474][   T78] execveat: ./my-hackme[78] to be hacked
+[    9.905142][   T78] hack: 0 gave different output
+Enter number: [    9.905530][   T78] my-hackme[78]: segfault at 5aa860 ip 00000000005aa860 sp 00007fffa8723e60 error 15 in my-hackme[1a9860,5aa000+3000] likely on CPU 0 (core 0, socket 0)
+[    9.905997][   T78] Code: <i>&hellip;</i> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 &lt;84&gt; 2a ad fb 00 00 00 00 30 84 5c 00 00 00 00 00 30  <i>&hellip;</i>
+# tracer: nop
+#
+# entries-in-buffer/entries-written: 47/47   #P:2
+#
+<i>...</i>
+#           TASK-PID     CPU#  |||||  TIMESTAMP  FUNCTION
+#              | |         |   |||||     |         |
+      <i>...</i></span>
+       my-hackme-78      [000] .....     9.918674: ick_checkpoint_proc: ick: Checkpointed my-hackme[78]
+       my-hackme-78      [000] .....     9.918674: ksys_read: Providing number 1 to hacked process my-hackme[78]
+       my-hackme-78      [000] ...1.     9.918675: ick_do_wp_page: CoWing page 0x00000000005c9000 following wp fault at offset 0x440
+       my-hackme-78      [000] ...1.     9.918677: ick_do_wp_page: CoWing page 0x00000000005aa000 following wp fault at offset 0xa50
+       my-hackme-78      [000] ...1.     9.918690: ick_do_wp_page: CoWing page 0x00007fffa8723000 following wp fault at offset 0xed0
+       my-hackme-78      [000] ...1.     9.918753: ick_do_wp_page: CoWing page 0x00000000005ac000 following wp fault at offset 0xd28
+       my-hackme-78      [000] ...1.     9.918754: ick_do_wp_page: CoWing page 0x00007fffa8725000 following wp fault at offset 0x2cc
+       my-hackme-78      [000] ...1.     9.918755: ick_do_wp_page: CoWing page 0x00000000005c8000 following wp fault at offset 0x360
+       my-hackme-78      [000] ...1.     9.918756: ick_do_wp_page: CoWing page 0x00000000005b0000 following wp fault at offset 0x410
+       my-hackme-78      [000] ...1.     9.918756: ick_do_wp_page: CoWing page 0x00000000005ad000 following wp fault at offset 0x478
+       my-hackme-78      [000] ...1.     9.918757: ick_do_wp_page: CoWing page 0x00000000005ae000 following wp fault at offset 0x719
+       my-hackme-78      [000] .....     9.918781: ksys_write: hacked process attempted write with data Nope! 1 was a wrong guess. The correct number is 206744.
+       my-hackme-78      [000] .....     9.918782: ick_revert_proc: Restored process my-hackme[78]
+</pre>
+
+<p class="info">
+  (Note that the addresses are different from the last output as I had to rebuild my VM at some point during the writing of this article.)
+</p>
+
+This seems to be working. Now, let's think about how we can actually store the original pages in our do_wp_page hook.
+
+The kernel includes definition for some very useful data structures, one of which is a <a target="_blank" href="https://en.wikipedia.org/wiki/Red%E2%80%93black_tree">red-black tree</a> &mdash; a type of binary search tree commonly used to implement key-value stores (for example, <a target="_blank" href="https://en.cppreference.com/w/cpp/container/map"><code>std::map</code></a> in C++), and often as an alternative to hashmaps. In our case, we can use it to map the user space's page addresses (for the modified pages) to (pointers to) the page's original content, at the time of the checkpoint.
+
+There is good [kernel documentation](https://www.kernel.org/doc/html/v6.12/core-api/rbtree.html) for using this data structure, with code examples, but it is a bit &lsquo;raw&rsquo;, and requires a fair bit of manipulation ourselves.  While you don't have to fully understand how the red-black tree algorithm works in detail, it would be useful to have a general understanding of [binary search trees](https://en.wikipedia.org/wiki/Binary_search_tree).
+
+Let's implement constructing the RB-tree and copying the page data first.  We will need to define an extra structure to represent a &ldquo;modified page&rdquo;, and this structure will be our tree nodes (with the address being the search key).
+
+#### Intrusive data structures
+
+If you have ever manually implemented a linked list, or a binary search tree / RB tree yourself, it might have looked something like this:
+
+```c
+struct list_node {
+    struct void *data;
+    struct list_node *next;
+};
+```
+
+```c
+struct tree_node {
+    struct void *data;
+    struct tree_node *left;
+    struct tree_node *right;
+};
+```
+
+In this case, the linked list or the binary tree nodes are themselves standalone objects, and they point to (or in some cases, contains) data.  An example layout in memory would look like:
+
+<p><img class="center" style="width: 800px;" alt="An excalidraw diagram showing non-intrusive linked lists and trees. The top half depicts a singly linked list with 3 list_node structs containing pointers to some data and the next list_node, and the bottom half shows a binary tree with a root tree_node structs containing data pointer and a left and right pointer each pointing to a lower tree_node." src="non-intrusive-lists-and-trees.png"></p>
+
+However, this is not how these data structures are usually used in the kernel.  Instead, kernel code likes to have the list / tree node struct be part of the data itself &mdash; essentially, when a structure is defined, we already know what lists / trees it will ever need to be in, and we create one struct member for each of them, as illustrated below:
+
+<p><img class="center" style="width: 800px;" alt="An excalidraw diagram showing intrusive linked lists and trees. Each of the three data blocks contains embedded struct list_node and struct tree_node, with arrows connecting the next pointers to form a linked list and the left and right pointers to form a binary tree." src="intrusive-lists-and-trees.png"></p>
+
+For a concrete example, in Linux, all the `struct task_struct` are linked together to form a list of all tasks. In order to do this, the task struct needs to have:
+
+```c
+struct task_struct {
+    // ...
+    struct list_head tasks;
+    // ...
+}
+```
+
+And the &ldquo;linked list node&rdquo; &mdash; `struct list_head` &mdash; is defined as:
+
+```c
+struct list_head {
+    struct list_head *next, *prev;
+};
+```
+
+Even though it makes things slightly less flexible, doing it this way results in less allocations (as you do not need an extra allocated object for the node themselves) and thus better cache locality.  It also means that when the objects are already allocated, connecting them into a list (or moving them around lists) does not require extra allocations and thus can't fail.
+
+With that in mind, we can define our structure for storing modified pages:
+
+<a class="make-diff" href="diffs/0012-Defining-structure-to-store-modified-pages.patch"></a>
+
+The Linux kernel uses the &ldquo;Slab allocator&rdquo; for kernel memory allocations, and the way it works is by allocating objects into &lsquo;slabs&rsquo; depending on its size.  The built-in `kmalloc` function determines which slab to use based on power-of-2 size (see [`__kmalloc_index`](https://github.com/micromaomao/linux-dev/blob/v6.12.9/include/linux/slab.h#L654)).  Therefore, we make our tree nodes `struct ick_modified_page` be short, and store the actual 4096 bytes of original page content in a separate allocation.
+
+There is a way to make this better, by using [`kmem_cache_create`](https://kernel.org/doc/html/v6.12/core-api/mm-api.html#c.kmem_cache_create) to create our own slab cache, which can have the exact size we need (<tex>4096 + 8 +\ </tex>`sizeof(struct rb_node)`<tex>\ = 4128</tex> bytes), but let's not worry about that here.
+
+We can proceed to implement actually populating the tree and copying off the original content. There are various examples for RB tree traversal code in the [kernel docs](https://www.kernel.org/doc/html/v6.12/core-api/rbtree.html#inserting-data-into-an-rbtree).  We can make use of &ldquo;[Scope-based Cleanup Helpers](https://kernel.org/doc/html/v6.12/core-api/cleanup.html)&rdquo; to automatically free stuff if our function takes an error return path.
+
+<a class="make-diff" href="diffs/0013-Copying-pages.patch"></a>
+
+Note in particular that [`rb_entry`](https://github.com/micromaomao/linux-dev/blob/v6.12.9/include/linux/rbtree.h#L28), defined this way:
+
+```c
+#define	rb_entry(ptr, type, member) container_of(ptr, type, member)
+```
+
+turns a `struct rb_node *` into the element that holds that node, by subtracting the offset of the `struct rb_node` member from the pointer.  This `container_of` pattern is used in various other ways too &mdash; most obviously for linked lists, but is also used when a larger, module specific type (for example, `struct hv_device` or `struct netfs_inode`) contains a more generic type (`struct device` or `struct inode`).  When something has a pointer to the generic type that it knows is part of a more specific type (usually because it created the more generic pointer itself in the first place to work with other parts of the kernel), it can use `container_of` to get back the original type just from the pointer to the generic type.
+
+And while this is optional, we can add a function to print the modified pages in the tree at the point of a revert attempt and compare which bytes changed, which might be interesting to see, and lets us convince ourselves better that this is working as intended:
+
+<a class="make-diff" href="diffs/0014-debug-print-changed-pages.patch"></a>
+
+<pre>
+root@9e340995f2d3:/# ./my-hackme
+<span class="irrelevant">[    7.276047][   T76] execveat: ./my-hackme[76] to be hacked
+[    7.286451][   T76] hack: 0 gave different output
+Enter number: [    7.288739][   T76] my-hackme[76]: segfault at 5aa860 ip 00000000005aa860 sp 00007fff8f4b07d0 error 15 in my-hackme[1a9860,5aa000+3000] likely on CPU 0 (core 0, socket 0)
+[    7.295550][   T76] Code: 00 00 00 00 00 00 00 00 00 00 00 bf 5a 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 <84> 2a ad fb 00 00 00 00 30 84 5c 00 00 00 00 00 30 84 5c 00 00 00</span>
+root@9e340995f2d3:/# cat /sys/kernel/tracing/trace
+<span class="irrelevant">my-hackme-76      [000] .....     7.417757: mark_pages: Marking VMA 7fff8f492000-7fff8f4b3000 (132 KiB) as read-only
+       my-hackme-76      [000] .....     7.417758: ick_checkpoint_proc: ick: Checkpointed my-hackme[76]
+       my-hackme-76      [000] .....     7.417759: ksys_read: Providing number 1 to hacked process my-hackme[76]
+       my-hackme-76      [000] ...1.     7.417760: ick_do_wp_page: CoWing page 0x00000000005c9000 following wp fault at offset 0x440
+       my-hackme-76      [000] ...1.     7.417762: ick_do_wp_page: CoWing page 0x00000000005aa000 following wp fault at offset 0xa50
+       my-hackme-76      [000] ...1.     7.417777: ick_do_wp_page: CoWing page 0x00007fff8f4b0000 following wp fault at offset 0x840
+       my-hackme-76      [000] ...1.     7.417844: ick_do_wp_page: CoWing page 0x00000000005ac000 following wp fault at offset 0xd28
+       my-hackme-76      [000] ...1.     7.417847: ick_do_wp_page: CoWing page 0x00007fff8f4b1000 following wp fault at offset 0xc3c
+       my-hackme-76      [000] ...1.     7.417848: ick_do_wp_page: CoWing page 0x00000000005c8000 following wp fault at offset 0x360
+       my-hackme-76      [000] ...1.     7.417850: ick_do_wp_page: CoWing page 0x00000000005b0000 following wp fault at offset 0x410
+       my-hackme-76      [000] ...1.     7.417852: ick_do_wp_page: CoWing page 0x00000000005ad000 following wp fault at offset 0x478
+       my-hackme-76      [000] ...1.     7.417855: ick_do_wp_page: CoWing page 0x00000000005ae000 following wp fault at offset 0x719
+       my-hackme-76      [000] .....     7.417882: ksys_write: hacked process attempted write with data Nope! 1 was a wrong guess. The correct number is 1727375.</span>
+
+       my-hackme-76      [000] .....     7.417883: ick_revert_proc: Modified pages:
+       my-hackme-76      [000] .....     7.417887: ick_revert_proc: Page 0x00000000005aa000: change starting at offset 0x888 for 457 bytes
+       my-hackme-76      [000] .....     7.417892: ick_revert_proc: Page 0x00000000005ac000: change starting at offset 0xd28 for 4 bytes
+       my-hackme-76      [000] .....     7.417896: ick_revert_proc: Page 0x00000000005ad000: change starting at offset 0x548 for 2 bytes
+       my-hackme-76      [000] .....     7.417900: ick_revert_proc: Page 0x00000000005ae000: change starting at offset 0x718 for 257 bytes
+       my-hackme-76      [000] .....     7.417905: ick_revert_proc: Page 0x00000000005b0000: no changes
+       my-hackme-76      [000] .....     7.417909: ick_revert_proc: Page 0x00000000005c8000: change starting at offset 0x360 for 266 bytes
+       my-hackme-76      [000] .....     7.417912: ick_revert_proc: Page 0x00000000005c9000: change starting at offset 0x440 for 2 bytes
+       my-hackme-76      [000] .....     7.417916: ick_revert_proc: Page 0x00007fff8f4b0000: change starting at offset 0x718 for 402 bytes
+       my-hackme-76      [000] .....     7.417921: ick_revert_proc: Page 0x00007fff8f4b1000: change starting at offset 0xc3c for 1 bytes
+       my-hackme-76      [000] .....     7.417921: ick_revert_proc: Restored process my-hackme[76]
+<span class="irrelevant">       my-hackme-76      [000] d....     7.417925: console: my-hackme[76]: segfault at 5aa860 ip 00000000005aa860 sp 00007fff8f4b07d0 error 15</span>
+</pre>
+
+Ok, it's hard to tell from this whether things are working completely correctly, but there's no obvious signs of things going wrong.
+
+#### Finally, let's actually restore the pages
+
+At this point it should be relatively obvious what's left to do.  We already have our `ick_revert_proc` that gets called at the right moment.
+
+<a class="make-diff" href="diffs/0015-handle-reverting-pages.patch"></a>
 
 <style>
   .todo {
@@ -1983,11 +2150,9 @@ The kernel includes definition for some very useful data structures, one of whic
   TODO: write this section
 </div>
 
-<a class="make-diff" href="./diffs/0011-copying-the-pages.patch"></a>
+### Restarting the `read`
 
-<!-- `do_swap_page` also calls `do_wp_page`. Not sure about huge pages so will disable that.
-
-Build a rbtree, allocate with `kmalloc` (let's not worry about folios) -->
+<a class="make-diff" href="diffs/0016-restart_syscall.patch"></a>
 
 ### Blocking off other syscalls
 

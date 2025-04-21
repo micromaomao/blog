@@ -5,6 +5,7 @@ time: "2025-04-20T03:04:25+01:00"
 discuss:
   "Hacker News": "https://news.ycombinator.com/item?id=43748086"
   "GitHub": "https://github.com/micromaomao/linux-dev/issues"
+  "LinkedIn": "https://www.linkedin.com/posts/maowtm_using-the-linux-kernel-to-help-me-crack-an-activity-7320101112500412417-ronn"
 snippet: >-
   Early this year I found a reverse engineering problem which basically boiled down to running a heavily obfuscated Linux binary and entering the correct number to get it to print a flag. Fortunately, the interesting bits of the program ran quite fast – after reading the input, it spends around 5us before printing out whether the guess was correct or not. This means that even a brute-force search of the possible inputs could finish in a reasonable time, and there is no need to expend much effort on actual reverse engineering if we don't have to. The only tricky part is, how do we convince it to try different inputs as fast as this?
 cover_alt: |

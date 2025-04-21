@@ -21,7 +21,7 @@ cover_alt: |
 
 Truth be told, I've never been really good at CTFs, but I do enjoy solving challenges at my own pace, and exploring perhaps less conventional methods, learning more about programming in the process. <del>A few weeks ago</del> Early this year I found a reverse engineering problem which basically boiled down to running a Linux binary and entering the correct number to get it to print a flag. The program was heavily obfuscated, has anti-debugging techniques, and potentially utilized self-modifying code, but `strace` shows that, aside from those, it did not try to do anything fancy with system calls, attempt to save files, or communicate via network.
 
-Fortunately, the _interesting_ bits of the program ran quite fast &ndash; after reading the input, it spends around 5us (0.005ms) before printing out whether the guess was correct or not. The input space was also very managable &ndash; between 0 to 3,000,000. This means that even a brute-force search of the possible inputs could finish in a reasonable time, and there is no need to expend much effort on actual reverse engineering if we don't have to. The only tricky part is, how do we convince it to try different inputs as fast as this?
+Fortunately, the _interesting_ bits of the program ran quite fast &ndash; after reading the input, it spends around 5us (0.005ms) before printing out whether the guess was correct or not. The input space was also very manageable &ndash; between 0 to 3,000,000. This means that even a brute-force search of the possible inputs could finish in a reasonable time, and there is no need to expend much effort on actual reverse engineering if we don't have to. The only tricky part is, how do we convince it to try different inputs as fast as this?
 
 After considering some alternatives, my approach for solving this eventually ended up being a self-taught lesson in kernel hacking.
 
@@ -29,12 +29,12 @@ After considering some alternatives, my approach for solving this eventually end
 
 ## Environment
 
-Before we get into more investigation, let's quickly explain what my test environment for this looks like. Since I'm not a fan of running random binaries from the Internet on my host system, we will only ever run the target binary in a VM. In fact, since there will be a good amount of kernel hacking today, we need a VM for which which we can easily boot our hacked kernel in. Previously I made some shell scripts which comes in handy. It:
+Before we get into more investigation, let's quickly explain what my test environment for this looks like. Since I'm not a fan of running random binaries from the Internet on my host system, we will only ever run the target binary in a VM. In fact, since there will be a good amount of kernel hacking today, we need a VM for which we can easily boot our hacked kernel in. Previously I made some shell scripts which come in handy. They:
 
-- Allows me to easily run a QEMU VM with any kernel changes I want by directly booting from a compiled vmlinux.
-- Hooks up a serial console and 9pfs root (mapped to a separate file system on the host) for convenience.
-- Uses a relatively minimal kernel configuration and lightweight startup script &mdash; VM boots up in 2 seconds.
-- Builds the rootfs with Docker, pre-installing things like `strace`, `gdb`, `trace-cmd`, etc.
+- Allow me to easily run a QEMU VM with any kernel changes I want by directly booting from a compiled vmlinux.
+- Hook up a serial console and 9pfs root (mapped to a separate file system on the host) for convenience.
+- Use a relatively minimal kernel configuration and lightweight startup script &mdash; VM boots up in 2 seconds.
+- Build the rootfs with Docker, pre-installing things like `strace`, `gdb`, `trace-cmd`, etc.
 
 Once you've checked that you have Docker and QEMU installed, you can get started with the same environment by cloning [micromaomao/linux-dev](https://github.com/micromaomao/linux-dev), running `make -j$(nproc)` to compile the kernel, then `.dev/startvm.sh` to build the rootfs (if not already present) and start the VM (your user account might need to be in the `kvm` group). If you are on ARM, remove the `-enable-kvm` and `-cpu host` flag in startvm.sh to use emulation instead.
 
@@ -45,7 +45,7 @@ Once you've checked that you have Docker and QEMU installed, you can get started
 A straightforward, first approach would be to just run it repeatedly. However, with such a short runtime between getting the input and printing the result, any significant overhead in either the initialization of the executable itself, or the time spent in the script used to repeatedly run it quickly starts to dominate. A quick test would be to run it under `strace` and see how long it takes from the initial `execve` to the first `read`. That would be a good starting point to understand more about the program and catch any potentially surprising behavior, so let's do that first.
 
 <p class="warn">
-  Quick reminder again that you should not run or even interact with untrusted stuff directly on your host system. This include running them under <code>strace</code>, <code>gdb</code>, or even using <code>ldd</code> on them.
+  Quick reminder again that you should not run or even interact with untrusted stuff directly on your host system. This includes running them under <code>strace</code>, <code>gdb</code>, or even using <code>ldd</code> on them.
 </p>
 
 <style>
@@ -120,7 +120,7 @@ $ cat strace.log</span>
 <span class="comment">// ... more strace output ...</span>
 </pre>
 
-I suspect it is detecting debuggers and potentially changing its behavior. After writing this I later found out that actually it will pretend to run as normal even when it has detected a tracer, but actually will not print the flag even with the right input. For now, I found the code that puts that number in `/proc/self/status` by simply searching for &ldquo;TracerPid&rdquo;:
+I suspect it is detecting debuggers and potentially changing its behavior. After writing this I later found out that it will actually pretend to run as normal even when it has detected a tracer, but will not print the flag even with the right input. For now, I found the code that puts that number in `/proc/self/status` by simply searching for &ldquo;TracerPid&rdquo;:
 
 <a class="make-diff" href="./diffs/0001-hide-TracerPid.patch"></a>
 
@@ -141,7 +141,7 @@ It is probably looking for whether this call returns a `-EPERM`, which would ind
 <a class="make-diff" href="./diffs/0002-ptrace_traceme-return-0.patch"></a>
 
 <p class="info">
-  Quick note: instead of making such changes to the kernel, there are alternative to <code>strace</code> which relies on seccomp-unotify instead of ptrace, which also gets around anti-debugging techniques that targets ptrace, and may be more convenient to use in other situations.
+  Quick note: instead of making such changes to the kernel, there are alternatives to <code>strace</code> which rely on seccomp-unotify instead of ptrace, which also get around anti-debugging techniques that target ptrace, and may be more convenient to use in other situations.
 </p>
 
 Now let's try `strace` it again:
@@ -210,7 +210,7 @@ We can ignore everything that is not reading from stdin (fd = 0) or writing to s
 </style>
 
 Notice that the program doesn't really try to do anything fancy (at least not externally visible) between `read` and `write` &ndash; all it does is spin some numbers around in its own memory, then spits out &lsquo;Correct&rsquo; plus the flag, or &lsquo;Nope&rsquo; if the guess was wrong. This means that, in theory, if we can perfectly restore the program's memory and register states<footnote>
-Technically there's not all of the state a program could rely on or change, even without issuing any syscalls. For example, it can use the raw `rdtsc` assembly instruction to measure the current time, and deduce if it's being tricked. But in this case restoring registers and memory alone works well enough.
+Technically this is not all of the state a program could rely on or change, even without issuing any syscalls. For example, it can use the raw `rdtsc` assembly instruction to measure the current time, and deduce if it's being tricked. But in this case restoring registers and memory alone works well enough.
 </footnote>, we can instantly start trying a different input, then another one in 10us (when I ran it fast enough often it finishes within 5), and so on until we find the right number. Without the overhead of even forking another process, this has the potential to be a lot faster &ndash; we're basically turning the whole input validation process into a `for` loop! It's just that the &lsquo;`for`&rsquo; in this case is outside the program. <img src="./hehe.png" alt="Hehe" class="emoji">
 
 ## What if we get the kernel to try numbers for us?
@@ -234,11 +234,11 @@ The core idea is:
 
 Now, this might seem like massive overkill, and it probably is, but hear me out:
 
-- This is basically as fast as we can hope to get without non-trivial amount of careful reverse engineering.<footnote>
+- This is basically as fast as we can hope to get without a non-trivial amount of careful reverse engineering.<footnote>
 Insert _girl will literally invent new kernel feature instead of doing actual reverse engineering_ joke here</footnote>
 Compared to alternative, user-space approach with ptrace (which I will explore at the end of this article), we avoid any overhead from ptrace-ing &ndash; there is no context switching or waiting between processes, and we can truly run the brute-force loop at the fastest possible speed.<footnote>
-Ok, technically there is another way that can be basically as fast, and which doesn't involve kernel modifications. You can instead use `SECCOMP_RET_TRAP` with a seccomp bpf filter to have the kernel turn the syscall you're interested into a `SIGSYS`, and inject code into the program to handle this signal. This gives you the functionality of a ptrace-based syscall interceptor (your injected code can save/restore registers via the `ucontext` reference, and of course memory too) without the cost of ptrace. But this is arguably getting into wilder territory than some not-too-complex kernel modifications. There are real world projects which does this for a very good reason &ndash; sandboxing. See [gVisor Systrap](https://gvisor.dev/blog/2023/04/28/systrap-release/) for more detail.
-</footnote> From my testing, when the input-checking code is ran in a tight loop this way, it is even faster and often takes aound 5us. 5us <tex>\times</tex> 3,000,000 is _15 seconds_.
+Ok, technically there is another way that can be basically as fast, and which doesn't involve kernel modifications. You can instead use `SECCOMP_RET_TRAP` with a seccomp bpf filter to have the kernel turn the syscall you're interested into a `SIGSYS`, and inject code into the program to handle this signal. This gives you the functionality of a ptrace-based syscall interceptor (your injected code can save/restore registers via the `ucontext` reference, and of course memory too) without the cost of ptrace. But this is arguably getting into wilder territory than some not-too-complex kernel modifications. There are real world projects which do this for a very good reason &ndash; sandboxing. See [gVisor Systrap](https://gvisor.dev/blog/2023/04/28/systrap-release/) for more detail.
+</footnote> From my testing, when the input-checking code is run in a tight loop this way, it is even faster and often takes around 5us. 5us <tex>\times</tex> 3,000,000 is _15 seconds_.
 - While correctly write-protecting the memory pages, saving them off on write fault, and restoring them might sound tricky, with the way Linux manages writable pages it is actually not bad. This is because even for a writable mapping, pages can start off write-protected, and the kernel can make them actually writable on the first write attempt (without coupling it with a copy). This is the case in, for example, the second process that gets scheduled after a fork, where its memory is still all in a write-protected state. This means that there are very natural places we can add our code to, and we don't even have to actually change any permissions, etc.
 - Hacking the kernel is fun, at least to me <img src="./init.png" alt="Small Yuki Nagato emote" class="emoji">, and I learn a lot this way. In the future if I have a similar problem but a lot larger input space, what we did here might prove to be useful again.
 
@@ -246,13 +246,13 @@ I will now walk through each step one by one, as laid out above. If you as the r
 
 ### Identify and mark the target process
 
-The first step (step 1) is to identity and mark the process we're interested in. In Linux, each thread is represented by a [`struct task_struct`](https://github.com/micromaomao/linux-dev/blob/ick/include/linux/sched.h#L778), which contains things like the PID, process name, memory mappings, and a thousand other things. We can of course add our own data to this struct &ndash; for example, we can have a `bool` to indicate whether a process<footnote>
+The first step (step 1) is to identify and mark the process we're interested in. In Linux, each thread is represented by a [`struct task_struct`](https://github.com/micromaomao/linux-dev/blob/ick/include/linux/sched.h#L778), which contains things like the PID, process name, memory mappings, and a thousand other things. We can of course add our own data to this struct &ndash; for example, we can have a `bool` to indicate whether a process<footnote>
 Technically, anything stored in the `task_struct` is per-thread, but in this case our target only has one thread, and so saying &lsquo;process&rsquo; is correct here. Plus, even if it has multiple threads, our marking would be copied to the other threads when it tries to `clone`.
 </footnote> is our hack target, and use it to decide if we should do special things in our modified `read`/`write` syscall handlers (we don't want to break unrelated processes like the shell, for example).
 
-You probably know that when you run an executable, the shell forks a subprocess then run `exec` with the command arguments. If we assume our target binary is always named &ldquo;`hackme`&rdquo;, we can check for this in the handler for `exec`, and set the `bool` we added previously to `true`.
+You probably know that when you run an executable, the shell forks a subprocess then runs `exec` with the command arguments. If we assume our target binary is always named &ldquo;`hackme`&rdquo;, we can check for this in the handler for `exec`, and set the `bool` we added previously to `true`.
 
-With some searching around and perhaps tracing function calls with `trace-cmd` (which juse uses [ftrace](https://docs.kernel.org/6.12/trace/ftrace.html)), we find that there is a common function for `execve` and `execveat` &ndash; [`do_execveat_common`](https://github.com/micromaomao/linux-dev/blob/ick/fs/exec.c#L1876), and so we can add our code there, and add the additional field to the `task_struct`:
+With some searching around and perhaps tracing function calls with `trace-cmd` (which just uses [ftrace](https://docs.kernel.org/6.12/trace/ftrace.html)), we find that there is a common function for `execve` and `execveat` &ndash; [`do_execveat_common`](https://github.com/micromaomao/linux-dev/blob/ick/fs/exec.c#L1876), and so we can add our code there, and add the additional field to the `task_struct`:
 
 <div id="hack-target-execve"></div>
 
@@ -296,7 +296,7 @@ While this is not really necessary, let's also add a proper config option for ou
 
 ### Patching `read`, inject our guess
 
-Next, we can finish off the relatively easier part of step 2 &ndash; handling `read`, calling the checkpoint function, and injecting our next guess. Again, we can use `ftrace` to figure out the best function to change. There are more &lsquo;complicated&rsquo; variant of the `read` syscall that takes a `struct iovec`, but that's not what our target binary uses, so we won't worry about that.
+Next, we can finish off the relatively easier part of step 2 &ndash; handling `read`, calling the checkpoint function, and injecting our next guess. Again, we can use `ftrace` to figure out the best function to change. There are more &lsquo;complicated&rsquo; variants of the `read` syscall that take a `struct iovec`, but that's not what our target binary uses, so we won't worry about that.
 
 <div id="read-calls-checkpoint"></div>
 
@@ -381,7 +381,7 @@ root@feef72fcd655:/# cat /sys/kernel/tracing/trace
 </pre>
 
 <p class="info">
-  You do not need <code>trace-cmd</code> nor even enabling tracing in tracefs to see <code>trace_printk</code> outputs.
+  You do not need <code>trace-cmd</code> or even enabling tracing in tracefs to see <code>trace_printk</code> outputs.
 </p>
 
 Note that the &ldquo;\_ gave different output&rdquo; prints are because the program was writing &ldquo;`Enter number: `&rdquo; every loop iteration, which doesn't contain &ldquo;`Nope!`&rdquo;. Once our checkpoint restore is working, the program should end up back to when it first issues the `read`, which means that any prompt to enter number would no longer be printed again.
@@ -636,16 +636,16 @@ Ok, that didn't take very long to break.
 
 #### What about the other ones?
 
-Now, some of you might have noticed the lack of the more &lsquo;unusual&rsquo; registers in the `PUSH_REGS` code [above](#push_regs) (or in [`struct pt_regs`](https://github.com/micromaomao/linux-dev/blob/ick/arch/x86/include/asm/ptrace.h#L103)), and if you're questioning whether just saving the general-purpose registers in `pt_regs` is enough, you're right. We have not saved any of xmm0-xmm31 (or their y/z extensions) which are used for floating point operations and various generations of SIMD, or the FS and GS segment registers [which can be set by user-space](https://docs.kernel.org/6.12/arch/x86/x86_64/fsgs.html) (most notably, libc uses them to point to start of thread-local storage, which obviously shouldn't change in the lifetime of a thread, but really they can be used in whatever ways by an obfuscated program).
+Now, some of you might have noticed the lack of the more &lsquo;unusual&rsquo; registers in the `PUSH_REGS` code [above](#push_regs) (or in [`struct pt_regs`](https://github.com/micromaomao/linux-dev/blob/ick/arch/x86/include/asm/ptrace.h#L103)), and if you're questioning whether just saving the general-purpose registers in `pt_regs` is enough, you're right. We have not saved any of xmm0-xmm31 (or their y/z extensions) which are used for floating point operations and various generations of SIMD, or the FS and GS segment registers [which can be set by user-space](https://docs.kernel.org/6.12/arch/x86/x86_64/fsgs.html) (most notably, libc uses them to point to the start of thread-local storage, which obviously shouldn't change in the lifetime of a thread, but really they can be used in whatever ways by an obfuscated program).
 
 However, in a sensible program linking to a &lsquo;normal&rsquo; libc, neither of these ought to matter. This is because, as noted earlier, the segment registers shouldn't normally change inside a thread, and the SIMD registers are caller-saved<footnote>
 H.J. Lu, et al. (2024) [_System V Application Binary Interface AMD64 Architecture Processor Supplement (With LP64 and ILP32 Programming Models) Version 1.0_](https://gitlab.com/x86-psABIs/x86-64-ABI/-/jobs/artifacts/master/raw/x86-64-ABI/abi.pdf?job=build) &sect; 3.2.1<br>
 Also see https://godbolt.org/z/oj3ej3e5z
-</footnote>, which means that the compiler isn't supposed to rely on them suriving across a call to libc's `read()` or `write()` wrappers (although technically `syscall` is supposed to perserve those).
+</footnote>, which means that the compiler isn't supposed to rely on them surviving across a call to libc's `read()` or `write()` wrappers (although technically `syscall` is supposed to preserve those).
 
 For performance reasons the kernel does not save these registers to memory on every kernel entry, but only when it is about to context-switch to another task.<footnote>
 Although because the kernel itself also uses GS for per-CPU data, it does a [`swapgs`](https://wiki.osdev.org/SWAPGS) to stash off the user-space GS to some hidden machine-specific register.
-</footnote> After all, the ?mm registers, on a new-enough CPU with AVX-512, totals to 512 bits <tex>\times</tex> 32 = 2 KiB (not counting the vector mask registers, etc). This makes our life harder if we want to save/restore those (which is technically the correct thing to do for a fully working save/restore), but since they are unlikely to break a &lsquo;reasonable&rsquo; program, we will leave them untouched for now.
+</footnote> After all, the ?mm registers, on a new-enough CPU with AVX-512, total to 512 bits <tex>\times</tex> 32 = 2 KiB (not counting the vector mask registers, etc). This makes our life harder if we want to save/restore those (which is technically the correct thing to do for a fully working save/restore), but since they are unlikely to break a &lsquo;reasonable&rsquo; program, we will leave them untouched for now.
 
 <p class="info">
   Do you want to learn more about how Linux manages processes, does context switches, and similar low-level topics, or just learn more about the kernel in general? Check out these highly informative lecture notes: <a href="https://linux-kernel-labs.github.io/refs/heads/master/so2/index.html" target="_blank">Operating Systems 2</a> (maybe after you're done with this article <img src="./grinning-squinting-face.png" alt="&#x1F606;" class="emoji">).
@@ -1756,7 +1756,7 @@ Now, inside [`mprotect_fixup`](https://github.com/micromaomao/linux-dev/blob/v6.
     vma_start_write(vma);
     <div class="comment-box">
       Earlier in <code>do_mprotect_pkey</code> we have taken the mmap_lock by calling <code>mmap_write_lock_killable</code>.<br>
-      This call increments a sequence number on the VMA so that readers trying to opportunistically avoid taking the<br> mmap_lock when reading will actually fallback to taking it (and hence waiting until this mprotect call is done).<br>
+      This call increments a sequence number on the VMA so that readers trying to opportunistically avoid taking the<br> mmap_lock when reading will actually fall back to taking it (and hence waiting until this mprotect call is done).<br>
       This means that if we want to modify <code>vma->vm_flags</code> or <code>vma->vm_page_prot</code>, we need to both take the<br> mmap_lock, and call this function.
     </div>
     vm_flags_reset(vma, newflags);
@@ -2076,11 +2076,11 @@ With that in mind, we can define our structure for storing modified pages:
 
 <a class="make-diff" href="diffs/0012-Defining-structure-to-store-modified-pages.patch"></a>
 
-The Linux kernel uses the &ldquo;Slab allocator&rdquo; for kernel memory allocations, and the way it works is by allocating objects into &lsquo;slabs&rsquo; depending on its size.  The built-in `kmalloc` function determines which slab to use based on power-of-2 size (see [`__kmalloc_index`](https://github.com/micromaomao/linux-dev/blob/v6.12.9/include/linux/slab.h#L654)).  Therefore, we make our tree nodes `struct ick_modified_page` be short, and store the actual 4096 bytes of original page content in a separate allocation.
+The Linux kernel uses the &ldquo;Slab allocator&rdquo; for kernel memory allocations, and the way it works is by allocating objects into &lsquo;slabs&rsquo; depending on their size.  The built-in `kmalloc` function determines which slab to use based on power-of-2 size (see [`__kmalloc_index`](https://github.com/micromaomao/linux-dev/blob/v6.12.9/include/linux/slab.h#L654)).  Therefore, we make our tree nodes `struct ick_modified_page` short, and store the actual 4096 bytes of original page content in a separate allocation.
 
 There is a way to make this better, by using [`kmem_cache_create`](https://kernel.org/doc/html/v6.12/core-api/mm-api.html#c.kmem_cache_create) to create our own slab cache, which can have the exact size we need (<tex>4096 + 8 +\ </tex>`sizeof(struct rb_node)`<tex>\ = 4128</tex> bytes), but let's not worry about that here.
 
-I've included a spinlock to protect the tree, but this is probably not necessary since we only support one threaded processes anyway. There's nothing technically preventing us from supporting multiple threads &mdash; but we will have to do some synchronization, including signaling other threads to stop when one thread triggers a revert.  Since I don't need it for this particular program, this is left as an exercise for the reader.
+I've included a spinlock to protect the tree, but this is probably not necessary since we only support one-threaded processes anyway. There's nothing technically preventing us from supporting multiple threads &mdash; but we will have to do some synchronization, including signaling other threads to stop when one thread triggers a revert.  Since I don't need it for this particular program, this is left as an exercise for the reader.
 
 We can proceed to implement actually populating the tree and copying off the original content. There are various examples for RB tree traversal code in the [kernel docs](https://www.kernel.org/doc/html/v6.12/core-api/rbtree.html#inserting-data-into-an-rbtree).  We can make use of &ldquo;[Scope-based Cleanup Helpers](https://kernel.org/doc/html/v6.12/core-api/cleanup.html)&rdquo; to automatically free stuff if our function takes an error return path.
 
@@ -2475,9 +2475,9 @@ A program like this could also fake `/proc/self/status` and the result of `ptrac
 
 Now, doing all this forking isn't free. With such short runtime per iteration (5-10us), the overhead of `fork` and the context switch between the supervisor, the parent to be forked, and the forked child process quickly dominates the time spent. I created a simple C program [fork-test.c](./fork-test.c) which measures time elapsed between just calling `fork` and it returning in the child, and from my testing, forking even this simple process usually takes ~50-150us. This is without the involvement of any ptrace supervisor, the process has less memory mappings than the real binary we're testing, and we're not writing or reading its memory from a remote process. It is reasonable to assume that if we were to actually do the proposed `ptrace`-based experiment, one iteration including handling `read`/`write` will take at least 100us on average (probably more).
 
-With 100us per iteration, searching through all the inputs will take 5 minutes, which is not bad at all. The result does depends on time though, and for certain time periods there won't always be a valid input. This means that if we don't feel like sitting behind the computer waiting for potentially tens of minutes, we need to either parallelize it by a lot (with different processes trying different ranges of input), or advance our system clock to the future, so that when we come back from our half-hour coffee break the solution is not expired already.
+With 100us per iteration, searching through all the inputs will take 5 minutes, which is not bad at all. The result does depend on time though, and for certain time periods there won't always be a valid input. This means that if we don't feel like sitting behind the computer waiting for potentially tens of minutes, we need to either parallelize it by a lot (with different processes trying different ranges of input), or advance our system clock to the future, so that when we come back from our half-hour coffee break the solution is not expired already.
 
-I have tried but have not been successful in coercing ChatGPT (o1) to give me an out-of-the-box working solution for this &ndash; it is tripping over getting the child to behave correctly and I ran out of patience debugging.
+I have tried but have not been successful in coercing ChatGPT (o1) to give me an out-of-the-box working solution for this &ndash; it was tripping over getting the child to behave correctly and I ran out of patience debugging.
 
 Saving the state and restoring, without `fork`ing a new process, is also doable with `ptrace`, since we can read and write the memory of our traced process, and get/set registers. One way we can do this is to save off the content of all writable memory regions (which is not very large in this case), and restore them along with the registers after each iteration. If we want to go even further, we can use [userfaultfd](https://man7.org/linux/man-pages/man2/userfaultfd.2.html) to monitor which pages are written to after we inject our test input, and only restore those pages. For a program which has a lot more state than a few MB, this could be quite worthwhile.
 

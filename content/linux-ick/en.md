@@ -4,8 +4,8 @@ tags: ["Linux", "systems programming", "reverse engineering", "memory management
 time: "2025-04-20T03:04:25+01:00"
 discuss:
   "Hacker News": "https://news.ycombinator.com/item?id=43748086"
-  "GitHub": "https://github.com/micromaomao/linux-dev/issues"
   "LinkedIn": "https://www.linkedin.com/posts/maowtm_using-the-linux-kernel-to-help-me-crack-an-activity-7320101112500412417-ronn"
+  "GitHub": "https://github.com/micromaomao/linux-dev/issues"
 snippet: >-
   Early this year I found a reverse engineering problem which basically boiled down to running a heavily obfuscated Linux binary and entering the correct number to get it to print a flag. Fortunately, the interesting bits of the program ran quite fast – after reading the input, it spends around 5us before printing out whether the guess was correct or not. This means that even a brute-force search of the possible inputs could finish in a reasonable time, and there is no need to expend much effort on actual reverse engineering if we don't have to. The only tricky part is, how do we convince it to try different inputs as fast as this?
 cover_alt: |
@@ -2463,6 +2463,8 @@ It is one of the things that now fills me with a bit of nostalgia looking backwa
 By now you can probably tell that brute-forcing the original executable wasn't really the main point of this exercise &mdash; it would have taken me 10x less time, including the time of actually running it, had I simply froze the system clock then repeatedly invoke the program in a reasonably efficient loop on multiple threads, brute forcing a number for the time I decided to set my clock to.  However, this has not really been about brute-forcing a simple number guessing game.  It was really more about learning how the kernel works.
 
 For me, trying to implement something like this, play with kgdb, etc. is a very good way to learn and challenge my understanding, and part of that learning is also writing this article.  I hope that this has been a fun journey for you, and if you wern't already familiar with the Linux kernel, I hope that this has been an enjoyable introduction, much like that Orange book is to me on OS development.
+
+You can download all the patches in this article [here](./diffs).  All based on Linux 6.12.9.
 
 ## Addendum: Hacking it with ptrace
 

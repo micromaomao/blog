@@ -1,7 +1,7 @@
-From 2e1823c7ce6950cacbea76717440aec35d91f77b Mon Sep 17 00:00:00 2001
+From 336387495980bcf4409fe363cd2e18626bf510be Mon Sep 17 00:00:00 2001
 From: Tingmao Wang <m@maowtm.org>
 Date: Mon, 14 Apr 2025 22:34:00 +0100
-Subject: [PATCH 11/16] ick_do_wp_page skeleton
+Subject: [PATCH 11/18] ick_do_wp_page skeleton
 
 ---
  include/linux/ick.h |  3 +++

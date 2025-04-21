@@ -5,7 +5,7 @@ time: "2025-04-20T03:04:25+01:00"
 discuss:
   "GitHub": "https://github.com/micromaomao/linux-dev/issues"
 snippet: >-
-  A few weeks ago I found a reverse engineering problem which basically boiled down to running a heavily obfuscated Linux binary and entering the correct number to get it to print a flag. Fortunately, the interesting bits of the program ran quite fast – after reading the input, it spends around 5us before printing out whether the guess was correct or not. This means that even a brute-force search of the possible inputs could finish in a reasonable time, and there is no need to expend much effort on actual reverse engineering if we don't have to. The only tricky part is, how do we convince it to try different inputs as fast as this?
+  Early this year I found a reverse engineering problem which basically boiled down to running a heavily obfuscated Linux binary and entering the correct number to get it to print a flag. Fortunately, the interesting bits of the program ran quite fast – after reading the input, it spends around 5us before printing out whether the guess was correct or not. This means that even a brute-force search of the possible inputs could finish in a reasonable time, and there is no need to expend much effort on actual reverse engineering if we don't have to. The only tricky part is, how do we convince it to try different inputs as fast as this?
 cover_alt: |
   A five-panel comic featuring the Linux mascot Tux with a bandage placed above it, and a box with a question-mark.
 
@@ -252,6 +252,8 @@ Technically, anything stored in the `task_struct` is per-thread, but in this cas
 You probably know that when you run an executable, the shell forks a subprocess then run `exec` with the command arguments. If we assume our target binary is always named &ldquo;`hackme`&rdquo;, we can check for this in the handler for `exec`, and set the `bool` we added previously to `true`.
 
 With some searching around and perhaps tracing function calls with `trace-cmd` (which juse uses [ftrace](https://docs.kernel.org/6.12/trace/ftrace.html)), we find that there is a common function for `execve` and `execveat` &ndash; [`do_execveat_common`](https://github.com/micromaomao/linux-dev/blob/ick/fs/exec.c#L1876), and so we can add our code there, and add the additional field to the `task_struct`:
+
+<div id="hack-target-execve"></div>
 
 <a class="make-diff" href="./diffs/0003-set-hack_target.patch"></a>
 
@@ -2077,6 +2079,8 @@ The Linux kernel uses the &ldquo;Slab allocator&rdquo; for kernel memory allocat
 
 There is a way to make this better, by using [`kmem_cache_create`](https://kernel.org/doc/html/v6.12/core-api/mm-api.html#c.kmem_cache_create) to create our own slab cache, which can have the exact size we need (<tex>4096 + 8 +\ </tex>`sizeof(struct rb_node)`<tex>\ = 4128</tex> bytes), but let's not worry about that here.
 
+I've included a spinlock to protect the tree, but this is probably not necessary since we only support one threaded processes anyway. There's nothing technically preventing us from supporting multiple threads &mdash; but we will have to do some synchronization, including signaling other threads to stop when one thread triggers a revert.  Since I don't need it for this particular program, this is left as an exercise for the reader.
+
 We can proceed to implement actually populating the tree and copying off the original content. There are various examples for RB tree traversal code in the [kernel docs](https://www.kernel.org/doc/html/v6.12/core-api/rbtree.html#inserting-data-into-an-rbtree).  We can make use of &ldquo;[Scope-based Cleanup Helpers](https://kernel.org/doc/html/v6.12/core-api/cleanup.html)&rdquo; to automatically free stuff if our function takes an error return path.
 
 <a class="make-diff" href="diffs/0013-Copying-pages.patch"></a>
@@ -2098,7 +2102,7 @@ root@9e340995f2d3:/# ./my-hackme
 <span class="irrelevant">[    7.276047][   T76] execveat: ./my-hackme[76] to be hacked
 [    7.286451][   T76] hack: 0 gave different output
 Enter number: [    7.288739][   T76] my-hackme[76]: segfault at 5aa860 ip 00000000005aa860 sp 00007fff8f4b07d0 error 15 in my-hackme[1a9860,5aa000+3000] likely on CPU 0 (core 0, socket 0)
-[    7.295550][   T76] Code: 00 00 00 00 00 00 00 00 00 00 00 bf 5a 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 <84> 2a ad fb 00 00 00 00 30 84 5c 00 00 00 00 00 30 84 5c 00 00 00</span>
+[    7.295550][   T76] Code: <i>&hellip;</i> 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 &lt;84&gt; 2a ad fb 00 00 00 00 30 84 5c 00 00 00 00 00 30  <i>&hellip;</i></span>
 root@9e340995f2d3:/# cat /sys/kernel/tracing/trace
 <span class="irrelevant">my-hackme-76      [000] .....     7.417757: mark_pages: Marking VMA 7fff8f492000-7fff8f4b3000 (132 KiB) as read-only
        my-hackme-76      [000] .....     7.417758: ick_checkpoint_proc: ick: Checkpointed my-hackme[76]
@@ -2136,45 +2140,327 @@ At this point it should be relatively obvious what's left to do.  We already hav
 
 <a class="make-diff" href="diffs/0015-handle-reverting-pages.patch"></a>
 
-<style>
-  .todo {
-    background-color:rgb(255, 235, 235);
-    border: 1px solid #ccc;
-    padding: 10px;
-    margin: 10px 0;
-    text-align: center;
-  }
-</style>
+It is possible for a write page fault to happen when we're reverting the pages (which obviously involves trying to write to it).  We can handle that by not doing anything in our wp fault handler if we're already inside an revert.
 
-<div class="todo">
-  TODO: write this section
-</div>
+<a class="make-diff" href="diffs/0016-Protect-against-wp-fault-when-reverting.patch"></a>
+
+#### Almost there!
+
+Let's see what happens now when we run our `my-hackme` test program:
+
+<pre>
+root@9e340995f2d3:/# ./my-hackme
+[    4.221228][   T78] execveat: ./my-hackme[78] to be hacked
+[    4.227214][   T78] hack: 0 gave different output
+Enter number:
+</pre>
+
+Hmm&hellip; let's check if we see any traces:
+
+<pre>
+<span class="irrelevant">root@9e340995f2d3:/# </span>./my-hackme & cat <b>/sys/kernel/tracing/trace_pipe</b> | head -n 100
+<span class="comment">  # Note use of <code>trace_pipe</code> instead of <code>trace</code>, as <code>trace</code> reads from the buffer once.</span>
+<span class="irrelevant">[1] 71
+[    8.621408][   T71] execveat: ./my-hackme[71] to be hacked
+[    8.626684][   T71] hack: 0 gave different output
+Enter number:            mount-66      [000] dN...     1.834472: console: EXT4-fs (vda): mounted filesystem abc4e493-171b-4bed-b85b-6c1bcdb6d976 r/w with ordered data mode. Quota mode: disabled.
+       my-hackme-71      [000] d....     8.630788: console: execveat: ./my-hackme[71] to be hacked
+       my-hackme-71      [000] .....     8.631257: __handle_mm_fault: faulting on non-present anonymous page 7fffffffe000
+       my-hackme-71      [000] .....     8.631884: __handle_mm_fault: faulting on non-present anonymous page 5b4000
+       my-hackme-71      [000] .....     8.632655: __handle_mm_fault: faulting on non-present anonymous page 5af000
+       my-hackme-71      [000] .....     8.633347: __handle_mm_fault: faulting on non-present anonymous page 5b5000
+       my-hackme-71      [000] .....     8.633396: __handle_mm_fault: faulting on non-present anonymous page 5b0000
+       my-hackme-71      [000] .N...     8.633667: __handle_mm_fault: faulting on non-present anonymous page 7ffdd77c4000
+       my-hackme-71      [000] .....     8.633737: __handle_mm_fault: faulting on non-present anonymous page 5b6000
+       my-hackme-71      [000] .....     8.634915: __handle_mm_fault: faulting on non-present anonymous page 5ad000
+       my-hackme-71      [000] .....     8.634916: __handle_mm_fault: faulting on non-present anonymous page 5ae000
+       my-hackme-71      [000] .....     8.635826: __handle_mm_fault: faulting on non-present anonymous page 5c8000
+       my-hackme-71      [000] .....     8.636019: __handle_mm_fault: faulting on non-present anonymous page 5c9000
+       my-hackme-71      [000] .....     8.636047: ksys_write: hacked process attempted write with data Enter number:
+       my-hackme-71      [000] d....     8.636060: console: hack: 0 gave different output
+       my-hackme-71      [000] .....     8.636286: __handle_mm_fault: faulting on non-present anonymous page 5ca000</span>
+       my-hackme-71      [000] .....     8.636304: ksys_read: ick checkpoint on hacked process my-hackme[71]
+       my-hackme-71      [000] .....     8.636317: mark_pages: Skipping non-writable VMA 400000-401000 (my-hackme)
+       my-hackme-71      [000] .....     8.636318: mark_pages: Skipping non-writable VMA 401000-54a000 (my-hackme)
+       my-hackme-71      [000] .....     8.636318: mark_pages: Skipping non-writable VMA 54a000-59f000 (my-hackme)
+       my-hackme-71      [000] .....     8.636318: mark_pages: Skipping non-writable VMA 59f000-5aa000 (my-hackme)
+       my-hackme-71      [000] .....     8.636318: mark_pages: Marking VMA 5aa000-5ad000 (12 KiB) as read-only
+       my-hackme-71      [000] .....     8.636319: mark_pages: Marking VMA 5ad000-5b5000 (32 KiB) as read-only
+       my-hackme-71      [000] .....     8.636319: mark_pages: Marking VMA 5b5000-5d7000 (136 KiB) as read-only
+       my-hackme-71      [000] .....     8.636331: mark_pages: Skipping non-writable VMA 7f769a618000-7f769a61c000 (anon)
+       my-hackme-71      [000] .....     8.636331: mark_pages: Skipping non-writable VMA 7f769a61c000-7f769a61e000 (anon)
+       my-hackme-71      [000] .....     8.636332: mark_pages: Marking VMA 7ffdd77a5000-7ffdd77c6000 (132 KiB) as read-only
+       my-hackme-71      [000] .....     8.636365: ick_checkpoint_proc: ick: Checkpointed my-hackme[71]
+       my-hackme-71      [000] .....     8.636366: ksys_read: Providing number 1 to hacked process my-hackme[71]
+       my-hackme-71      [000] ...1.     8.636378: ick_do_wp_page: CoWing page 0x00000000005c9000 following wp fault at offset 0x440
+       my-hackme-71      [000] ...1.     8.636380: ick_do_wp_page: CoWing page 0x00000000005aa000 following wp fault at offset 0xa50
+       my-hackme-71      [000] ...1.     8.636394: ick_do_wp_page: CoWing page 0x00007ffdd77c4000 following wp fault at offset 0x510
+       my-hackme-71      [000] ...1.     8.636495: ick_do_wp_page: CoWing page 0x00000000005ac000 following wp fault at offset 0xd28
+       my-hackme-71      [000] ...1.     8.636497: ick_do_wp_page: CoWing page 0x00007ffdd77c5000 following wp fault at offset 0x90c
+       my-hackme-71      [000] ...1.     8.636499: ick_do_wp_page: CoWing page 0x00000000005c8000 following wp fault at offset 0x360
+       my-hackme-71      [000] ...1.     8.636501: ick_do_wp_page: CoWing page 0x00000000005b0000 following wp fault at offset 0x410
+       my-hackme-71      [000] ...1.     8.636502: ick_do_wp_page: CoWing page 0x00000000005ad000 following wp fault at offset 0x478
+       my-hackme-71      [000] ...1.     8.636504: ick_do_wp_page: CoWing page 0x00000000005ae000 following wp fault at offset 0x719
+       my-hackme-71      [000] .....     8.636542: ksys_write: hacked process attempted write with data Nope! 1 was a wrong guess. The correct number is 1349673.
+
+       my-hackme-71      [000] ...1.     8.636542: ick_revert_proc: Restoring CoW'd page at 0x00000000005aa000
+       my-hackme-71      [000] ...1.     8.636543: ick_revert_proc: Restoring CoW'd page at 0x00000000005ac000
+       my-hackme-71      [000] ...1.     8.636543: ick_revert_proc: Restoring CoW'd page at 0x00000000005ad000
+       my-hackme-71      [000] ...1.     8.636543: ick_revert_proc: Restoring CoW'd page at 0x00000000005ae000
+       my-hackme-71      [000] ...1.     8.636543: ick_revert_proc: Restoring CoW'd page at 0x00000000005b0000
+       my-hackme-71      [000] ...1.     8.636544: ick_revert_proc: Restoring CoW'd page at 0x00000000005c8000
+       my-hackme-71      [000] ...1.     8.636544: ick_revert_proc: Restoring CoW'd page at 0x00000000005c9000
+       my-hackme-71      [000] ...1.     8.636544: ick_revert_proc: Restoring CoW'd page at 0x00007ffdd77c4000
+       my-hackme-71      [000] ...1.     8.636544: ick_revert_proc: Restoring CoW'd page at 0x00007ffdd77c5000
+       my-hackme-71      [000] .....     8.636545: ick_revert_proc: Restored process my-hackme[71]
+       my-hackme-71      [000] .....     8.636546: ksys_write: hacked process attempted write with data Nope! 0 was a wrong guess. The correct number is 1349673.
+
+      <i>&hellip;</i>
+</pre>
+
+So we did successfully provide the first input `1`. Why does it keep getting 0 after that?  In fact, in our [`do_execveat_common`](#hack-target-execve) we start from number 1, so it's not even supposed to ever be 0.  Let's check with strace what the program is getting back from the kernel:
+
+<pre>
+<span class="irrelevant">root@9e340995f2d3:/# pkill my-hackme
+root@9e340995f2d3:/# </span>strace -o strace.log -e trace=read,write ./my-hackme & sleep 1; pkill my-hackme
+<span class="irrelevant">[1] 82
+[  394.635207][   T86] execveat: ./my-hackme[86] to be hacked
+[  394.643847][   T86] hack: 0 gave different output
+Enter number: root@9e340995f2d3:/#
+root@9e340995f2d3:/# </span>head -n100 strace.log
+write(1, "Enter number: ", 14)          = 14
+read(0, "1\n", 4096)                    = 2
+write(1, "Nope! 1 was a wrong guess. The c"..., 58) = 58
+write(1, "Nope! 0 was a wrong guess. The c"..., 58) = 58
+write(1, "Nope! 0 was a wrong guess. The c"..., 58) = 58
+write(1, "Nope! 0 was a wrong guess. The c"..., 58) = 58
+write(1, "Nope! 0 was a wrong guess. The c"..., 58) = 58
+...
+</pre>
+
+We correctly passed the input number 1 to the process, but it went downhill from there.  Interestingly strace does not show any further `read`s &mdash; is that a genuine bug, or is it just a side effect of us messing with system calls?
+
+At this point some readers might have already figured out what's going on.  But in any case, let's see what `gdb` tells us.  When debugging things like this, it's useful to refer to this <a target="_blank" href="https://syscalls.mebeim.net/?table=x86/64/x64/latest">Linux x86 syscall table</a>, which tells us that, for `read` and `write`, `rdi` is the fd, `rsi` is the buffer, and `rdx` is the byte count.  As always, `rax` is the return value.
+
+<pre>
+root@9e340995f2d3:/# gdb ./my-hackme
+<font color="#75507B"><b>GNU gdb (Debian 13.1-3) 13.1</b></font>
+<i>...</i>
+Reading symbols from <font color="#4E9A06">./my-hackme</font>...
+(gdb) <b>b my-hackme.cpp:20</b> <span class="comment"># just before first input read</span>
+Breakpoint 1 at <font color="#3465A4">0x40418e</font>: file <font color="#4E9A06">my-hackme.cpp</font>, line 20.
+(gdb) r
+Starting program: <font color="#4E9A06">/my-hackme</font>
+[   38.462167][   T74] execveat: /my-hackme[74] to be hacked
+[   38.477181][   T74] hack: 0 gave different output
+Enter number:
+Breakpoint 1, <font color="#C4A000">main</font> (<font color="#06989A">argc</font>=&lt;optimized out&gt;, <font color="#06989A">argv</font>=&lt;optimized out&gt;) at <font color="#4E9A06">my-hackme.cpp</font>:20
+20	  cin <font color="#CC0000">&gt;&gt;</font> num<font color="#CC0000">;</font>
+(gdb) catch syscall read
+Catchpoint 2 (syscall &apos;read&apos; [0])
+(gdb) catch syscall write
+Catchpoint 3 (syscall &apos;write&apos; [1])
+(gdb) c
+Continuing.
+
+Catchpoint 2 (call to syscall read), <font color="#3465A4">0x000000000050848d</font> in <font color="#C4A000">read</font> ()
+<span class="comment"># This is the entry. We want to see what it returns.</span>
+(gdb) c
+Continuing.
+
+Catchpoint 2 (returned from syscall read), <font color="#3465A4">0x000000000050848d</font> in <font color="#C4A000">read</font> ()
+(gdb) print $rax <span class="comment"># return value (size read)</span>
+$2 = 2
+(gdb) print (char*)$rsi <span class="comment"># our passed-in buffer</span>
+$3 = <font color="#3465A4">0x5c9440</font> &quot;1\n&quot;
+<span class="comment"># Looks good...</span>
+(gdb) c
+Continuing.
+
+Catchpoint 3 (call to syscall write), <font color="#3465A4">0x0000000000508530</font> in <font color="#C4A000">write</font> ()
+(gdb) c
+Continuing.
+
+Catchpoint 2 (returned from syscall read), <font color="#3465A4">0x000000000050848d</font> in <font color="#C4A000">read</font> ()
+(gdb) print $rax
+$4 = 57
+<span class="comment"># Hmm... Why are we getting 57 bytes back?</span>
+(gdb) print (char*)$rsi
+$5 = <font color="#3465A4">0x5c9440</font> &quot;&quot;
+(gdb) c
+Continuing.
+
+Catchpoint 3 (call to syscall write), <font color="#3465A4">0x0000000000508530</font> in <font color="#C4A000">write</font> ()
+(gdb) print (char*)$rsi
+$6 = <font color="#3465A4">0x5c8430</font> &quot;Nope! 0 was a wrong guess. The correct number is 490041.\n&quot;
+(gdb) print $rdx
+$7 = 57
+(gdb) c
+Continuing.
+
+Catchpoint 2 (returned from syscall read), <font color="#3465A4">0x000000000050848d</font> in <font color="#C4A000">read</font> ()
+(gdb) print $rax
+$8 = 57
+(gdb)
+</pre>
+
+Ahh right, the `57` is really the return value of the `write` syscall!  Even though we reverted the user space state, we're still returning from our `write` as-if it happened normally:
+
+<!--
+```c
+ssize_t ksys_write(unsigned int fd, const char __user *buf, size_t count)
+{
+    struct fd f;
+    ssize_t ret = -EBADF;
+
+    if (fd == 1 && current->hack_target.hack) {
+        // ...
+        if (strnstr(data, "Nope!", sizeof(data))) {
+            ret = ick_revert_proc();
+            if (ret) {
+                pr_err("sys_write: ick_revert_proc failed: %pe\n", ERR_PTR(ret));
+                return ret;
+            }
+
+            /* Hmm... what do we do now? Let's just return for now. */
+            return count;
+```
+-->
+<pre>
+<code class="language-c"><span class="hljs-type">ssize_t</span> <span class="hljs-title function_">ksys_write</span><span class="hljs-params">(<span class="hljs-type">unsigned</span> <span class="hljs-type">int</span> fd, <span class="hljs-type">const</span> <span class="hljs-type">char</span> __user *buf, <span class="hljs-type">size_t</span> count)</span>
+{<span style="opacity: 0.4">
+    <span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">fd</span> <span class="hljs-title">f</span>;</span>
+    <span class="hljs-type">ssize_t</span> ret = -EBADF;
+
+    <span class="hljs-keyword">if</span> (fd == <span class="hljs-number">1</span> &amp;&amp; current-&gt;hack_target.hack) {
+        <span class="hljs-comment">// ...</span>
+        <span class="hljs-keyword">if</span> (strnstr(data, <span class="hljs-string">"Nope!"</span>, <span class="hljs-keyword">sizeof</span>(data))) {
+            ret = ick_revert_proc();
+            <span class="hljs-keyword">if</span> (ret) {
+                pr_err(<span class="hljs-string">"sys_write: ick_revert_proc failed: %pe\n"</span>, ERR_PTR(ret));
+                <span class="hljs-keyword">return</span> ret;
+            }
+</span>
+            <span class="hljs-comment">/* Hmm... what do we do now? Let's just return for now. */</span>
+            <span class="hljs-keyword">return</span> count;</code>
+</pre>
+
+Silly me&hellip;
 
 ### Restarting the `read`
 
-<a class="make-diff" href="diffs/0016-restart_syscall.patch"></a>
+One way we could do this is by simply calling `ksys_read` ourselves in the `write` syscall, and return with its return value.  This is a workable solution, but there is actually a better way.  There is a built in mechanism which syscall implementations can use to cause the syscall to be restarted: [`restart_syscall`](https://github.com/micromaomao/linux-dev/blob/v6.12.9/include/linux/sched/signal.h#L372), which works by returning `-ERESTARTNOINTR`, and [some signal handling code](https://github.com/micromaomao/linux-dev/blob/v6.12.9/arch/x86/kernel/signal.c#L344) will cause the syscall to be restarted in a slightly crude way: `regs->ip -= 2;`.
+
+<a class="make-diff" href="diffs/0017-restart_syscall.patch"></a>
+
+With that, our hack is complete:
+
+<pre>
+root@9e340995f2d3:/# ./my-hackme
+[    5.673308][   T71] execveat: ./my-hackme[71] to be hacked
+[    5.709558][   T71] hack: 0 gave different output
+Enter number: <span class="highlight">[    6.307638][   T71] hack: 181830 gave different output</span>
+<span class="highlight">Correct!</span>
+root@9e340995f2d3:/#
+</pre>
+
+With the way `-ERESTARTSYS(NOINTR)` is implemented, it is visible to ptrace (and in fact, signal handlers may run before the restart). `strace` correctly outputs all the syscall executed:
+
+<pre>
+root@9e340995f2d3:/# strace -e trace=read,write ./my-hackme
+[   25.815884][   T75] execveat: ./my-hackme[75] to be hacked
+write(1, "Enter number: ", 14[   25.820086][   T75] hack: 0 gave different output
+)          = 14
+read(0, "1\n", 4096)                    = 2
+write(1, "Nope! 1 was a wrong guess. The c"..., 57) = ? ERESTARTNOINTR (To be restarted)
+read(0, "2\n", 4096)                    = 2
+write(1, "Nope! 2 was a wrong guess. The c"..., 57) = ? ERESTARTNOINTR (To be restarted)
+read(0, "3\n", 4096)                    = 2
+write(1, "Nope! 3 was a wrong guess. The c"..., 57) = ? ERESTARTNOINTR (To be restarted)
+read(0, "4\n", 4096)                    = 2
+write(1, "Nope! 4 was a wrong guess. The c"..., 57) = ? ERESTARTNOINTR (To be restarted)
+read(0, "5\n", 4096)                    = 2
+write(1, "Nope! 5 was a wrong guess. The c"..., 57) = ? ERESTARTNOINTR (To be restarted)
+read(0, "6\n", 4096)                    = 2
+write(1, "Nope! 6 was a wrong guess. The c"..., 57) = ? ERESTARTNOINTR (To be restarted)
+read(0, "7\n", 4096)                    = 2
+write(1, "Nope! 7 was a wrong guess. The c"..., 57) = ? ERESTARTNOINTR (To be restarted)
+read(0, "8\n", 4096)                    = 2
+write(1, "Nope! 8 was a wrong guess. The c"..., 57) = ? ERESTARTNOINTR (To be restarted)
+read(0, "9\n", 4096)                    = 2
+write(1, "Nope! 9 was a wrong guess. The c"..., 57) = ? ERESTARTNOINTR (To be restarted)
+read(0, "10\n", 4096)                   = 3
+write(1, "Nope! 10 was a wrong guess. The "..., 58) = ? ERESTARTNOINTR (To be restarted)
+</pre>
+
+Let's try this with our original `hackme` program:
+
+<pre>
+root@9e340995f2d3:/# ./hackme
+<span class="irrelevant">[    2.910861][   T71] execveat: ./hackme[71] to be hacked
+[    2.935536][   T71] hack: 0 gave different output
+<i>&lt;Initial output&gt;</i>
+[    2.935793][   T71] hack: 0 gave different output
+<i>&lt;Initial output&gt;</i></span>
+[   10.885323][   T71] <span class="highlight">hack: 2044823 gave different output</span>
+Wow! You must be psychic!
+[   10.885761][   T71] hack: 2044823 gave different output
+Here you go, but keep in mind that the flag is time-sensitive.
+[   10.886056][   T71] hack: 2044823 gave different output
+flag{<i class="irrelevant">...</i>}
+<span class="irrelevant">root@9e340995f2d3:/# </span>
+</pre>
+
+This is an average of <tex>((10.88-2.93) \div 2044823) \times 10^{6} \approx 3.89</tex> microseconds per iteration &mdash; pretty exciting!
 
 ### Blocking off other syscalls
 
-<div class="todo">
-  TODO: write this section
-</div>
+Compared to a <a target="_blank" href="https://criu.org/Main_Page">proper checkpoint implementation</a>, this hack only saves the register and memory state of the process, and even that is not complete.  For example, if the process creates new mappings via `mmap`, currently we would not restore those.  We also does not handle process saving files to disk, and many many other things.
+
+It would be nice to know if the process tries to do any of these things, so that we can see why things doesn't work, and implement the necessary checkpointing.  An easy way to do this is to simply disallow all syscalls except `read` and `write`.  We also allow `exit_group` in case the program tries to terminate itself without saying &ldquo;Nope&rdquo; (for example because we got the right answer).
+
+<a class="make-diff" href="diffs/0018-block-other-syscalls.patch"></a>
+
+We add it to the end of [`syscall_enter_from_user_mode_work`](https://github.com/micromaomao/linux-dev/blob/v6.12.9/include/linux/entry-common.h#L163), after `syscall_trace_enter`, so that ptrace (and thus, `strace` / `gdb` etc) still works properly.
+
+You can test this out with [my-hackme-syscall.cpp](./my-hackme-syscall.cpp), which tries to mmap an anonymous page after being checkpointed:
+
+<pre>
+<span class="irrelevant">root@9e340995f2d3:/# ./my-hackme
+[    4.014562][   T71] execveat: ./my-hackme[71] to be hacked
+[    4.018465][   T71] hack: 0 gave different output
+Enter number: [    5.415120][   T71] hack: 433152 gave different output
+Correct!
+[    5.415542][   T71] ick checkpointed process my-hackme[71] tried to call syscall 8 - blocked
+root@9e340995f2d3:/# </span>./my-hackme-syscall
+[   10.479424][   T72] execveat: ./my-hackme-syscall[72] to be hacked
+[   10.483573][   T72] hack: 0 gave different output
+Enter number: [   10.483990][   T72] ick checkpointed process my-hackme-sysca[72] tried to call syscall 9 - blocked
+[   10.484387][   T72] hack: 1 gave different output
+<span class="highlight">mmap failed with error: Operation not permitted</span>
+[   10.484654][   T72] hack: 1 gave different output
+Oops, you broke my mmap
+[   10.484992][   T72] ick checkpointed process my-hackme-sysca[72] tried to call syscall 8 - blocked
+<span class="irrelevant">root@9e340995f2d3:/# </span>
+</pre>
 
 ## Final thoughts
 
-<div class="todo">
-  <p>
-    At this point, the author apologizes for procrastinating on the last bits of this article for more than 3 months.  In the interest of getting something that's almost complete out there, she is publishing this as-is, but promises the reader that she will finish this off at her earliest opportunity&hellip;
-  </p>
-  <p>
-    If you've reached this point, she sincerely thanks for your interest in this article! You can send her more motivation to finish this &rarr; <a href="mailto:m@maowtm.org">m@maowtm.org</a>
-  </p>
-</div>
+When I was a lot younger, I found this (Chinese) book which attempted to help the reader understand Linux by listing a bunch of source code and making commentaries on it. It started from bootup, and I don't remember where it went from there since I put it down pretty quickly. I couldn't even get through a few pages, and as far as I remember it felt pretty boring to read.  I ended up being much more interested in some of the other books I bought in that trip to the library (such as an introduction to 8086 assembly, digital circuit design (I literally bought it because I wanted to build redstone circuits in Minecraft), and &ldquo;十万个为什么&rdquo; (literally translates to &ldquo;A Hundred Thousand Whys&rdquo;, it was a series of popular children's science book).  I remember the cashier at the library was pretty baffled at my selection).
 
-<!-- When I was a lot younger, there was this book which attempted to help the reader understand Linux by listing a bunch of source codes and make commentaries on it. It started from bootup. I couldn't even get through a chapter.
-I think for me, I needed to play with stuff to understand. Try to implement something (like in this case a checkpoint feature), play with kgdb, etc.
+I just tried to looked it up, and I'm not sure if I actually found the one I saw, but I think this gives off the idea (if it wasn't the same book):
 
-Also learned about stuff incrementally by reading code, which would otherwise be overwhelming if I tried to read up on them at once - like folio etc -->
+<p><img alt="A screenshot of a table of contents that shows chapter 8 and 9.  Chapter 8 is titled &quot;内核代码(KERNEL)&quot; (Kernel Code), with 14 subsections covering, in order, ASM.S, TRAPS.C, SYS_CALL.S, MKTIME.C, SCHED.C, etc. Chapter 9 is titled &quot;块设备驱动程序(BLOCK DRIVER)&quot; (Block Device Driver), with 4 subsections shown covering, in order, BLK.H, HD.C, LL_RW_BLK.C" src="linux-book-screenshot.png" style="width: 400px;"></p>
+
+Sure, at the time I knew basically nothing about operating systems, or Linux for that matter, but my opinion remains that it was not a very useful way to learn for me.  Later on I came to realize that I needed to play with things to understand.  For example, there was another old book which I enjoyed (even though I didn't manage to get through half of it at the time, and on second thought I'm not sure I really understood much of the first half either), which is also in Chinese, called &ldquo;Orange'S &mdash; Implementation of an Operating System&rdquo; _(Orange's：一个操作系统的实现)_.  It contained instructions for setting up the Bochs x86 emulator, using `dd` to create a (MBR) bootable image, writing a simple bootloader, and then went on to explain and implement various things like (32 bit) protected mode, interrupts, processes, filesystem, command line, etc.
+
+It wasn't written to explain a thing from top to bottom, but rather, it was more like an exploration, building up this operating system (which is named Orange'S, I'm guessing it's a pun on &lsquo;OS&rsquo;?) a bit at a time, explaining concepts incrementally and each step showing the result of running this iteration of the code.  In fact, it explained simple things like Makefiles as well, and that was my first introduction to writing Makefiles on Linux.
+
+It is one of the things that now fills me with a bit of nostalgia looking backwards.  Nowadays you can probably find more modern OS materials that does 64-bit and boots up from UEFI, and perhaps goes into dealing with new CPU features like the AVX registers, or multiprocessing, DMA, virtualisation, etc.  However, being one of my first &lsquo;serious&rsquo; programming books, I really appreciated the way the author went about explaining things, the writing style, and the emphesis on hands-on fiddling.
+
+By now you can probably tell that brute-forcing the original executable wasn't really the main point of this exercise &mdash; it would have taken me 10x less time, including the time of actually running it, had I simply froze the system clock then repeatedly invoke the program in a reasonably efficient loop on multiple threads, brute forcing a number for the time I decided to set my clock to.  However, this has not really been about brute-forcing a simple number guessing game.  It was really more about learning how the kernel works.
+
+For me, trying to implement something like this, play with kgdb, etc. is a very good way to learn and challenge my understanding, and part of that learning is also writing this article.  I hope that this has been a fun journey for you, and if you wern't already familiar with the Linux kernel, I hope that this has been an enjoyable introduction, much like that Orange book is to me on OS development.
 
 ## Addendum: Hacking it with ptrace
 

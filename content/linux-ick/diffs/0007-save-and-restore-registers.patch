@@ -1,7 +1,7 @@
-From 10ed6d0b37ff824bf91a286b0e0fe63a2ebf6af3 Mon Sep 17 00:00:00 2001
+From 6cff407099edb1ffec74f0becf817c42ad5f9505 Mon Sep 17 00:00:00 2001
 From: Tingmao Wang <m@maowtm.org>
 Date: Sat, 11 Jan 2025 20:22:04 +0000
-Subject: [PATCH 07/16] save and restore registers
+Subject: [PATCH 07/18] save and restore registers
 
 ---
  include/linux/ick.h |  3 ++-

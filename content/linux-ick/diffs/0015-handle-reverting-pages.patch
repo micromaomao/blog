@@ -1,46 +1,17 @@
-From bda33fa23095a241522bf84292dd3dc856730cff Mon Sep 17 00:00:00 2001
+From 4b0f065578de2abfe03d8a78e8ad273f2452d0e0 Mon Sep 17 00:00:00 2001
 From: Tingmao Wang <m@maowtm.org>
 Date: Mon, 14 Apr 2025 23:01:05 +0100
-Subject: [PATCH 15/16] handle reverting pages
+Subject: [PATCH 15/18] handle reverting pages
 
 ---
- include/linux/ick.h |  1 +
- kernel/ick.c        | 35 +++++++++++++++++++++++++++++++++--
- 2 files changed, 34 insertions(+), 2 deletions(-)
+ kernel/ick.c | 23 +++++++++++++++++++++--
+ 1 file changed, 21 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/ick.h b/include/linux/ick.h
-index 2ad57223ade6..d9d632498d0d 100644
---- a/include/linux/ick.h
-+++ b/include/linux/ick.h
-@@ -13,6 +13,7 @@ struct ick_checked_process {
- 	struct pt_regs saved_regs;
- 	struct rb_root modified_pages_tree;
- 	spinlock_t tree_lock;
-+	bool reverting;
- };
- 
- struct ick_modified_page {
 diff --git a/kernel/ick.c b/kernel/ick.c
-index 90753d30035a..4f888c074577 100644
+index 75051d88fb49..1675692189df 100644
 --- a/kernel/ick.c
 +++ b/kernel/ick.c
-@@ -75,6 +75,15 @@ vm_fault_t ick_do_wp_page(struct vm_fault *vmf)
- 	BUG_ON(!ick_data);
- 	BUG_ON(!(vmf->flags & FAULT_FLAG_WRITE));
- 
-+	if (READ_ONCE(ick_data->reverting)) {
-+		/*
-+		 * Don't handle a write page fault that is itself caused by ick
-+		 * reverting pages
-+		 */
-+		trace_printk("ick->reverting = 1, skipping\n");
-+		return 0;
-+	}
-+
- 	trace_printk("CoWing page 0x%px following wp fault at offset 0x%x\n",
- 					(void *)page_addr, (int)(vmf->real_address - page_addr));
- 
-@@ -215,6 +224,11 @@ int ick_revert_proc(void)
+@@ -218,6 +218,11 @@ int ick_revert_proc(void)
  {
  	struct ick_checked_process *ick_data;
  	struct pt_regs *regs;
@@ -52,14 +23,13 @@ index 90753d30035a..4f888c074577 100644
  
  	ick_data = current->ick_data;
  	if (!ick_data) {
-@@ -231,8 +245,25 @@ int ick_revert_proc(void)
+@@ -234,8 +239,22 @@ int ick_revert_proc(void)
  #error "Unsupported architecture"
  #endif
  
 -	print_modified_page_tree(&ick_data->modified_pages_tree);
 -	/* TODO: implement rest */
 +	spin_lock(&ick_data->tree_lock);
-+	WRITE_ONCE(ick_data->reverting, true);
 +	/* Do it in address space order for better cache locality when copying */
 +	for (node = rb_first(&ick_data->modified_pages_tree); node;
 +				node = rb_next(node)) {
@@ -69,13 +39,11 @@ index 90753d30035a..4f888c074577 100644
 +		trace_printk("Restoring CoW'd page at 0x%px\n", (void *)addr);
 +		ret = copy_to_user_nofault((void *)addr, orig_page_content, PAGE_SIZE);
 +		if (ret) {
-+			pr_alert("ick: Failed to copy page content for 0x%px back: %pe\n", (void *)addr, ERR_PTR(ret));
++			pr_alert("ick: Failed to copy page content for 0x%px back\n", (void *)addr);
 +			spin_unlock(&ick_data->tree_lock);
-+			WRITE_ONCE(ick_data->reverting, false);
-+			return ret;
++			return -EFAULT;
 +		}
 +	}
-+	WRITE_ONCE(ick_data->reverting, false);
 +	spin_unlock(&ick_data->tree_lock);
  
  	trace_printk("Restored process %s[%d]\n",

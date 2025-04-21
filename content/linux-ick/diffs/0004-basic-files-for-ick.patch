@@ -1,7 +1,7 @@
-From e7a28b964ce7636670000468f9a58f1a47e4ed5c Mon Sep 17 00:00:00 2001
+From 3b63a67e4765b9abde77d3644a45efad49f3b929 Mon Sep 17 00:00:00 2001
 From: Tingmao Wang <m@maowtm.org>
 Date: Sat, 4 Jan 2025 20:24:48 +0000
-Subject: [PATCH 04/16] basic files for ick
+Subject: [PATCH 04/18] basic files for ick
 
 ---
  .config               |  2 ++

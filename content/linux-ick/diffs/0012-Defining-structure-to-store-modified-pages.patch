@@ -1,7 +1,7 @@
-From 9a4cf5d2f21284b16293bc0af8e5013989d98d34 Mon Sep 17 00:00:00 2001
+From 6de6dc3315e9e18074d4553568d9e363fef9521a Mon Sep 17 00:00:00 2001
 From: Tingmao Wang <m@maowtm.org>
 Date: Thu, 17 Apr 2025 16:06:55 +0100
-Subject: [PATCH 12/16] Defining structure to store modified pages
+Subject: [PATCH 12/18] Defining structure to store modified pages
 
 ---
  include/linux/ick.h | 13 ++++++++++++-

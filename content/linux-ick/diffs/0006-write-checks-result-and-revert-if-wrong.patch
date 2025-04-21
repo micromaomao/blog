@@ -1,7 +1,7 @@
-From 114d7764449004f04192e03c3b3ca9f188a66e50 Mon Sep 17 00:00:00 2001
-From: Mao <m@maowtm.org>
+From 71ecbca16685d56e2dc6442667328da579d70057 Mon Sep 17 00:00:00 2001
+From: Tingmao Wang <m@maowtm.org>
 Date: Sun, 5 Jan 2025 02:10:57 +0000
-Subject: [PATCH 06/16] write checks result and revert if wrong
+Subject: [PATCH 06/18] write checks result and revert if wrong
 
 ---
  fs/read_write.c | 31 ++++++++++++++++++++++++++++++-

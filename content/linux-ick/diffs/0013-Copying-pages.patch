@@ -1,14 +1,14 @@
-From 1244e0d764b80304af63b81756b14ca96444bc76 Mon Sep 17 00:00:00 2001
+From 1262cf93e808d18a47f6db4a8dd707115d1aab20 Mon Sep 17 00:00:00 2001
 From: Tingmao Wang <m@maowtm.org>
 Date: Thu, 17 Apr 2025 16:07:27 +0100
-Subject: [PATCH 13/16] Copying pages
+Subject: [PATCH 13/18] Copying pages
 
 ---
- kernel/ick.c | 55 +++++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 54 insertions(+), 1 deletion(-)
+ kernel/ick.c | 54 +++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 53 insertions(+), 1 deletion(-)
 
 diff --git a/kernel/ick.c b/kernel/ick.c
-index ab07467f8f80..d53ff1bd760a 100644
+index ab07467f8f80..b6c93e273518 100644
 --- a/kernel/ick.c
 +++ b/kernel/ick.c
 @@ -4,6 +4,7 @@
@@ -31,7 +31,7 @@ index ab07467f8f80..d53ff1bd760a 100644
  
  	BUG_ON(!ick_data);
  	BUG_ON(!(vmf->flags & FAULT_FLAG_WRITE));
-@@ -72,7 +78,54 @@ vm_fault_t ick_do_wp_page(struct vm_fault *vmf)
+@@ -72,7 +78,53 @@ vm_fault_t ick_do_wp_page(struct vm_fault *vmf)
  	trace_printk("CoWing page 0x%px following wp fault at offset 0x%x\n",
  					(void *)page_addr, (int)(vmf->real_address - page_addr));
  
@@ -44,7 +44,6 @@ index ab07467f8f80..d53ff1bd760a 100644
 +	new_mod_page = kmalloc(sizeof(*mod_page), GFP_KERNEL_ACCOUNT);
 +
 +	if (!copied_page_content || !new_mod_page) {
-+		spin_unlock(&ick_data->tree_lock);
 +		return VM_FAULT_OOM;
 +	}
 +
@@ -68,7 +67,7 @@ index ab07467f8f80..d53ff1bd760a 100644
 +
 +	ret = copy_from_user_nofault(copied_page_content, (void *)page_addr, PAGE_SIZE);
 +	if (ret) {
-+		pr_alert("ick: Failed to copy page 0x%px following wp fault: %pe\n", (void *)page_addr, ERR_PTR(ret));
++		pr_alert("ick: Failed to copy page 0x%px following wp fault\n", (void *)page_addr);
 +		spin_unlock(&ick_data->tree_lock);
 +		return VM_FAULT_SIGBUS;
 +	}

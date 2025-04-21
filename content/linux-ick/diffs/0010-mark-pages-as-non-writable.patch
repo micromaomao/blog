@@ -1,7 +1,7 @@
-From 1836d52e8fd506b73be3b5b3ee370c1e2b4ceb4b Mon Sep 17 00:00:00 2001
+From 0ea65373a8b1d92bcbe1ebb2fb859c00df4b2a1c Mon Sep 17 00:00:00 2001
 From: Tingmao Wang <m@maowtm.org>
 Date: Sun, 9 Feb 2025 19:43:07 +0000
-Subject: [PATCH 10/16] mark pages as non-writable
+Subject: [PATCH 10/18] mark pages as non-writable
 
 ---
  kernel/ick.c | 52 ++++++++++++++++++++++++++++++++++++++++++++++++++++

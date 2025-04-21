@@ -1,0 +1,70 @@
+From 9667d3686bb8cfd905a3b76b97c6e10cb1e6a7b6 Mon Sep 17 00:00:00 2001
+From: Tingmao Wang <m@maowtm.org>
+Date: Sun, 20 Apr 2025 15:37:16 +0100
+Subject: [PATCH 16/18] Protect against wp fault when reverting
+
+---
+ include/linux/ick.h |  1 +
+ kernel/ick.c        | 14 +++++++++++++-
+ 2 files changed, 14 insertions(+), 1 deletion(-)
+
+diff --git a/include/linux/ick.h b/include/linux/ick.h
+index 2ad57223ade6..d9d632498d0d 100644
+--- a/include/linux/ick.h
++++ b/include/linux/ick.h
+@@ -13,6 +13,7 @@ struct ick_checked_process {
+ 	struct pt_regs saved_regs;
+ 	struct rb_root modified_pages_tree;
+ 	spinlock_t tree_lock;
++	bool reverting;
+ };
+ 
+ struct ick_modified_page {
+diff --git a/kernel/ick.c b/kernel/ick.c
+index 1675692189df..a888847e8706 100644
+--- a/kernel/ick.c
++++ b/kernel/ick.c
+@@ -75,6 +75,15 @@ vm_fault_t ick_do_wp_page(struct vm_fault *vmf)
+ 	BUG_ON(!ick_data);
+ 	BUG_ON(!(vmf->flags & FAULT_FLAG_WRITE));
+ 
++	if (READ_ONCE(ick_data->reverting)) {
++		/*
++		 * Don't handle a write page fault that is itself caused by ick
++		 * reverting pages
++		 */
++		trace_printk("ick->reverting = 1, skipping\n");
++		return 0;
++	}
++
+ 	trace_printk("CoWing page 0x%px following wp fault at offset 0x%x\n",
+ 					(void *)page_addr, (int)(vmf->real_address - page_addr));
+ 
+@@ -240,6 +249,7 @@ int ick_revert_proc(void)
+ #endif
+ 
+ 	spin_lock(&ick_data->tree_lock);
++	WRITE_ONCE(ick_data->reverting, true);
+ 	/* Do it in address space order for better cache locality when copying */
+ 	for (node = rb_first(&ick_data->modified_pages_tree); node;
+ 				node = rb_next(node)) {
+@@ -247,13 +257,15 @@ int ick_revert_proc(void)
+ 		addr = mod_page->addr;
+ 		orig_page_content = mod_page->orig_page_content;
+ 		trace_printk("Restoring CoW'd page at 0x%px\n", (void *)addr);
+-		ret = copy_to_user_nofault((void *)addr, orig_page_content, PAGE_SIZE);
++		ret = copy_to_user((void *)addr, orig_page_content, PAGE_SIZE);
+ 		if (ret) {
+ 			pr_alert("ick: Failed to copy page content for 0x%px back\n", (void *)addr);
+ 			spin_unlock(&ick_data->tree_lock);
++			WRITE_ONCE(ick_data->reverting, false);
+ 			return -EFAULT;
+ 		}
+ 	}
++	WRITE_ONCE(ick_data->reverting, false);
+ 	spin_unlock(&ick_data->tree_lock);
+ 
+ 	trace_printk("Restored process %s[%d]\n",
+-- 
+2.39.5
+

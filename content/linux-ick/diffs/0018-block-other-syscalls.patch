@@ -1,0 +1,32 @@
+From b8989eb842e0caeb3c131d8a0304f5510ca44026 Mon Sep 17 00:00:00 2001
+From: Tingmao Wang <m@maowtm.org>
+Date: Sun, 20 Apr 2025 19:17:25 +0100
+Subject: [PATCH 18/18] block other syscalls
+
+---
+ include/linux/entry-common.h | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/include/linux/entry-common.h b/include/linux/entry-common.h
+index 1e50cdb83ae5..f2e076636f5e 100644
+--- a/include/linux/entry-common.h
++++ b/include/linux/entry-common.h
+@@ -167,6 +167,15 @@ static __always_inline long syscall_enter_from_user_mode_work(struct pt_regs *re
+ 	if (work & SYSCALL_WORK_ENTER)
+ 		syscall = syscall_trace_enter(regs, syscall, work);
+ 
++	if (unlikely(current->ick_data)) {
++		if (syscall != __NR_read && syscall != __NR_write && syscall != __NR_exit_group) {
++			pr_err("ick checkpointed process %s[%d] tried to call syscall %ld - blocked\n",
++			       current->comm, current->pid, syscall);
++			regs->ax = -EPERM;
++			return -1L;
++		}
++	}
++
+ 	return syscall;
+ }
+ 
+-- 
+2.39.5
+

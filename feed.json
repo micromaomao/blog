@@ -1,0 +1,113 @@
+[
+  {
+    "title": "Using the Linux kernel to help me crack an executable quickly",
+    "url": "https://blog.maowtm.org/linux-ick/en.html",
+    "date": "2025-04-20T02:04:25.000Z",
+    "tags": [
+      "Linux",
+      "systems programming",
+      "reverse engineering",
+      "memory management",
+      "deep dives"
+    ],
+    "cover_image": "https://blog.maowtm.org/linux-ick/cover.png",
+    "snippet": "Early this year I found a reverse engineering problem which basically boiled down to running a heavily obfuscated Linux binary and entering the correct number to get it to print a flag. Fortunately, the interesting bits of the program ran quite fast – after reading the input, it spends around 5us before printing out whether the guess was correct or not. This means that even a brute-force search of the possible inputs could finish in a reasonable time, and there is no need to expend much effort on actual reverse engineering if we don't have to. The only tricky part is, how do we convince it to try different inputs as fast as this?"
+  },
+  {
+    "title": "An elusive coin-flipping problem",
+    "url": "https://blog.maowtm.org/flip-a-coin-100/en.html",
+    "date": "2024-03-17T21:41:10.000Z",
+    "tags": [
+      "math",
+      "probability",
+      "algorithm",
+      "dynamic programming",
+      "interactive"
+    ],
+    "cover_image": "https://blog.maowtm.org/flip-a-coin-100/cover.svg",
+    "snippet": "Flip a fair coin 100 times — it gives a sequence of heads (H) and tails (T). For each HH in the sequence of flips, Alice gets a point; for each HT, Bob does, so e.g. for the sequence THHHT Alice gets 2 points and Bob gets 1 point. Who is most likely to win?"
+  },
+  {
+    "title": "A very short, playable introduction to Text Embeddings",
+    "url": "https://blog.maowtm.org/text-embeddings/en.html",
+    "date": "2024-01-27T12:00:00.000Z",
+    "tags": [
+      "LLM",
+      "Text Embeddings",
+      "interactive"
+    ],
+    "cover_image": "https://blog.maowtm.org/text-embeddings/cover.gif",
+    "snippet": "Have you ever wondered how LLMs ‘read’ text and seem to understand concepts? Internally, these models turn their input into numerical vectors. This means that with an LLM and some text input, you can get a bunch of numbers to feed into whatever machine learning model you dream of..."
+  },
+  {
+    "title": "Blazingly⚡ fast🚀 packet processing with DPDK",
+    "url": "https://blog.maowtm.org/dpdk/en.html",
+    "date": "2023-04-07T00:40:20.004Z",
+    "tags": [
+      "networking",
+      "DPDK",
+      "performance",
+      "Azure",
+      "Linux",
+      "Rust"
+    ],
+    "cover_image": "https://blog.maowtm.org/dpdk/cover.png",
+    "snippet": "Recently at work I have been learning about this fancy framework we are using in a product with high-performance networking requirement — the Data Plane Development Kit (DPDK). It is a set of user-space NIC drivers and related utility libraries (like fast buffer pools or queues) that enables an application to bypass the Linux kernel's networking stack, and directly send and receive packets from the hardware..."
+  },
+  {
+    "title": "A Minecraft Server on Google Cloud that puts itself to sleep",
+    "url": "https://blog.maowtm.org/minecraft-server-auto-sleep/en.html",
+    "date": "2022-08-19T00:53:16.000Z",
+    "tags": [
+      "cloud",
+      "Minecraft",
+      "Google-Cloud",
+      "architecture",
+      "Java"
+    ],
+    "cover_image": "https://blog.maowtm.org/minecraft-server-auto-sleep/cover.png",
+    "snippet": "The idea for this project came when I realized that most of the time, no one is on my Minecraft server, which means that keeping it running 24/7 is a huge waste of resources. The other day I noticed one little interesting feature in Compute Engine: suspend..."
+  },
+  {
+    "title": "How Certificate Transparency works, exactly",
+    "url": "https://blog.maowtm.org/ct/en.html",
+    "date": "2020-07-12T19:44:04.000Z",
+    "tags": [
+      "security",
+      "web security",
+      "cryptography",
+      "TLS",
+      "RFC",
+      "PKI",
+      "Rust",
+      "interactive"
+    ],
+    "cover_image": "https://blog.maowtm.org/ct/cover.svg",
+    "snippet": "For TLS, We require that the public key of web servers be signed by a publicly trusted CA in the form of a certificate bound to a domain name, and we trust that those CAs would only sign certificates after they have verified the server they are signing for controls the domain. However, there is no way for the public, or the site owner, to reliably know when a CA has breached this trust. We would be much safer if every valid certificate were discoverable by the public. Can we make that happen?"
+  },
+  {
+    "title": "Understanding AWS security policies",
+    "url": "https://blog.maowtm.org/aws-security-policies/en.html",
+    "date": "2020-01-06T14:18:04.000Z",
+    "tags": [
+      "cloud",
+      "AWS",
+      "security"
+    ],
+    "cover_image": "https://blog.maowtm.org/aws-security-policies/policy_editor_summary_screenshot.png",
+    "snippet": "Some days ago I was (again) trying to fiddle with AWS security policies trying to create a user with only the rights to upload to a specific S3 \"folder\". I have already attempted this earlier before but with no success, in part because there is just so little documentation about how AWS policies work..."
+  },
+  {
+    "title": "CMake: A build system generator for pretty much anything",
+    "url": "https://blog.maowtm.org/cmake-bsg/en.html",
+    "date": "2019-12-01T20:00:00.220Z",
+    "tags": [
+      "tooling",
+      "building",
+      "Linux",
+      "CMake"
+    ],
+    "cover_image": "https://blog.maowtm.org/cmake-bsg/cv_build_screenshot.svg",
+    "snippet": "If you have been compiling open-source programs for some time, you almost certainly have used CMake. It's a very popular Makefile generator for C/C++ projects. Recently I have been trying to use CMake for non-C projects, and I find it worked well — CMake build scripts might not be so easy to write at first, but they are very flexible and can certainly be helpful if you want a custom build system for your project..."
+  }
+]

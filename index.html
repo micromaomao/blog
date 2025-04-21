@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style type="text/css">
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI Light"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/light/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/light/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/light/latest.ttf) format("truetype");
+  font-weight: 100;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI Semilight"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semilight/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semilight/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semilight/latest.ttf) format("truetype");
+  font-weight: 200;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/normal/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/normal/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/normal/latest.ttf) format("truetype");
+  font-weight: 400;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI Semibold"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semibold/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semibold/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semibold/latest.ttf) format("truetype");
+  font-weight: 600;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI Bold"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/bold/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/bold/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/bold/latest.ttf) format("truetype");
+  font-weight: 700;
+}
+body {
+  background-color: #f9f9fa;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 18px;
+  line-height: 28px;
+  padding: 2em;
+  max-width: 1200px;
+  margin: auto;
+  text-align: justify;
+}
+
+p {
+  margin: 1em 0;
+  hyphens: auto;
+}
+
+hr {
+  background-color: none;
+  border: none;
+  border-bottom: dashed 1px #aaa;
+  margin: 0;
+  padding: 0;
+}
+
+pre {
+  display: block;
+  font-family: monospace;
+  background-color: white;
+  padding: 0.5em 1em;
+  margin: 1em 0;
+  overflow-x: auto;
+}
+pre .comment-box {
+  white-space: nowrap;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 18px;
+  line-height: 28px;
+  padding: 5px 10px;
+  margin: 5px 0;
+  display: inline-block;
+  text-align: left;
+  width: auto;
+  border: solid 1px #444;
+}
+
+.tags {
+  font-size: 16px;
+}
+.tags a.tag {
+  background-color: #eee;
+  color: #666;
+  text-decoration: none;
+  transition: background-color 100ms;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  display: inline-block;
+  margin: 0.1em 0.1em;
+  padding: 0.1em 0.5em;
+  border-radius: 4px;
+}
+.tags a.tag:hover {
+  background-color: #d9d9d9;
+}
+.tags a.tag:active {
+  background-color: #e0e0e0;
+}
+
+body > a.blogtitle {
+  color: black;
+  text-align: center;
+  display: block;
+  text-decoration: none;
+  font-size: 120%;
+  font-style: italic;
+  margin: 0.5em;
+  padding: 1em;
+  border-bottom: 1px dashed #999;
+}
+body > a.blogtitle > img {
+  width: 500px;
+  max-width: 100%;
+}
+body > a.blogtitle > span.note {
+  font-size: 60%;
+  color: #999;
+}
+
+.draftmode-warn {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 10px;
+  line-height: 1.2;
+  background-color: #db7500;
+  color: #fff;
+  text-align: center;
+  font-weight: bold;
+  z-index: 99;
+}
+.draftmode-warn a {
+  color: #fff;
+  text-decoration: underline;
+}
+
+body.draft-mode {
+  margin-top: 60px;
+}
+
+ul.articles {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+ul.articles > li.article {
+  display: grid;
+  grid-template-columns: 100%;
+  list-style-type: none;
+  padding: 0;
+  margin: 1em 0;
+}
+@media (min-width: 1200px) {
+  ul.articles > li.article {
+    grid-template-columns: 40% 60%;
+    grid-template-rows: auto auto auto 1fr;
+    row-gap: 0.4em;
+    column-gap: 1em;
+  }
+}
+ul.articles > li.article img.cover {
+  max-width: 100%;
+  max-height: 300px;
+  display: block;
+  margin: 0 auto;
+}
+@media (min-width: 1200px) {
+  ul.articles > li.article img.cover {
+    grid-column: 1/2;
+    grid-row: 1/5;
+    align-self: center;
+    justify-self: center;
+  }
+}
+ul.articles > li.article a.title {
+  color: #088da5;
+  font-size: 120%;
+  text-decoration: none;
+  font-weight: bold;
+  display: block;
+  padding: 0;
+  margin: 0;
+}
+ul.articles > li.article .time {
+  color: #999;
+  font-size: 75%;
+}
+ul.articles > li.article .snippet {
+  margin: 0;
+  padding: 0;
+  color: #444;
+  font-size: 16px;
+}</style>
+    <title>mw casual engineering</title>
+  </head>
+  <body><a class="blogtitle"><img src="title.svg" alt="mw casual engineering"></a>
+    <ul class="articles">
+      <li class="article clickable-article" data-href="linux-ick/en.html"><img class="cover" src="linux-ick/cover.png" alt="A five-panel comic featuring the Linux mascot Tux with a bandage placed above it, and a box with a question-mark.
+
+Panel 1: The box says “Am I being traced??” and Linux says “No trust me.”
+Panel 2: The box says “Ok now guess the number”.
+Panel 3: Linux says “1” and the box says “lol no, now get lost”.
+Panel 4: The background has 2 clocks in random rotation and shear, and also has some lines which says “ick_revert_proc: Restoring CoW'd page at 0x00000000005cxxxx”, and the box is wrapped in a squiggly blue circle, and is itself distorted.
+Panel 5: The box thinks “(hmm what was that must have been the wind)” and Linux says “jk i mean 2”.
+"/><a class="title" href="linux-ick/en.html">Using the Linux kernel to help me crack an executable quickly</a>
+        <div class="tags"><a class="tag" href="tagindex/linux.html">Linux</a> <a class="tag" href="tagindex/systems%20programming.html">systems programming</a> <a class="tag" href="tagindex/reverse%20engineering.html">reverse engineering</a> <a class="tag" href="tagindex/memory%20management.html">memory management</a> <a class="tag" href="tagindex/deep%20dives.html">deep dives</a>
+        </div>
+        <div class="time">Sun Apr 20 2025</div>
+        <p class="snippet">Early this year I found a reverse engineering problem which basically boiled down to running a heavily obfuscated Linux binary and entering the correct number to get it to print a flag. Fortunately, the interesting bits of the program ran quite fast – after reading the input, it spends around 5us before printing out whether the guess was correct or not. This means that even a brute-force search of the possible inputs could finish in a reasonable time, and there is no need to expend much effort on actual reverse engineering if we don't have to. The only tricky part is, how do we convince it to try different inputs as fast as this?</p>
+      </li>
+      <hr/>
+      <li class="article clickable-article" data-href="flip-a-coin-100/en.html"><img class="cover" src="flip-a-coin-100/cover.svg" alt="5 coins, showing THHHT"/><a class="title" href="flip-a-coin-100/en.html">An elusive coin-flipping problem</a>
+        <div class="tags"><a class="tag" href="tagindex/math.html">math</a> <a class="tag" href="tagindex/probability.html">probability</a> <a class="tag" href="tagindex/algorithm.html">algorithm</a> <a class="tag" href="tagindex/dynamic%20programming.html">dynamic programming</a> <a class="tag" href="tagindex/interactive.html">interactive</a>
+        </div>
+        <div class="time">Sun Mar 17 2024</div>
+        <p class="snippet">Flip a fair coin 100 times — it gives a sequence of heads (H) and tails (T). For each HH in the sequence of flips, Alice gets a point; for each HT, Bob does, so e.g. for the sequence THHHT Alice gets 2 points and Bob gets 1 point. Who is most likely to win?</p>
+      </li>
+      <hr/>
+      <li class="article clickable-article" data-href="text-embeddings/en.html"><img class="cover" src="text-embeddings/cover.gif" alt="A grid of pixels taking random values between red, white and green, animated such that there is a region of pixels that seems to be scrolling up. The changing pixels draws out the sentence &quot;YUKI BEST GIRL&quot;."/><a class="title" href="text-embeddings/en.html">A very short, playable introduction to Text Embeddings</a>
+        <div class="tags"><a class="tag" href="tagindex/llm.html">LLM</a> <a class="tag" href="tagindex/text%20embeddings.html">Text Embeddings</a> <a class="tag" href="tagindex/interactive.html">interactive</a>
+        </div>
+        <div class="time">Sat Jan 27 2024</div>
+        <p class="snippet">Have you ever wondered how LLMs ‘read’ text and seem to understand concepts? Internally, these models turn their input into numerical vectors. This means that with an LLM and some text input, you can get a bunch of numbers to feed into whatever machine learning model you dream of...</p>
+      </li>
+      <hr/>
+      <li class="article clickable-article" data-href="dpdk/en.html"><img class="cover" src="dpdk/cover.png" alt="cover image"/><a class="title" href="dpdk/en.html">Blazingly⚡ fast🚀 packet processing with DPDK</a>
+        <div class="tags"><a class="tag" href="tagindex/networking.html">networking</a> <a class="tag" href="tagindex/dpdk.html">DPDK</a> <a class="tag" href="tagindex/performance.html">performance</a> <a class="tag" href="tagindex/azure.html">Azure</a> <a class="tag" href="tagindex/linux.html">Linux</a> <a class="tag" href="tagindex/rust.html">Rust</a>
+        </div>
+        <div class="time">Fri Apr 07 2023</div>
+        <p class="snippet">Recently at work I have been learning about this fancy framework we are using in a product with high-performance networking requirement — the Data Plane Development Kit (DPDK). It is a set of user-space NIC drivers and related utility libraries (like fast buffer pools or queues) that enables an application to bypass the Linux kernel's networking stack, and directly send and receive packets from the hardware...</p>
+      </li>
+      <hr/>
+      <li class="article clickable-article" data-href="minecraft-server-auto-sleep/en.html"><img class="cover" src="minecraft-server-auto-sleep/cover.png" alt="cover image"/><a class="title" href="minecraft-server-auto-sleep/en.html">A Minecraft Server on Google Cloud that puts itself to sleep</a>
+        <div class="tags"><a class="tag" href="tagindex/cloud.html">cloud</a> <a class="tag" href="tagindex/minecraft.html">Minecraft</a> <a class="tag" href="tagindex/google-cloud.html">Google-Cloud</a> <a class="tag" href="tagindex/architecture.html">architecture</a> <a class="tag" href="tagindex/java.html">Java</a>
+        </div>
+        <div class="time">Fri Aug 19 2022</div>
+        <p class="snippet">The idea for this project came when I realized that most of the time, no one is on my Minecraft server, which means that keeping it running 24/7 is a huge waste of resources. The other day I noticed one little interesting feature in Compute Engine: suspend...</p>
+      </li>
+      <hr/>
+      <li class="article clickable-article" data-href="ct/en.html"><img class="cover" src="ct/cover.svg" alt="cover image"/><a class="title" href="ct/en.html">How Certificate Transparency works, exactly</a>
+        <div class="tags"><a class="tag" href="tagindex/security.html">security</a> <a class="tag" href="tagindex/web%20security.html">web security</a> <a class="tag" href="tagindex/cryptography.html">cryptography</a> <a class="tag" href="tagindex/tls.html">TLS</a> <a class="tag" href="tagindex/rfc.html">RFC</a> <a class="tag" href="tagindex/pki.html">PKI</a> <a class="tag" href="tagindex/rust.html">Rust</a> <a class="tag" href="tagindex/interactive.html">interactive</a>
+        </div>
+        <div class="time">Sun Jul 12 2020</div>
+        <p class="snippet">For TLS, We require that the public key of web servers be signed by a publicly trusted CA in the form of a certificate bound to a domain name, and we trust that those CAs would only sign certificates after they have verified the server they are signing for controls the domain. However, there is no way for the public, or the site owner, to reliably know when a CA has breached this trust. We would be much safer if every valid certificate were discoverable by the public. Can we make that happen?</p>
+      </li>
+      <hr/>
+      <li class="article clickable-article" data-href="aws-security-policies/en.html"><img class="cover" src="aws-security-policies/policy_editor_summary_screenshot.png" alt="cover image"/><a class="title" href="aws-security-policies/en.html">Understanding AWS security policies</a>
+        <div class="tags"><a class="tag" href="tagindex/cloud.html">cloud</a> <a class="tag" href="tagindex/aws.html">AWS</a> <a class="tag" href="tagindex/security.html">security</a>
+        </div>
+        <div class="time">Mon Jan 06 2020</div>
+        <p class="snippet">Some days ago I was (again) trying to fiddle with AWS security policies trying to create a user with only the rights to upload to a specific S3 &quot;folder&quot;. I have already attempted this earlier before but with no success, in part because there is just so little documentation about how AWS policies work...</p>
+      </li>
+      <hr/>
+      <li class="article clickable-article" data-href="cmake-bsg/en.html"><img class="cover" src="cmake-bsg/cv_build_screenshot.svg" alt="cover image"/><a class="title" href="cmake-bsg/en.html">CMake: A build system generator for pretty much anything</a>
+        <div class="tags"><a class="tag" href="tagindex/tooling.html">tooling</a> <a class="tag" href="tagindex/building.html">building</a> <a class="tag" href="tagindex/linux.html">Linux</a> <a class="tag" href="tagindex/cmake.html">CMake</a>
+        </div>
+        <div class="time">Sun Dec 01 2019</div>
+        <p class="snippet">If you have been compiling open-source programs for some time, you almost certainly have used CMake. It's a very popular Makefile generator for C/C++ projects. Recently I have been trying to use CMake for non-C projects, and I find it worked well — CMake build scripts might not be so easy to write at first, but they are very flexible and can certainly be helpful if you want a custom build system for your project...</p>
+      </li>
+    </ul>
+    <script type="text/javascript" src="/layout.js"></script>
+  </body>
+</html>

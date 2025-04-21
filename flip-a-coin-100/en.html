@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style type="text/css">
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI Light"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/light/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/light/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/light/latest.ttf) format("truetype");
+  font-weight: 100;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI Semilight"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semilight/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semilight/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semilight/latest.ttf) format("truetype");
+  font-weight: 200;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/normal/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/normal/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/normal/latest.ttf) format("truetype");
+  font-weight: 400;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI Semibold"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semibold/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semibold/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semibold/latest.ttf) format("truetype");
+  font-weight: 600;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI Bold"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/bold/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/bold/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/bold/latest.ttf) format("truetype");
+  font-weight: 700;
+}
+body {
+  background-color: #f9f9fa;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 18px;
+  line-height: 28px;
+  padding: 2em;
+  max-width: 1200px;
+  margin: auto;
+  text-align: justify;
+}
+
+p {
+  margin: 1em 0;
+  hyphens: auto;
+}
+
+hr {
+  background-color: none;
+  border: none;
+  border-bottom: dashed 1px #aaa;
+  margin: 0;
+  padding: 0;
+}
+
+pre, .diff-block {
+  display: block;
+  font-family: monospace;
+  background-color: white;
+  padding: 0.5em 1em;
+  margin: 1em 0;
+  overflow-x: auto;
+}
+pre .comment-box, .diff-block .comment-box {
+  white-space: nowrap;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 18px;
+  line-height: 28px;
+  padding: 5px 10px;
+  margin: 5px 0;
+  display: inline-block;
+  text-align: left;
+  width: auto;
+  border: solid 1px #444;
+}
+
+.tags {
+  font-size: 16px;
+}
+.tags a.tag {
+  background-color: #eee;
+  color: #666;
+  text-decoration: none;
+  transition: background-color 100ms;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  display: inline-block;
+  margin: 0.1em 0.1em;
+  padding: 0.1em 0.5em;
+  border-radius: 4px;
+}
+.tags a.tag:hover {
+  background-color: #d9d9d9;
+}
+.tags a.tag:active {
+  background-color: #e0e0e0;
+}
+
+body > a.blogtitle {
+  color: black;
+  text-align: center;
+  display: block;
+  text-decoration: none;
+  font-size: 120%;
+  font-style: italic;
+  margin: 0.5em;
+  padding: 1em;
+  border-bottom: 1px dashed #999;
+}
+body > a.blogtitle > img {
+  width: 500px;
+  max-width: 100%;
+}
+body > a.blogtitle > span.note {
+  font-size: 60%;
+  color: #999;
+}
+
+.draftmode-warn {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 10px;
+  line-height: 1.2;
+  background-color: #db7500;
+  color: #fff;
+  text-align: center;
+  font-weight: bold;
+  z-index: 99;
+}
+.draftmode-warn a {
+  color: #fff;
+  text-decoration: underline;
+}
+
+body.draft-mode {
+  margin-top: 60px;
+}
+
+body {
+  line-height: 1.6;
+}
+
+pre, .diff-block {
+  line-height: 1.3;
+}
+
+h1 {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 28px;
+  margin: 1.5em 0 0.5em 0;
+}
+h1::before {
+  content: "# ";
+  opacity: 0.5;
+  text-align: right;
+  display: inline-block;
+  width: 0px;
+  margin-left: -22px;
+  margin-right: 22px;
+}
+
+h2 {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 22px;
+  margin: 1.5em 0 0.5em 0;
+}
+h2::before {
+  content: "## ";
+  opacity: 0.5;
+  text-align: right;
+  display: inline-block;
+  width: 0px;
+  margin-left: -30px;
+  margin-right: 30px;
+}
+
+h3 {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 18px;
+  margin: 1.5em 0 0.5em 0;
+}
+h3::before {
+  content: "### ";
+  opacity: 0.5;
+  text-align: right;
+  display: inline-block;
+  width: 0px;
+  margin-left: -34px;
+  margin-right: 34px;
+}
+
+h4 {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 18px;
+  margin: 1em 0 0.5em 0;
+}
+
+p a, ul a, li a, h2 a, h3 a, h4 a, body > a.home, .comment-box a {
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  color: #088da5;
+  text-decoration: none;
+  transition: background-color 100ms;
+  background-color: rgba(8, 141, 165, 0);
+  padding: 0.25em 0.5em;
+  margin: -0.25em -0.5em;
+}
+p a:active, ul a:active, li a:active, h2 a:active, h3 a:active, h4 a:active, body > a.home:active, .comment-box a:active {
+  background-color: rgba(8, 141, 165, 0.1);
+}
+
+pre a, .diff-block a {
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  color: inherit;
+  text-decoration: dashed underline;
+}
+
+body > code, body :not(pre):not(.diff-block) > code {
+  display: inline-block;
+  background-color: white;
+  border-radius: 4px;
+  border: solid 1px #999;
+  padding-left: 0.3em;
+  padding-right: 0.3em;
+}
+
+img.coverimg {
+  min-width: 50%;
+  max-width: 100%;
+  margin: 0 auto;
+  display: block;
+}
+
+p > img {
+  max-width: 100%;
+}
+
+p.single-img-p > img {
+  display: block;
+  margin: 0 auto;
+}
+
+.tags {
+  margin-top: -0.7em;
+}
+
+.footer {
+  color: #999;
+  font-size: 14px;
+}
+
+p.warn, div.warn {
+  border-left: #ff4545 solid 2px;
+  background-color: rgba(255, 0, 0, 0.116);
+  padding: 0.2em 1em;
+  margin-top: -0.2em;
+  margin-bottom: -0.3em;
+}
+
+p.info, div.info {
+  border-left: #3a59c7 solid 2px;
+  background-color: #e7eaf7;
+  padding: 0.2em 1em;
+  margin-top: -0.2em;
+  margin-bottom: -0.3em;
+}
+
+sup.footnoteref {
+  user-select: none;
+}
+
+sup:target, .footnote-revref:target {
+  background-color: rgba(255, 255, 0, 0.2);
+}
+
+span.tex {
+  font-size: 22px;
+}
+
+noscript {
+  border: dashed 2px #000;
+  padding: 1rem 2rem;
+  margin: 1em 0;
+}
+
+blockquote {
+  border-left: 4px solid #ccc;
+  padding-left: 1em;
+  margin: 0;
+}
+
+.diff-block-container {
+  overflow-x: auto;
+  margin: 1em 0;
+}
+
+.diff-block {
+  white-space: inherit;
+  padding: 0.5em 0;
+  margin: 0;
+  overflow-x: visible;
+  width: max-content;
+  min-width: 100%;
+  tab-size: 4;
+}
+.diff-block .diff-line {
+  white-space: pre;
+  padding: 0 1em;
+}
+.diff-block .diff-header, .diff-block .diff-header-start {
+  color: #808080;
+}
+.diff-block .diff-header-start:not(:first-child) {
+  margin-top: 0.5em;
+  border-top: solid #78baf7 3px;
+  padding-top: 0.5em;
+}
+.diff-block .diff-hunk {
+  background-color: #ddf4ff;
+  margin-top: 0.2em;
+  padding-top: 0.25em;
+  padding-bottom: 0.25em;
+  margin-bottom: 0.2em;
+}
+.diff-block .diff-hunk .diff-hunk-lines {
+  color: #6639ba;
+  font-weight: bold;
+}
+.diff-block .diff-add {
+  background-color: #dafbe1;
+}
+.diff-block .diff-delete {
+  background-color: #ffebe9;
+}
+.diff-block .diff-symbol {
+  color: #808080;
+}
+
+.toc-container {
+  border: solid 2px #ccc;
+  background-color: #f5f5f5;
+  padding: 1em 2em;
+  margin: 1em 0;
+  width: fit-content;
+  text-align: left;
+}
+@media (max-width: 600px) {
+  .toc-container {
+    width: 100%;
+    padding: 1em;
+    margin-left: -1em;
+    margin-right: -1em;
+  }
+}
+.toc-container .title {
+  text-align: center;
+  font-weight: bold;
+}
+.toc-container .title > .dock-button-container {
+  margin-left: 0.5em;
+  font-size: 75%;
+}
+.toc-container .title > .dock-button-container > a {
+  cursor: pointer;
+  color: #088da5;
+}
+.toc-container ol {
+  margin: 0 1em;
+  padding: 0;
+}
+.toc-container ol > li > ol {
+  list-style-type: lower-alpha;
+}
+.toc-container ol > li > ol > li ol {
+  list-style-type: none;
+}
+.toc-container.docked {
+  position: fixed;
+  z-index: 100;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  margin: 0;
+  box-sizing: border-box;
+  width: min(90vw, 450px);
+  background-color: #ffffff;
+  box-shadow: #000000 0 0 8px;
+  border: hidden;
+  overflow-y: auto;
+  transition: left 0.3s;
+}
+.toc-container.docked.hidden {
+  left: -460px;
+}
+@media (max-width: 500px) {
+  .toc-container.docked.hidden {
+    left: -100vw;
+  }
+}
+.toc-container.docked .open-dock-button {
+  position: fixed;
+  text-align: center;
+  writing-mode: vertical-rl;
+  text-orientation: sideways;
+  top: calc(50% - 80px);
+  left: 0;
+  width: 22px;
+  line-height: 22px;
+  height: 160px;
+  font-size: 16px;
+  background-color: #f5f5f5;
+  cursor: pointer;
+  box-shadow: #000000 0 0 8px;
+  z-index: 101;
+}
+.toc-container.docked:not(.hidden) .open-dock-button {
+  display: none;
+}</style>
+    <title>An elusive coin-flipping problem - mw casual engineering</title>
+    <meta name="keywords" content="math,probability,algorithm,dynamic programming,interactive">
+    <meta property="og:url" content="https://blog.maowtm.org/flip-a-coin-100/en.html">
+    <meta property="og:title" content="An elusive coin-flipping problem">
+    <meta property="og:image" content="https://blog.maowtm.org/flip-a-coin-100/./cover.svg.png">
+    <meta property="og:type" content="article">
+    <link rel="stylesheet" href="https://unpkg.com/highlight.js@9.16.2/styles/idea.css">
+    <script type="text/javascript" src="main.574bff1be5be22b63a3c.js" defer async></script>
+  </head>
+  <body><a class="blogtitle" href="/"><img src="/title.svg" alt="mw casual engineering"></a><img class="coverimg" src="cover.svg" alt="5 coins, showing THHHT">
+    <h1>An elusive coin-flipping problem</h1>
+    <div class="tags"><a class="tag" href="../tagindex/math.html">math</a> <a class="tag" href="../tagindex/probability.html">probability</a> <a class="tag" href="../tagindex/algorithm.html">algorithm</a> <a class="tag" href="../tagindex/dynamic%20programming.html">dynamic programming</a> <a class="tag" href="../tagindex/interactive.html">interactive</a>
+    </div><p></p>
+<p>I was asked the following question by a friend today (he got the question from a financial analysis test):</p>
+<blockquote>
+<p>Flip a fair coin 100 times — it gives a sequence of heads (<em>H</em>) and tails (<em>T</em>). For each <em>HH</em> in the sequence of flips, Alice gets a point; for each <em>HT</em>, Bob does, so e.g. for the sequence <em>THHHT</em> Alice gets 2 points and Bob gets 1 point. Who is most likely to win?</p>
+</blockquote>
+<p>My immediate reaction was of course both would be equally likely to win. After all, in a random sequence of Hs and Ts, I <em>expect</em> HH and HT to appear the same number of times. Let's write some code to verify this:</p>
+<noscript>
+Enable javascript to edit code and re-run.
+</noscript>
+
+<pre><code class="language-javascript"><span class="hljs-keyword">const</span> seq_len = <span class="hljs-number">1000000</span>;
+
+<span class="hljs-keyword">let</span> sequence = <span class="hljs-title class_">Array</span>.<span class="hljs-title function_">from</span>({ <span class="hljs-attr">length</span>: seq_len }, <span class="hljs-function">() =&gt;</span> <span class="hljs-title class_">Math</span>.<span class="hljs-title function_">random</span>() &gt; <span class="hljs-number">0.5</span> ? <span class="hljs-string">'H'</span> : <span class="hljs-string">'T'</span>);
+<span class="hljs-keyword">let</span> a_score = sequence.<span class="hljs-title function_">filter</span>(<span class="hljs-function">(<span class="hljs-params">_, i</span>) =&gt;</span> i &lt; seq_len - <span class="hljs-number">1</span> &amp;&amp; sequence[i] == <span class="hljs-string">'H'</span> &amp;&amp; sequence[i + <span class="hljs-number">1</span>] == <span class="hljs-string">'H'</span>).<span class="hljs-property">length</span>;
+<span class="hljs-keyword">let</span> b_score = sequence.<span class="hljs-title function_">filter</span>(<span class="hljs-function">(<span class="hljs-params">_, i</span>) =&gt;</span> i &lt; seq_len - <span class="hljs-number">1</span> &amp;&amp; sequence[i] == <span class="hljs-string">'H'</span> &amp;&amp; sequence[i + <span class="hljs-number">1</span>] == <span class="hljs-string">'T'</span>).<span class="hljs-property">length</span>;
+
+<span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(<span class="hljs-string">`Alice: <span class="hljs-subst">${a_score}</span>, Bob: <span class="hljs-subst">${b_score}</span>, ratio = <span class="hljs-subst">${a_score / b_score}</span>`</span>);
+</code></pre>
+<pre class="output-for-code-above">Alice: 249865, Bob: 249721, ratio = 1.000576643534184</pre>
+
+<p>At this point I was pretty comfortable to declare that both players are equally likely to win. However, that would obviously be too easy, and my friend quickly told me I was wrong. He also told me the correct answer, albeit without what I consider a good explanation. Let's explore this a bit more.</p>
+<p>In the above code, I have increased the sequence length because I didn't think the particular case of 100 mattered, and I just wanted more "samples". <strong>This was my first mistake</strong> — the question explicitly said 100, so there is no reason for me to arbitrarily increase the sequence. In the limit of an infinite sequence length (like we simulated above), Alice and Bob would score the same number of points, but perhaps things are more complicated with a finite sequence length? Let's actually do the simulation properly:</p>
+<pre><code class="language-javascript"><span class="hljs-keyword">const</span> seq_len = <span class="hljs-number">100</span>;
+<span class="hljs-keyword">const</span> n_runs = <span class="hljs-number">100000</span>;
+
+<span class="hljs-keyword">let</span> a_score_sum = <span class="hljs-number">0</span>;
+<span class="hljs-keyword">let</span> b_score_sum = <span class="hljs-number">0</span>;
+
+<span class="hljs-keyword">function</span> <span class="hljs-title function_">run</span>(<span class="hljs-params"></span>) {
+  <span class="hljs-keyword">let</span> sequence = <span class="hljs-title class_">Array</span>.<span class="hljs-title function_">from</span>({ <span class="hljs-attr">length</span>: seq_len }, <span class="hljs-function">() =&gt;</span> <span class="hljs-title class_">Math</span>.<span class="hljs-title function_">random</span>() &gt; <span class="hljs-number">0.5</span> ? <span class="hljs-string">'H'</span> : <span class="hljs-string">'T'</span>);
+  <span class="hljs-keyword">let</span> a_score = sequence.<span class="hljs-title function_">filter</span>(<span class="hljs-function">(<span class="hljs-params">_, i</span>) =&gt;</span> i &lt; seq_len - <span class="hljs-number">1</span> &amp;&amp; sequence[i] == <span class="hljs-string">'H'</span> &amp;&amp; sequence[i + <span class="hljs-number">1</span>] == <span class="hljs-string">'H'</span>).<span class="hljs-property">length</span>;
+  <span class="hljs-keyword">let</span> b_score = sequence.<span class="hljs-title function_">filter</span>(<span class="hljs-function">(<span class="hljs-params">_, i</span>) =&gt;</span> i &lt; seq_len - <span class="hljs-number">1</span> &amp;&amp; sequence[i] == <span class="hljs-string">'H'</span> &amp;&amp; sequence[i + <span class="hljs-number">1</span>] == <span class="hljs-string">'T'</span>).<span class="hljs-property">length</span>;
+
+  a_score_sum += a_score;
+  b_score_sum += b_score;
+}
+
+<span class="hljs-keyword">for</span> (<span class="hljs-keyword">let</span> i = <span class="hljs-number">0</span>; i &lt; n_runs; i++) {
+  <span class="hljs-title function_">run</span>();
+}
+<span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(<span class="hljs-string">`Average Alice: <span class="hljs-subst">${a_score_sum / n_runs}</span>, Bob: <span class="hljs-subst">${b_score_sum / n_runs}</span>, Ratio: <span class="hljs-subst">${a_score_sum / b_score_sum}</span>`</span>);
+</code></pre>
+<pre class="output-for-code-above">Average Alice: 24.76017, Bob: 24.75328, Ratio: 1.000278346950384
+</pre>
+
+<p>Interesting. The difference is quite small, although it's not obviously equal. Running it with a vastly larger iteration count, with statistical analysis, results in the following (<a href="simulation-avg.js">source code</a>):</p>
+<pre><code class="language-text">Average Alice: 24.749331868750865 +- 0.011238525490417558, Bob: 24.749518982975573 +- 0.0023019322652421182
+No significant difference with p = 0.01
+</code></pre>
+<p>It seems reasonable to assume for now that the expectation are equal (we will prove this formally later) — wouldn't this mean that the game is fair? Let's do it slightly differently:</p>
+<pre><code class="language-javascript"><span class="hljs-keyword">const</span> seq_len = <span class="hljs-number">100</span>;
+<span class="hljs-keyword">const</span> n_runs = <span class="hljs-number">10000</span>;
+
+<span class="hljs-keyword">let</span> a_wins = <span class="hljs-number">0</span>;
+<span class="hljs-keyword">let</span> b_wins = <span class="hljs-number">0</span>;
+
+<span class="hljs-keyword">function</span> <span class="hljs-title function_">run</span>(<span class="hljs-params"></span>) {
+  <span class="hljs-keyword">let</span> sequence = <span class="hljs-title class_">Array</span>.<span class="hljs-title function_">from</span>({ <span class="hljs-attr">length</span>: seq_len }, <span class="hljs-function">() =&gt;</span> <span class="hljs-title class_">Math</span>.<span class="hljs-title function_">random</span>() &gt; <span class="hljs-number">0.5</span> ? <span class="hljs-string">'H'</span> : <span class="hljs-string">'T'</span>);
+  <span class="hljs-keyword">let</span> a_score = sequence.<span class="hljs-title function_">filter</span>(<span class="hljs-function">(<span class="hljs-params">_, i</span>) =&gt;</span> i &lt; seq_len - <span class="hljs-number">1</span> &amp;&amp; sequence[i] == <span class="hljs-string">'H'</span> &amp;&amp; sequence[i + <span class="hljs-number">1</span>] == <span class="hljs-string">'H'</span>).<span class="hljs-property">length</span>;
+  <span class="hljs-keyword">let</span> b_score = sequence.<span class="hljs-title function_">filter</span>(<span class="hljs-function">(<span class="hljs-params">_, i</span>) =&gt;</span> i &lt; seq_len - <span class="hljs-number">1</span> &amp;&amp; sequence[i] == <span class="hljs-string">'H'</span> &amp;&amp; sequence[i + <span class="hljs-number">1</span>] == <span class="hljs-string">'T'</span>).<span class="hljs-property">length</span>;
+
+  <span class="hljs-keyword">if</span> (a_score &gt; b_score) {
+    a_wins++;
+  } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (b_score &gt; a_score) {
+    b_wins++;
+  }
+}
+
+<span class="hljs-keyword">for</span> (<span class="hljs-keyword">let</span> i = <span class="hljs-number">0</span>; i &lt; n_runs; i++) {
+  <span class="hljs-title function_">run</span>();
+}
+<span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(<span class="hljs-string">`Alice wins: <span class="hljs-subst">${a_wins}</span>, Bob wins: <span class="hljs-subst">${b_wins}</span>`</span>);
+<span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(<span class="hljs-string">`Alice wins <span class="hljs-subst">${a_wins / n_runs * <span class="hljs-number">100</span>}</span>% of the time`</span>);
+<span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(<span class="hljs-string">`Bob wins <span class="hljs-subst">${b_wins / n_runs * <span class="hljs-number">100</span>}</span>% of the time`</span>);
+</code></pre>
+<pre class="output-for-code-above">Alice wins: 4540, Bob wins: 4910
+Alice wins 45.4% of the time
+Bob wins 49.1% of the time
+</pre>
+
+<p>Running the simulation more times shows that Bob wins approximately 2.7% more often than Alice.</p>
+<img src="thonk.png" alt="Thonk" style="max-width: 200px; width: 100%; display: block; margin: auto;">
+
+<p>Ok, at this point I have to admit that <strong>I had actually made a second mistake</strong> in my original reasoning for concluding that the game is fair to both — assuming that simply comparing the <em>expectation</em> of the score will answer the question. However, note what the question is asking:</p>
+<blockquote>
+<p>Who is most likely to win?</p>
+</blockquote>
+<p>It is <em>not</em> asking who's score is higher on average. By the simulation above, we can conclude that Bob wins more often than Alice, question solved.</p>
+<p>An important lesson here is to use accurate simulations — simulate the thing you're actually interested in (who wins), not something else (like average score).</p>
+<hr>
+<p>But wait…</p>
+<h2>Why?</h2>
+<p>A fundamental realisation from this is that when faced with a question like “who is most likely to win”, it is very tempting to simply jump to conclusion based on the observation that the expectations are equal. For example, if we set the score for Alice to simply be the number of heads, and for Bob to be the number of tails, it seems logical to conclude that, because we expect to get the same number of heads and tails, the game is fair.</p>
+<p>As we just showed, this is not always the case. An intuitive explanation for this is that, even when two distributions have the same mean, they might have different <em>skew</em>, which means that the probability of one being greater than the other is not necessarily 50%. In the question above, the theoretical maximum score Alice can earn is 99, with the sequence <em>HHHHH</em>…<em>HHHHH</em>, whereas for Bob, it is 50 (<em>HTHT</em>…<em>HTHT</em>). This means that the probability distribution of Alice's score has a longer tail to the right, perhaps something like (not to scale):</p>
+<p class="single-img-p"><img src="distributions-sketck.excalidraw.png" alt="A sketch of Alice and Bob's score distributions"></p>
+<p>And therefore, even if the two score distributions have the same mean, it might be that Alice actually more often gets a lower score, but has the <em>potential</em> to earn vastly higher scores <em>occasionally</em>. And when the only thing that matters is who wins, earning higher scores doesn't matter once you've won.</p>
+<p>There is actually another erroneous assumption here that is more subtle — note that in the question setup, the scores for Alice and Bob are derived from the same sequence of coin flips. This means that the scores are not independent, and we can't treat the two scores as two separate, independent distribution. So even if we managed to find the distribution for Alice's score and Bob's score, the answer we get may not be correct if we treat them separately.</p>
+<h2>So what is the actual score distribution?</h2>
+<p>Let's try and deduce the full score distribution algorithmically. A sensible approach might be to find some way of expressing some distribution function <style>.mjx-chtml {display: inline-block; line-height: 0; text-indent: 0; text-align: left; text-transform: none; font-style: normal; font-weight: normal; font-size: 100%; font-size-adjust: none; letter-spacing: normal; word-wrap: normal; word-spacing: normal; white-space: nowrap; float: none; direction: ltr; max-width: none; max-height: none; min-width: 0; min-height: 0; border: 0; margin: 0; padding: 1px 0}
+.MJXc-display {display: block; text-align: center; margin: 1em 0; padding: 0}
+.mjx-chtml[tabindex]:focus, body :focus .mjx-chtml[tabindex] {display: inline-table}
+.mjx-full-width {text-align: center; display: table-cell!important; width: 10000em}
+.mjx-math {display: inline-block; border-collapse: separate; border-spacing: 0}
+.mjx-math * {display: inline-block; -webkit-box-sizing: content-box!important; -moz-box-sizing: content-box!important; box-sizing: content-box!important; text-align: left}
+.mjx-numerator {display: block; text-align: center}
+.mjx-denominator {display: block; text-align: center}
+.MJXc-stacked {height: 0; position: relative}
+.MJXc-stacked > * {position: absolute}
+.MJXc-bevelled > * {display: inline-block}
+.mjx-stack {display: inline-block}
+.mjx-op {display: block}
+.mjx-under {display: table-cell}
+.mjx-over {display: block}
+.mjx-over > * {padding-left: 0px!important; padding-right: 0px!important}
+.mjx-under > * {padding-left: 0px!important; padding-right: 0px!important}
+.mjx-stack > .mjx-sup {display: block}
+.mjx-stack > .mjx-sub {display: block}
+.mjx-prestack > .mjx-presup {display: block}
+.mjx-prestack > .mjx-presub {display: block}
+.mjx-delim-h > .mjx-char {display: inline-block}
+.mjx-surd {vertical-align: top}
+.mjx-surd + .mjx-box {display: inline-flex}
+.mjx-mphantom * {visibility: hidden}
+.mjx-merror {background-color: #FFFF88; color: #CC0000; border: 1px solid #CC0000; padding: 2px 3px; font-style: normal; font-size: 90%}
+.mjx-annotation-xml {line-height: normal}
+.mjx-menclose > svg {fill: none; stroke: currentColor; overflow: visible}
+.mjx-mtr {display: table-row}
+.mjx-mlabeledtr {display: table-row}
+.mjx-mtd {display: table-cell; text-align: center}
+.mjx-label {display: table-row}
+.mjx-box {display: inline-block}
+.mjx-block {display: block}
+.mjx-span {display: inline}
+.mjx-char {display: block; white-space: pre}
+.mjx-itable {display: inline-table; width: auto}
+.mjx-row {display: table-row}
+.mjx-cell {display: table-cell}
+.mjx-table {display: table; width: 100%}
+.mjx-line {display: block; height: 0}
+.mjx-strut {width: 0; padding-top: 1em}
+.mjx-vsize {width: 0}
+.MJXc-space1 {margin-left: .167em}
+.MJXc-space2 {margin-left: .222em}
+.MJXc-space3 {margin-left: .278em}
+.mjx-test.mjx-test-display {display: table!important}
+.mjx-test.mjx-test-inline {display: inline!important; margin-right: -1px}
+.mjx-test.mjx-test-default {display: block!important; clear: both}
+.mjx-ex-box {display: inline-block!important; position: absolute; overflow: hidden; min-height: 0; max-height: none; padding: 0; border: 0; margin: 0; width: 1px; height: 60ex}
+.mjx-test-inline .mjx-left-box {display: inline-block; width: 0; float: left}
+.mjx-test-inline .mjx-right-box {display: inline-block; width: 0; float: right}
+.mjx-test-display .mjx-right-box {display: table-cell!important; width: 10000em!important; min-width: 0; max-width: none; padding: 0; border: 0; margin: 0}
+.MJXc-TeX-unknown-R {font-family: monospace; font-style: normal; font-weight: normal}
+.MJXc-TeX-unknown-I {font-family: monospace; font-style: italic; font-weight: normal}
+.MJXc-TeX-unknown-B {font-family: monospace; font-style: normal; font-weight: bold}
+.MJXc-TeX-unknown-BI {font-family: monospace; font-style: italic; font-weight: bold}
+.MJXc-TeX-ams-R {font-family: MJXc-TeX-ams-R,MJXc-TeX-ams-Rw}
+.MJXc-TeX-cal-B {font-family: MJXc-TeX-cal-B,MJXc-TeX-cal-Bx,MJXc-TeX-cal-Bw}
+.MJXc-TeX-frak-R {font-family: MJXc-TeX-frak-R,MJXc-TeX-frak-Rw}
+.MJXc-TeX-frak-B {font-family: MJXc-TeX-frak-B,MJXc-TeX-frak-Bx,MJXc-TeX-frak-Bw}
+.MJXc-TeX-math-BI {font-family: MJXc-TeX-math-BI,MJXc-TeX-math-BIx,MJXc-TeX-math-BIw}
+.MJXc-TeX-sans-R {font-family: MJXc-TeX-sans-R,MJXc-TeX-sans-Rw}
+.MJXc-TeX-sans-B {font-family: MJXc-TeX-sans-B,MJXc-TeX-sans-Bx,MJXc-TeX-sans-Bw}
+.MJXc-TeX-sans-I {font-family: MJXc-TeX-sans-I,MJXc-TeX-sans-Ix,MJXc-TeX-sans-Iw}
+.MJXc-TeX-script-R {font-family: MJXc-TeX-script-R,MJXc-TeX-script-Rw}
+.MJXc-TeX-type-R {font-family: MJXc-TeX-type-R,MJXc-TeX-type-Rw}
+.MJXc-TeX-cal-R {font-family: MJXc-TeX-cal-R,MJXc-TeX-cal-Rw}
+.MJXc-TeX-main-B {font-family: MJXc-TeX-main-B,MJXc-TeX-main-Bx,MJXc-TeX-main-Bw}
+.MJXc-TeX-main-I {font-family: MJXc-TeX-main-I,MJXc-TeX-main-Ix,MJXc-TeX-main-Iw}
+.MJXc-TeX-main-R {font-family: MJXc-TeX-main-R,MJXc-TeX-main-Rw}
+.MJXc-TeX-math-I {font-family: MJXc-TeX-math-I,MJXc-TeX-math-Ix,MJXc-TeX-math-Iw}
+.MJXc-TeX-size1-R {font-family: MJXc-TeX-size1-R,MJXc-TeX-size1-Rw}
+.MJXc-TeX-size2-R {font-family: MJXc-TeX-size2-R,MJXc-TeX-size2-Rw}
+.MJXc-TeX-size3-R {font-family: MJXc-TeX-size3-R,MJXc-TeX-size3-Rw}
+.MJXc-TeX-size4-R {font-family: MJXc-TeX-size4-R,MJXc-TeX-size4-Rw}
+.MJXc-TeX-vec-R {font-family: MJXc-TeX-vec-R,MJXc-TeX-vec-Rw}
+.MJXc-TeX-vec-B {font-family: MJXc-TeX-vec-B,MJXc-TeX-vec-Bx,MJXc-TeX-vec-Bw}
+@font-face {font-family: MJXc-TeX-ams-R; src: local('MathJax_AMS'), local('MathJax_AMS-Regular')}
+@font-face {font-family: MJXc-TeX-ams-Rw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_AMS-Regular.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_AMS-Regular.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_AMS-Regular.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-cal-B; src: local('MathJax_Caligraphic Bold'), local('MathJax_Caligraphic-Bold')}
+@font-face {font-family: MJXc-TeX-cal-Bx; src: local('MathJax_Caligraphic'); font-weight: bold}
+@font-face {font-family: MJXc-TeX-cal-Bw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Caligraphic-Bold.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Caligraphic-Bold.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Caligraphic-Bold.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-frak-R; src: local('MathJax_Fraktur'), local('MathJax_Fraktur-Regular')}
+@font-face {font-family: MJXc-TeX-frak-Rw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Fraktur-Regular.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Fraktur-Regular.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Fraktur-Regular.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-frak-B; src: local('MathJax_Fraktur Bold'), local('MathJax_Fraktur-Bold')}
+@font-face {font-family: MJXc-TeX-frak-Bx; src: local('MathJax_Fraktur'); font-weight: bold}
+@font-face {font-family: MJXc-TeX-frak-Bw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Fraktur-Bold.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Fraktur-Bold.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Fraktur-Bold.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-math-BI; src: local('MathJax_Math BoldItalic'), local('MathJax_Math-BoldItalic')}
+@font-face {font-family: MJXc-TeX-math-BIx; src: local('MathJax_Math'); font-weight: bold; font-style: italic}
+@font-face {font-family: MJXc-TeX-math-BIw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Math-BoldItalic.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Math-BoldItalic.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Math-BoldItalic.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-sans-R; src: local('MathJax_SansSerif'), local('MathJax_SansSerif-Regular')}
+@font-face {font-family: MJXc-TeX-sans-Rw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_SansSerif-Regular.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_SansSerif-Regular.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_SansSerif-Regular.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-sans-B; src: local('MathJax_SansSerif Bold'), local('MathJax_SansSerif-Bold')}
+@font-face {font-family: MJXc-TeX-sans-Bx; src: local('MathJax_SansSerif'); font-weight: bold}
+@font-face {font-family: MJXc-TeX-sans-Bw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_SansSerif-Bold.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_SansSerif-Bold.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_SansSerif-Bold.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-sans-I; src: local('MathJax_SansSerif Italic'), local('MathJax_SansSerif-Italic')}
+@font-face {font-family: MJXc-TeX-sans-Ix; src: local('MathJax_SansSerif'); font-style: italic}
+@font-face {font-family: MJXc-TeX-sans-Iw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_SansSerif-Italic.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_SansSerif-Italic.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_SansSerif-Italic.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-script-R; src: local('MathJax_Script'), local('MathJax_Script-Regular')}
+@font-face {font-family: MJXc-TeX-script-Rw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Script-Regular.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Script-Regular.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Script-Regular.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-type-R; src: local('MathJax_Typewriter'), local('MathJax_Typewriter-Regular')}
+@font-face {font-family: MJXc-TeX-type-Rw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Typewriter-Regular.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Typewriter-Regular.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Typewriter-Regular.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-cal-R; src: local('MathJax_Caligraphic'), local('MathJax_Caligraphic-Regular')}
+@font-face {font-family: MJXc-TeX-cal-Rw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Caligraphic-Regular.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Caligraphic-Regular.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Caligraphic-Regular.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-main-B; src: local('MathJax_Main Bold'), local('MathJax_Main-Bold')}
+@font-face {font-family: MJXc-TeX-main-Bx; src: local('MathJax_Main'); font-weight: bold}
+@font-face {font-family: MJXc-TeX-main-Bw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Main-Bold.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Main-Bold.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Main-Bold.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-main-I; src: local('MathJax_Main Italic'), local('MathJax_Main-Italic')}
+@font-face {font-family: MJXc-TeX-main-Ix; src: local('MathJax_Main'); font-style: italic}
+@font-face {font-family: MJXc-TeX-main-Iw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Main-Italic.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Main-Italic.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Main-Italic.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-main-R; src: local('MathJax_Main'), local('MathJax_Main-Regular')}
+@font-face {font-family: MJXc-TeX-main-Rw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Main-Regular.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Main-Regular.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Main-Regular.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-math-I; src: local('MathJax_Math Italic'), local('MathJax_Math-Italic')}
+@font-face {font-family: MJXc-TeX-math-Ix; src: local('MathJax_Math'); font-style: italic}
+@font-face {font-family: MJXc-TeX-math-Iw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Math-Italic.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Math-Italic.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Math-Italic.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-size1-R; src: local('MathJax_Size1'), local('MathJax_Size1-Regular')}
+@font-face {font-family: MJXc-TeX-size1-Rw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Size1-Regular.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Size1-Regular.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Size1-Regular.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-size2-R; src: local('MathJax_Size2'), local('MathJax_Size2-Regular')}
+@font-face {font-family: MJXc-TeX-size2-Rw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Size2-Regular.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Size2-Regular.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Size2-Regular.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-size3-R; src: local('MathJax_Size3'), local('MathJax_Size3-Regular')}
+@font-face {font-family: MJXc-TeX-size3-Rw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Size3-Regular.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Size3-Regular.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Size3-Regular.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-size4-R; src: local('MathJax_Size4'), local('MathJax_Size4-Regular')}
+@font-face {font-family: MJXc-TeX-size4-Rw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Size4-Regular.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Size4-Regular.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Size4-Regular.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-vec-R; src: local('MathJax_Vector'), local('MathJax_Vector-Regular')}
+@font-face {font-family: MJXc-TeX-vec-Rw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Vector-Regular.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Vector-Regular.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Vector-Regular.otf') format('opentype')}
+@font-face {font-family: MJXc-TeX-vec-B; src: local('MathJax_Vector Bold'), local('MathJax_Vector-Bold')}
+@font-face {font-family: MJXc-TeX-vec-Bx; src: local('MathJax_Vector'); font-weight: bold}
+@font-face {font-family: MJXc-TeX-vec-Bw; src /*1*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/eot/MathJax_Vector-Bold.eot'); src /*2*/: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/woff/MathJax_Vector-Bold.woff') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/fonts/HTML-CSS/TeX/otf/MathJax_Vector-Bold.otf') format('opentype')}
+</style><span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="Q"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.465em;">Q</span></span></span></span></span></span> in terms of smaller versions of the problem. This pattern is commonly known as “dynamic programming”.</p>
+<p>We define the distribution function <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="Q(n, s_A, s_B)"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.465em;">Q</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">(</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">n</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-msubsup MJXc-space1"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.241em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.266em;">A</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-msubsup MJXc-space1"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em;">B</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">)</span></span></span></span></span></span> to be the <em>number of</em> distinct <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="n"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">n</span></span></span></span></span></span>-length coin-flip sequences such that Alice scores <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="s_A"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-msubsup"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.241em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.266em;">A</span></span></span></span></span></span></span></span> and Bob scores <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="s_B"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-msubsup"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em;">B</span></span></span></span></span></span></span></span>. In other word, the sequence contains <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="s_A"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-msubsup"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.241em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.266em;">A</span></span></span></span></span></span></span></span> <em>HH</em> and <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="s_B"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-msubsup"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em;">B</span></span></span></span></span></span></span></span> <em>HT</em>. Defining it this way allow us to avoid having to think about actual probability, which is simply <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="\frac{1}{2^n} Q(n, s_A, s_B)"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mfrac"><span class="mjx-box MJXc-stacked" style="width: 0.82em; padding: 0px 0.12em;"><span class="mjx-numerator" style="font-size: 70.7%; width: 1.16em; top: -1.248em;"><span class="mjx-mn" style=""><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.333em;">1</span></span></span><span class="mjx-denominator" style="font-size: 70.7%; width: 1.16em; bottom: -0.563em;"><span class="mjx-msubsup" style=""><span class="mjx-base"><span class="mjx-mn"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.333em;">2</span></span></span><span class="mjx-sup" style="font-size: 70.7%; vertical-align: 0.591em; padding-left: 0px; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">n</span></span></span></span></span><span style="border-bottom: 2.7px solid; top: -0.28em; width: 0.82em;" class="mjx-line"></span></span><span style="height: 1.281em; vertical-align: -0.398em;" class="mjx-vsize"></span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.465em;">Q</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">(</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">n</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-msubsup MJXc-space1"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.241em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.266em;">A</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-msubsup MJXc-space1"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em;">B</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">)</span></span></span></span></span></span>. Later on, it will be easiest for us to not have to re-scale <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="Q"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.465em;">Q</span></span></span></span></span></span> for different <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="n"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">n</span></span></span></span></span></span> and just work with the raw count instead.</p>
+<p>Assuming we have <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="Q(n, s_A, s_B)"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.465em;">Q</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">(</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">n</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-msubsup MJXc-space1"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.241em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.266em;">A</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-msubsup MJXc-space1"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em;">B</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">)</span></span></span></span></span></span> for <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="n = 100"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">n</span></span><span class="mjx-mo MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.09em; padding-bottom: 0.311em;">=</span></span><span class="mjx-mn MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.355em;">100</span></span></span></span></span></span>, we will then be able to answer the original question by computing the probability of each person winning. This can be done by counting how many sequences result in winning condition for each person:</p>
+<center>
+<p>
+<span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="
+\displaystyle
+P(s_A > s_B) = \frac{1}{2^{100}}\sum_{s_A = 1}^{99} \sum_{s_B = 0}^{s_A - 1} Q(100, s_A, s_B)
+"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mstyle"><span class="mjx-mrow"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em; padding-right: 0.109em;">P</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">(</span></span><span class="mjx-msubsup"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.241em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.266em;">A</span></span></span></span><span class="mjx-mo MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.244em; padding-bottom: 0.377em;">&gt;</span></span><span class="mjx-msubsup MJXc-space3"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em;">B</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">)</span></span><span class="mjx-mo MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.09em; padding-bottom: 0.311em;">=</span></span><span class="mjx-mfrac MJXc-space3"><span class="mjx-box MJXc-stacked" style="width: 1.796em; padding: 0px 0.12em;"><span class="mjx-numerator" style="width: 1.796em; top: -1.368em;"><span class="mjx-mn"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.333em;">1</span></span></span><span class="mjx-denominator" style="width: 1.796em; bottom: -0.827em;"><span class="mjx-msubsup"><span class="mjx-base"><span class="mjx-mn"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.333em;">2</span></span></span><span class="mjx-sup" style="font-size: 70.7%; vertical-align: 0.591em; padding-left: 0px; padding-right: 0.071em;"><span class="mjx-texatom" style=""><span class="mjx-mrow"><span class="mjx-mn"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.355em;">100</span></span></span></span></span></span></span><span style="border-bottom: 2.7px solid; top: -0.28em; width: 1.796em;" class="mjx-line"></span></span><span style="height: 2.194em; vertical-align: -0.827em;" class="mjx-vsize"></span></span><span class="mjx-munderover MJXc-space1"><span class="mjx-itable"><span class="mjx-row"><span class="mjx-cell"><span class="mjx-stack"><span class="mjx-over" style="font-size: 70.7%; padding-bottom: 0.236em; padding-top: 0.141em; padding-left: 0.656em;"><span class="mjx-texatom" style=""><span class="mjx-mrow"><span class="mjx-mn"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.355em;">99</span></span></span></span></span><span class="mjx-op" style="padding-left: 0.096em;"><span class="mjx-mo"><span class="mjx-char MJXc-TeX-size2-R" style="padding-top: 0.73em; padding-bottom: 0.73em;">∑</span></span></span></span></span></span><span class="mjx-row"><span class="mjx-under" style="font-size: 70.7%; padding-top: 0.236em; padding-bottom: 0.141em;"><span class="mjx-texatom" style=""><span class="mjx-mrow"><span class="mjx-msubsup"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.241em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.266em;">A</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.09em; padding-bottom: 0.311em;">=</span></span><span class="mjx-mn"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.333em;">1</span></span></span></span></span></span></span></span><span class="mjx-munderover MJXc-space1"><span class="mjx-itable"><span class="mjx-row"><span class="mjx-cell"><span class="mjx-stack"><span class="mjx-over" style="font-size: 70.7%; padding-bottom: 0.157em; padding-top: 0.141em; padding-left: 0.003em;"><span class="mjx-texatom" style=""><span class="mjx-mrow"><span class="mjx-msubsup"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.241em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.266em;">A</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.288em; padding-bottom: 0.421em;">−</span></span><span class="mjx-mn"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.333em;">1</span></span></span></span></span><span class="mjx-op" style="padding-left: 0.098em;"><span class="mjx-mo"><span class="mjx-char MJXc-TeX-size2-R" style="padding-top: 0.73em; padding-bottom: 0.73em;">∑</span></span></span></span></span></span><span class="mjx-row"><span class="mjx-under" style="font-size: 70.7%; padding-top: 0.236em; padding-bottom: 0.141em;"><span class="mjx-texatom" style=""><span class="mjx-mrow"><span class="mjx-msubsup"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em;">B</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.09em; padding-bottom: 0.311em;">=</span></span><span class="mjx-mn"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.355em;">0</span></span></span></span></span></span></span></span><span class="mjx-mi MJXc-space1"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.465em;">Q</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">(</span></span><span class="mjx-mn"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.355em;">100</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-msubsup MJXc-space1"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.241em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.266em;">A</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-msubsup MJXc-space1"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em;">B</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">)</span></span></span></span></span></span></span></span>
+</p>
+<p>and similarly</p>
+<p>
+<span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="
+\displaystyle
+P(s_B > s_A) = \frac{1}{2^{100}}\sum_{s_B = 1}^{50} \sum_{s_A = 0}^{s_B - 1} Q(100, s_A, s_B)
+"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mstyle"><span class="mjx-mrow"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em; padding-right: 0.109em;">P</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">(</span></span><span class="mjx-msubsup"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em;">B</span></span></span></span><span class="mjx-mo MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.244em; padding-bottom: 0.377em;">&gt;</span></span><span class="mjx-msubsup MJXc-space3"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.241em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.266em;">A</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">)</span></span><span class="mjx-mo MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.09em; padding-bottom: 0.311em;">=</span></span><span class="mjx-mfrac MJXc-space3"><span class="mjx-box MJXc-stacked" style="width: 1.796em; padding: 0px 0.12em;"><span class="mjx-numerator" style="width: 1.796em; top: -1.368em;"><span class="mjx-mn"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.333em;">1</span></span></span><span class="mjx-denominator" style="width: 1.796em; bottom: -0.827em;"><span class="mjx-msubsup"><span class="mjx-base"><span class="mjx-mn"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.333em;">2</span></span></span><span class="mjx-sup" style="font-size: 70.7%; vertical-align: 0.591em; padding-left: 0px; padding-right: 0.071em;"><span class="mjx-texatom" style=""><span class="mjx-mrow"><span class="mjx-mn"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.355em;">100</span></span></span></span></span></span></span><span style="border-bottom: 2.7px solid; top: -0.28em; width: 1.796em;" class="mjx-line"></span></span><span style="height: 2.194em; vertical-align: -0.827em;" class="mjx-vsize"></span></span><span class="mjx-munderover MJXc-space1"><span class="mjx-itable"><span class="mjx-row"><span class="mjx-cell"><span class="mjx-stack"><span class="mjx-over" style="font-size: 70.7%; padding-bottom: 0.236em; padding-top: 0.141em; padding-left: 0.66em;"><span class="mjx-texatom" style=""><span class="mjx-mrow"><span class="mjx-mn"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.355em;">50</span></span></span></span></span><span class="mjx-op" style="padding-left: 0.098em;"><span class="mjx-mo"><span class="mjx-char MJXc-TeX-size2-R" style="padding-top: 0.73em; padding-bottom: 0.73em;">∑</span></span></span></span></span></span><span class="mjx-row"><span class="mjx-under" style="font-size: 70.7%; padding-top: 0.236em; padding-bottom: 0.141em;"><span class="mjx-texatom" style=""><span class="mjx-mrow"><span class="mjx-msubsup"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em;">B</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.09em; padding-bottom: 0.311em;">=</span></span><span class="mjx-mn"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.333em;">1</span></span></span></span></span></span></span></span><span class="mjx-munderover MJXc-space1"><span class="mjx-itable"><span class="mjx-row"><span class="mjx-cell"><span class="mjx-stack"><span class="mjx-over" style="font-size: 70.7%; padding-bottom: 0.157em; padding-top: 0.141em;"><span class="mjx-texatom" style=""><span class="mjx-mrow"><span class="mjx-msubsup"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em;">B</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.288em; padding-bottom: 0.421em;">−</span></span><span class="mjx-mn"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.333em;">1</span></span></span></span></span><span class="mjx-op" style="padding-left: 0.098em;"><span class="mjx-mo"><span class="mjx-char MJXc-TeX-size2-R" style="padding-top: 0.73em; padding-bottom: 0.73em;">∑</span></span></span></span></span></span><span class="mjx-row"><span class="mjx-under" style="font-size: 70.7%; padding-top: 0.236em; padding-bottom: 0.141em; padding-left: 0.003em;"><span class="mjx-texatom" style=""><span class="mjx-mrow"><span class="mjx-msubsup"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.241em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.266em;">A</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.09em; padding-bottom: 0.311em;">=</span></span><span class="mjx-mn"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.355em;">0</span></span></span></span></span></span></span></span><span class="mjx-mi MJXc-space1"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.465em;">Q</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">(</span></span><span class="mjx-mn"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.355em;">100</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-msubsup MJXc-space1"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.241em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.266em;">A</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-msubsup MJXc-space1"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em;">B</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">)</span></span></span></span></span></span></span></span>
+</p>
+</center>
+
+<p>Ok, that is all fine and dandy, but how do we actually compute <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="Q"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.465em;">Q</span></span></span></span></span></span>?</p>
+<p>It is not obvious at first how we can possibly write <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="Q(n, \ldots)"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.465em;">Q</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">(</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">n</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-mo MJXc-space1"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.333em;">…</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">)</span></span></span></span></span></span> in terms of <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="Q(n - 1, \ldots)"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.465em;">Q</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">(</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">n</span></span><span class="mjx-mo MJXc-space2"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.288em; padding-bottom: 0.421em;">−</span></span><span class="mjx-mn MJXc-space2"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.333em;">1</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-mo MJXc-space1"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.333em;">…</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">)</span></span></span></span></span></span> or smaller <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="n"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">n</span></span></span></span></span></span>. Let's imagine we're currently at some particular <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="n"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">n</span></span></span></span></span></span>-length sequence:</p>
+<center><span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="\underbrace{\ldots \ldots \ldots}_{n - 1\text{ coins}}\ \textit{H}"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-munderover"><span class="mjx-itable"><span class="mjx-row"><span class="mjx-cell"><span class="mjx-op" style="margin-top: -0.205em;"><span class="mjx-texatom"><span class="mjx-mrow"><span class="mjx-munderover"><span class="mjx-itable"><span class="mjx-row"><span class="mjx-cell"><span class="mjx-op" style="margin-top: -0.205em;"><span class="mjx-mrow"><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.333em;">…</span></span><span class="mjx-mo MJXc-space1"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.333em;">…</span></span><span class="mjx-mo MJXc-space1"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.333em;">…</span></span></span></span></span></span><span class="mjx-row"><span class="mjx-under" style="padding-top: 0.12em;"><span class="mjx-mo"><span class="mjx-delim-h"><span class="mjx-char MJXc-TeX-size4-R" style="padding-top: 0.108em; padding-bottom: 0.488em; margin: 0px 0.01em 0px 0.024em;"></span><span class="mjx-char MJXc-TeX-size4-R" style="padding-top: 0.108em; padding-bottom: 0.488em; letter-spacing: -0.155em; margin: 0px 0.122em 0px -0.102em;"></span><span class="mjx-char MJXc-TeX-size4-R" style="margin-top: 0px; padding-bottom: 0.488em; margin-right: 0.01em; padding-top: 0.108em; margin-bottom: 0px;"></span><span class="mjx-char MJXc-TeX-size4-R" style="padding-top: 0.108em; padding-bottom: 0.488em; letter-spacing: -0.155em; margin: 0px 0.122em 0px -0.102em;"></span><span class="mjx-char MJXc-TeX-size4-R" style="padding-top: 0.108em; padding-bottom: 0.488em; margin-right: 0.024em; margin-bottom: 0px; margin-top: 0px;"></span></span></span></span></span></span></span></span></span></span></span></span><span class="mjx-row"><span class="mjx-under" style="font-size: 70.7%; padding-top: 0.236em; padding-bottom: 0.141em; padding-left: 0.572em;"><span class="mjx-texatom" style=""><span class="mjx-mrow"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">n</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.288em; padding-bottom: 0.421em;">−</span></span><span class="mjx-mn"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.333em;">1</span></span><span class="mjx-mtext"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.355em;">&nbsp;coins</span></span></span></span></span></span></span></span><span class="mjx-mtext"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.286em; padding-bottom: 0.333em;">&nbsp;</span></span><span class="mjx-texatom"><span class="mjx-mrow"><span class="mjx-mtext"><span class="mjx-char MJXc-TeX-main-I" style="padding-top: 0.465em; padding-bottom: 0.266em;">H</span></span></span></span></span></span></span></span></center>
+
+<p>Does Alice gain a point here? What if we have:</p>
+<center><span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="\underbrace{\ldots \ldots \ldots}_{n - 1\text{ coins}}\ \textit{T}"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-munderover"><span class="mjx-itable"><span class="mjx-row"><span class="mjx-cell"><span class="mjx-op" style="margin-top: -0.205em;"><span class="mjx-texatom"><span class="mjx-mrow"><span class="mjx-munderover"><span class="mjx-itable"><span class="mjx-row"><span class="mjx-cell"><span class="mjx-op" style="margin-top: -0.205em;"><span class="mjx-mrow"><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.333em;">…</span></span><span class="mjx-mo MJXc-space1"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.333em;">…</span></span><span class="mjx-mo MJXc-space1"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.333em;">…</span></span></span></span></span></span><span class="mjx-row"><span class="mjx-under" style="padding-top: 0.12em;"><span class="mjx-mo"><span class="mjx-delim-h"><span class="mjx-char MJXc-TeX-size4-R" style="padding-top: 0.108em; padding-bottom: 0.488em; margin: 0px 0.01em 0px 0.024em;"></span><span class="mjx-char MJXc-TeX-size4-R" style="padding-top: 0.108em; padding-bottom: 0.488em; letter-spacing: -0.155em; margin: 0px 0.122em 0px -0.102em;"></span><span class="mjx-char MJXc-TeX-size4-R" style="margin-top: 0px; padding-bottom: 0.488em; margin-right: 0.01em; padding-top: 0.108em; margin-bottom: 0px;"></span><span class="mjx-char MJXc-TeX-size4-R" style="padding-top: 0.108em; padding-bottom: 0.488em; letter-spacing: -0.155em; margin: 0px 0.122em 0px -0.102em;"></span><span class="mjx-char MJXc-TeX-size4-R" style="padding-top: 0.108em; padding-bottom: 0.488em; margin-right: 0.024em; margin-bottom: 0px; margin-top: 0px;"></span></span></span></span></span></span></span></span></span></span></span></span><span class="mjx-row"><span class="mjx-under" style="font-size: 70.7%; padding-top: 0.236em; padding-bottom: 0.141em; padding-left: 0.572em;"><span class="mjx-texatom" style=""><span class="mjx-mrow"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">n</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.288em; padding-bottom: 0.421em;">−</span></span><span class="mjx-mn"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.333em;">1</span></span><span class="mjx-mtext"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.355em;">&nbsp;coins</span></span></span></span></span></span></span></span><span class="mjx-mtext"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.286em; padding-bottom: 0.333em;">&nbsp;</span></span><span class="mjx-texatom"><span class="mjx-mrow"><span class="mjx-mtext"><span class="mjx-char MJXc-TeX-main-I" style="padding-top: 0.443em; padding-bottom: 0.266em;">T</span></span></span></span></span></span></span></span></center>
+
+<p>Does Bob gain a point here? It seems like we will be forced to ‘inspect’ the last coin in the preceding sequence to determine what we should do, which renders our approach unusable, because we have already rolled the previous state into just a count <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="Q"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.465em;">Q</span></span></span></span></span></span>.</p>
+<p>However, all hope is not lost for dynamic programming. What if we simply define two functions — <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="Q_{*H}"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-msubsup"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.465em;">Q</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-texatom" style=""><span class="mjx-mrow"><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.178em; padding-bottom: 0.311em;">∗</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em; padding-right: 0.057em;">H</span></span></span></span></span></span></span></span></span></span> and <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="Q_{*T}"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-msubsup"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.465em;">Q</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-texatom" style=""><span class="mjx-mrow"><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.178em; padding-bottom: 0.311em;">∗</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.443em; padding-bottom: 0.266em; padding-right: 0.12em;">T</span></span></span></span></span></span></span></span></span></span>, such that <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="Q_{*H}(n, s_A, s_B)"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-msubsup"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.465em;">Q</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-texatom" style=""><span class="mjx-mrow"><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.178em; padding-bottom: 0.311em;">∗</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em; padding-right: 0.057em;">H</span></span></span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">(</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">n</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-msubsup MJXc-space1"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.241em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.266em;">A</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-msubsup MJXc-space1"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em;">B</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">)</span></span></span></span></span></span> is the number of distinct <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="n"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">n</span></span></span></span></span></span>-length coin-flip sequences <strong>which ends in a head</strong>, and have a score of <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="s_A"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-msubsup"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.241em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.266em;">A</span></span></span></span></span></span></span></span> and <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="s_B"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-msubsup"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em;">B</span></span></span></span></span></span></span></span> for Alice and Bob, and similarly for <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="Q_{*T}(n, s_A, s_B)"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-msubsup"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.465em;">Q</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-texatom" style=""><span class="mjx-mrow"><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.178em; padding-bottom: 0.311em;">∗</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.443em; padding-bottom: 0.266em; padding-right: 0.12em;">T</span></span></span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">(</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">n</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-msubsup MJXc-space1"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.241em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.266em;">A</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-msubsup MJXc-space1"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em;">B</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">)</span></span></span></span></span></span>, except it counts sequences that end in a tail?</p>
+<p>This way, it become clearer how to write <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="Q_{\ldots}"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-msubsup"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.465em;">Q</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-texatom" style=""><span class="mjx-mrow"><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.333em;">…</span></span></span></span></span></span></span></span></span></span> in terms of itself. Let's consider <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="Q_{*H}"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-msubsup"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.465em;">Q</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-texatom" style=""><span class="mjx-mrow"><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.178em; padding-bottom: 0.311em;">∗</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em; padding-right: 0.057em;">H</span></span></span></span></span></span></span></span></span></span> first:</p>
+<center><span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="\underbrace{\ldots \ldots\ c}_{n - 1\text{ coins}}\ \textit{H}"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-munderover"><span class="mjx-itable"><span class="mjx-row"><span class="mjx-cell"><span class="mjx-op"><span class="mjx-texatom"><span class="mjx-mrow"><span class="mjx-munderover"><span class="mjx-itable"><span class="mjx-row"><span class="mjx-cell"><span class="mjx-op"><span class="mjx-mrow"><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.333em;">…</span></span><span class="mjx-mo MJXc-space1"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.333em;">…</span></span><span class="mjx-mtext MJXc-space1"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.286em; padding-bottom: 0.333em;">&nbsp;</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">c</span></span></span></span></span></span><span class="mjx-row"><span class="mjx-under" style="padding-top: 0.12em;"><span class="mjx-mo"><span class="mjx-delim-h"><span class="mjx-char MJXc-TeX-size4-R" style="padding-top: 0.108em; padding-bottom: 0.488em; margin: 0px 0.01em 0px 0.024em;"></span><span class="mjx-char MJXc-TeX-size4-R" style="padding-top: 0.108em; padding-bottom: 0.488em; letter-spacing: -0.155em; margin: 0px 0.122em 0px -0.102em;"></span><span class="mjx-char MJXc-TeX-size4-R" style="margin-top: 0px; padding-bottom: 0.488em; margin-right: 0.01em; padding-top: 0.108em; margin-bottom: 0px;"></span><span class="mjx-char MJXc-TeX-size4-R" style="padding-top: 0.108em; padding-bottom: 0.488em; letter-spacing: -0.155em; margin: 0px 0.122em 0px -0.102em;"></span><span class="mjx-char MJXc-TeX-size4-R" style="padding-top: 0.108em; padding-bottom: 0.488em; margin-right: 0.024em; margin-bottom: 0px; margin-top: 0px;"></span></span></span></span></span></span></span></span></span></span></span></span><span class="mjx-row"><span class="mjx-under" style="font-size: 70.7%; padding-top: 0.236em; padding-bottom: 0.141em; padding-left: 0.226em;"><span class="mjx-texatom" style=""><span class="mjx-mrow"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">n</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.288em; padding-bottom: 0.421em;">−</span></span><span class="mjx-mn"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.333em;">1</span></span><span class="mjx-mtext"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.355em;">&nbsp;coins</span></span></span></span></span></span></span></span><span class="mjx-mtext"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.286em; padding-bottom: 0.333em;">&nbsp;</span></span><span class="mjx-texatom"><span class="mjx-mrow"><span class="mjx-mtext"><span class="mjx-char MJXc-TeX-main-I" style="padding-top: 0.465em; padding-bottom: 0.266em;">H</span></span></span></span></span></span></span></span></center>
+
+<p>At this point, there are two possible outcomes: either Alice gains 1 point because <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="c = \textit{H}"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">c</span></span><span class="mjx-mo MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.09em; padding-bottom: 0.311em;">=</span></span><span class="mjx-texatom MJXc-space3"><span class="mjx-mrow"><span class="mjx-mtext"><span class="mjx-char MJXc-TeX-main-I" style="padding-top: 0.465em; padding-bottom: 0.266em;">H</span></span></span></span></span></span></span></span>, or nothing interesting happens because <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="c = \textit{T}"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">c</span></span><span class="mjx-mo MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.09em; padding-bottom: 0.311em;">=</span></span><span class="mjx-texatom MJXc-space3"><span class="mjx-mrow"><span class="mjx-mtext"><span class="mjx-char MJXc-TeX-main-I" style="padding-top: 0.443em; padding-bottom: 0.266em;">T</span></span></span></span></span></span></span></span> (and <em>TH</em> does not gain anyone points). This means that:</p>
+<center><span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="
+Q_{*H}(n, s_A, s_B) = Q_{*H}(n - 1, s_A - 1, s_B) + Q_{*T}(n - 1, s_A, s_B)
+"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-msubsup"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.465em;">Q</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-texatom" style=""><span class="mjx-mrow"><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.178em; padding-bottom: 0.311em;">∗</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em; padding-right: 0.057em;">H</span></span></span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">(</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">n</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-msubsup MJXc-space1"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.241em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.266em;">A</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-msubsup MJXc-space1"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em;">B</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">)</span></span><span class="mjx-mo MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.09em; padding-bottom: 0.311em;">=</span></span><span class="mjx-msubsup MJXc-space3"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.465em;">Q</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-texatom" style=""><span class="mjx-mrow"><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.178em; padding-bottom: 0.311em;">∗</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em; padding-right: 0.057em;">H</span></span></span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">(</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">n</span></span><span class="mjx-mo MJXc-space2"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.288em; padding-bottom: 0.421em;">−</span></span><span class="mjx-mn MJXc-space2"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.333em;">1</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-msubsup MJXc-space1"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.241em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.266em;">A</span></span></span></span><span class="mjx-mo MJXc-space2"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.288em; padding-bottom: 0.421em;">−</span></span><span class="mjx-mn MJXc-space2"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.333em;">1</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-msubsup MJXc-space1"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em;">B</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">)</span></span><span class="mjx-mo MJXc-space2"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.288em; padding-bottom: 0.421em;">+</span></span><span class="mjx-msubsup MJXc-space2"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.465em;">Q</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-texatom" style=""><span class="mjx-mrow"><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.178em; padding-bottom: 0.311em;">∗</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.443em; padding-bottom: 0.266em; padding-right: 0.12em;">T</span></span></span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">(</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">n</span></span><span class="mjx-mo MJXc-space2"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.288em; padding-bottom: 0.421em;">−</span></span><span class="mjx-mn MJXc-space2"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.333em;">1</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-msubsup MJXc-space1"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.241em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.266em;">A</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-msubsup MJXc-space1"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em;">B</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">)</span></span></span></span></span></span></center>
+
+<p>Now consider if the sequence ends in a tail:</p>
+<center><span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="\underbrace{\ldots \ldots\ c}_{n - 1\text{ coins}}\ \textit{T}"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-munderover"><span class="mjx-itable"><span class="mjx-row"><span class="mjx-cell"><span class="mjx-op"><span class="mjx-texatom"><span class="mjx-mrow"><span class="mjx-munderover"><span class="mjx-itable"><span class="mjx-row"><span class="mjx-cell"><span class="mjx-op"><span class="mjx-mrow"><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.333em;">…</span></span><span class="mjx-mo MJXc-space1"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.333em;">…</span></span><span class="mjx-mtext MJXc-space1"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.286em; padding-bottom: 0.333em;">&nbsp;</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">c</span></span></span></span></span></span><span class="mjx-row"><span class="mjx-under" style="padding-top: 0.12em;"><span class="mjx-mo"><span class="mjx-delim-h"><span class="mjx-char MJXc-TeX-size4-R" style="padding-top: 0.108em; padding-bottom: 0.488em; margin: 0px 0.01em 0px 0.024em;"></span><span class="mjx-char MJXc-TeX-size4-R" style="padding-top: 0.108em; padding-bottom: 0.488em; letter-spacing: -0.155em; margin: 0px 0.122em 0px -0.102em;"></span><span class="mjx-char MJXc-TeX-size4-R" style="margin-top: 0px; padding-bottom: 0.488em; margin-right: 0.01em; padding-top: 0.108em; margin-bottom: 0px;"></span><span class="mjx-char MJXc-TeX-size4-R" style="padding-top: 0.108em; padding-bottom: 0.488em; letter-spacing: -0.155em; margin: 0px 0.122em 0px -0.102em;"></span><span class="mjx-char MJXc-TeX-size4-R" style="padding-top: 0.108em; padding-bottom: 0.488em; margin-right: 0.024em; margin-bottom: 0px; margin-top: 0px;"></span></span></span></span></span></span></span></span></span></span></span></span><span class="mjx-row"><span class="mjx-under" style="font-size: 70.7%; padding-top: 0.236em; padding-bottom: 0.141em; padding-left: 0.226em;"><span class="mjx-texatom" style=""><span class="mjx-mrow"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">n</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.288em; padding-bottom: 0.421em;">−</span></span><span class="mjx-mn"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.333em;">1</span></span><span class="mjx-mtext"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.355em;">&nbsp;coins</span></span></span></span></span></span></span></span><span class="mjx-mtext"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.286em; padding-bottom: 0.333em;">&nbsp;</span></span><span class="mjx-texatom"><span class="mjx-mrow"><span class="mjx-mtext"><span class="mjx-char MJXc-TeX-main-I" style="padding-top: 0.443em; padding-bottom: 0.266em;">T</span></span></span></span></span></span></span></span></center>
+
+<p>Again, there are two possible outcomes: either Bob gains 1 point because <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="c = \textit{H}"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">c</span></span><span class="mjx-mo MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.09em; padding-bottom: 0.311em;">=</span></span><span class="mjx-texatom MJXc-space3"><span class="mjx-mrow"><span class="mjx-mtext"><span class="mjx-char MJXc-TeX-main-I" style="padding-top: 0.465em; padding-bottom: 0.266em;">H</span></span></span></span></span></span></span></span>, or nothing interesting happens because <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="c = \textit{T}"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">c</span></span><span class="mjx-mo MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.09em; padding-bottom: 0.311em;">=</span></span><span class="mjx-texatom MJXc-space3"><span class="mjx-mrow"><span class="mjx-mtext"><span class="mjx-char MJXc-TeX-main-I" style="padding-top: 0.443em; padding-bottom: 0.266em;">T</span></span></span></span></span></span></span></span> (and <em>TT</em> does not gain anyone points). This means that:</p>
+<center><span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="
+Q_{*T}(n, s_A, s_B) = Q_{*H}(n - 1, s_A, s_B - 1) + Q_{*T}(n - 1, s_A, s_B)
+"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-msubsup"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.465em;">Q</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-texatom" style=""><span class="mjx-mrow"><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.178em; padding-bottom: 0.311em;">∗</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.443em; padding-bottom: 0.266em; padding-right: 0.12em;">T</span></span></span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">(</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">n</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-msubsup MJXc-space1"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.241em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.266em;">A</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-msubsup MJXc-space1"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em;">B</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">)</span></span><span class="mjx-mo MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.09em; padding-bottom: 0.311em;">=</span></span><span class="mjx-msubsup MJXc-space3"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.465em;">Q</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-texatom" style=""><span class="mjx-mrow"><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.178em; padding-bottom: 0.311em;">∗</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em; padding-right: 0.057em;">H</span></span></span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">(</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">n</span></span><span class="mjx-mo MJXc-space2"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.288em; padding-bottom: 0.421em;">−</span></span><span class="mjx-mn MJXc-space2"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.333em;">1</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-msubsup MJXc-space1"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.241em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.266em;">A</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-msubsup MJXc-space1"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em;">B</span></span></span></span><span class="mjx-mo MJXc-space2"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.288em; padding-bottom: 0.421em;">−</span></span><span class="mjx-mn MJXc-space2"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.333em;">1</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">)</span></span><span class="mjx-mo MJXc-space2"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.288em; padding-bottom: 0.421em;">+</span></span><span class="mjx-msubsup MJXc-space2"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.465em;">Q</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-texatom" style=""><span class="mjx-mrow"><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.178em; padding-bottom: 0.311em;">∗</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.443em; padding-bottom: 0.266em; padding-right: 0.12em;">T</span></span></span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">(</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">n</span></span><span class="mjx-mo MJXc-space2"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.288em; padding-bottom: 0.421em;">−</span></span><span class="mjx-mn MJXc-space2"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.333em;">1</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-msubsup MJXc-space1"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.241em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.266em;">A</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-msubsup MJXc-space1"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em;">B</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">)</span></span></span></span></span></span></center>
+
+<p>Now that we have both <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="Q_{*H}"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-msubsup"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.465em;">Q</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-texatom" style=""><span class="mjx-mrow"><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.178em; padding-bottom: 0.311em;">∗</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em; padding-right: 0.057em;">H</span></span></span></span></span></span></span></span></span></span> and <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="Q_{*T}"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-msubsup"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.465em;">Q</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-texatom" style=""><span class="mjx-mrow"><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.178em; padding-bottom: 0.311em;">∗</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.443em; padding-bottom: 0.266em; padding-right: 0.12em;">T</span></span></span></span></span></span></span></span></span></span>, <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="Q"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.465em;">Q</span></span></span></span></span></span> is just:</p>
+<center><span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="
+Q(n, s_A, s_B) = Q_{*H}(n, s_A, s_B) + Q_{*T}(n, s_A, s_B)
+"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.465em;">Q</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">(</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">n</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-msubsup MJXc-space1"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.241em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.266em;">A</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-msubsup MJXc-space1"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em;">B</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">)</span></span><span class="mjx-mo MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.09em; padding-bottom: 0.311em;">=</span></span><span class="mjx-msubsup MJXc-space3"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.465em;">Q</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-texatom" style=""><span class="mjx-mrow"><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.178em; padding-bottom: 0.311em;">∗</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em; padding-right: 0.057em;">H</span></span></span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">(</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">n</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-msubsup MJXc-space1"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.241em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.266em;">A</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-msubsup MJXc-space1"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em;">B</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">)</span></span><span class="mjx-mo MJXc-space2"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.288em; padding-bottom: 0.421em;">+</span></span><span class="mjx-msubsup MJXc-space2"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.465em;">Q</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-texatom" style=""><span class="mjx-mrow"><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.178em; padding-bottom: 0.311em;">∗</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.443em; padding-bottom: 0.266em; padding-right: 0.12em;">T</span></span></span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">(</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">n</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-msubsup MJXc-space1"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.241em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.266em;">A</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-msubsup MJXc-space1"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em;">B</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">)</span></span></span></span></span></span></center>
+
+<p>As always in dynamic programming or recursion, we need to define the base cases. For this problem we will start from <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="n = 2"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">n</span></span><span class="mjx-mo MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.09em; padding-bottom: 0.311em;">=</span></span><span class="mjx-mn MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.333em;">2</span></span></span></span></span></span>:</p>
+<center><span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="
+Q_{*H}(2, s_A, s_B) = \begin{cases}
+  1 &amp; \text{if } s_A = 1 \text{ and } s_B = 0 \text{ (HH)} \\
+  1 &amp; \text{if } s_A = 0 \text{ and } s_B = 0 \text{ (TH)} \\
+  0 &amp; \text{otherwise}
+\end{cases}"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-msubsup"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.465em;">Q</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-texatom" style=""><span class="mjx-mrow"><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.178em; padding-bottom: 0.311em;">∗</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em; padding-right: 0.057em;">H</span></span></span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">(</span></span><span class="mjx-mn"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.333em;">2</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-msubsup MJXc-space1"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.241em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.266em;">A</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-msubsup MJXc-space1"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em;">B</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">)</span></span><span class="mjx-mo MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.09em; padding-bottom: 0.311em;">=</span></span><span class="mjx-mrow MJXc-space3"><span class="mjx-mo" style="vertical-align: -0.601em;"><span class="mjx-delim-v"><span class="mjx-char MJXc-TeX-size4-R" style="padding-top: 0.664em; padding-bottom: 0.288em; margin-bottom: -0.119em;">⎧</span><span class="mjx-char MJXc-TeX-size4-R" style="padding-top: 0.929em; padding-bottom: 0.929em;">⎨</span><span class="mjx-char MJXc-TeX-size4-R" style="margin-top: -0.339em; padding-bottom: 1.172em;">⎩</span></span></span><span class="mjx-mtable" style="vertical-align: -1.525em; padding: 0px 0.167em;"><span class="mjx-table"><span class="mjx-mtr" style="height: 1.175em;"><span class="mjx-mtd" style="padding: 0px 0.5em 0px 0px; text-align: left; width: 0.5em;"><span class="mjx-mrow" style="margin-top: -0.2em;"><span class="mjx-mn"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.333em;">1</span></span><span class="mjx-strut"></span></span></span><span class="mjx-mtd" style="padding: 0px 0px 0px 0.5em; text-align: left; width: 11.217em;"><span class="mjx-mrow" style="margin-top: -0.2em;"><span class="mjx-mtext"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.421em; padding-bottom: 0.333em;">if&nbsp;</span></span><span class="mjx-msubsup"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.241em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.266em;">A</span></span></span></span><span class="mjx-mo MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.09em; padding-bottom: 0.311em;">=</span></span><span class="mjx-mn MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.333em;">1</span></span><span class="mjx-mtext"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.399em; padding-bottom: 0.355em;">&nbsp;and&nbsp;</span></span><span class="mjx-msubsup"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em;">B</span></span></span></span><span class="mjx-mo MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.09em; padding-bottom: 0.311em;">=</span></span><span class="mjx-mn MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.355em;">0</span></span><span class="mjx-mtext"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">&nbsp;(HH)</span></span><span class="mjx-strut"></span></span></span></span><span class="mjx-mtr" style="height: 1.275em;"><span class="mjx-mtd" style="padding: 0.1em 0.5em 0px 0px; text-align: left;"><span class="mjx-mrow" style="margin-top: -0.2em;"><span class="mjx-mn"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.333em;">1</span></span><span class="mjx-strut"></span></span></span><span class="mjx-mtd" style="padding: 0.1em 0px 0px 0.5em; text-align: left;"><span class="mjx-mrow" style="margin-top: -0.2em;"><span class="mjx-mtext"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.421em; padding-bottom: 0.333em;">if&nbsp;</span></span><span class="mjx-msubsup"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.241em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.266em;">A</span></span></span></span><span class="mjx-mo MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.09em; padding-bottom: 0.311em;">=</span></span><span class="mjx-mn MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.355em;">0</span></span><span class="mjx-mtext"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.399em; padding-bottom: 0.355em;">&nbsp;and&nbsp;</span></span><span class="mjx-msubsup"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em;">B</span></span></span></span><span class="mjx-mo MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.09em; padding-bottom: 0.311em;">=</span></span><span class="mjx-mn MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.355em;">0</span></span><span class="mjx-mtext"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">&nbsp;(TH)</span></span><span class="mjx-strut"></span></span></span></span><span class="mjx-mtr" style="height: 1.1em;"><span class="mjx-mtd" style="padding: 0.1em 0.5em 0px 0px; text-align: left;"><span class="mjx-mrow" style="margin-top: -0.2em;"><span class="mjx-mn"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.355em;">0</span></span><span class="mjx-strut"></span></span></span><span class="mjx-mtd" style="padding: 0.1em 0px 0px 0.5em; text-align: left;"><span class="mjx-mrow" style="margin-top: -0.2em;"><span class="mjx-mtext"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.399em; padding-bottom: 0.355em;">otherwise</span></span><span class="mjx-strut"></span></span></span></span></span></span><span class="mjx-mo" style="width: 0.12em;"></span></span></span></span></span></span><br><br><span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="
+Q_{*T}(2, s_A, s_B) = \begin{cases}
+  1 &amp; \text{if } s_A = 0 \text{ and } s_B = 1 \text{ (HT)} \\
+  1 &amp; \text{if } s_A = 0 \text{ and } s_B = 0 \text{ (TT)} \\
+  0 &amp; \text{otherwise}
+\end{cases}
+"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-msubsup"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.465em;">Q</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-texatom" style=""><span class="mjx-mrow"><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.178em; padding-bottom: 0.311em;">∗</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.443em; padding-bottom: 0.266em; padding-right: 0.12em;">T</span></span></span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">(</span></span><span class="mjx-mn"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.333em;">2</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-msubsup MJXc-space1"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.241em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.266em;">A</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-msubsup MJXc-space1"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em;">B</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">)</span></span><span class="mjx-mo MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.09em; padding-bottom: 0.311em;">=</span></span><span class="mjx-mrow MJXc-space3"><span class="mjx-mo" style="vertical-align: -0.601em;"><span class="mjx-delim-v"><span class="mjx-char MJXc-TeX-size4-R" style="padding-top: 0.664em; padding-bottom: 0.288em; margin-bottom: -0.119em;">⎧</span><span class="mjx-char MJXc-TeX-size4-R" style="padding-top: 0.929em; padding-bottom: 0.929em;">⎨</span><span class="mjx-char MJXc-TeX-size4-R" style="margin-top: -0.339em; padding-bottom: 1.172em;">⎩</span></span></span><span class="mjx-mtable" style="vertical-align: -1.525em; padding: 0px 0.167em;"><span class="mjx-table"><span class="mjx-mtr" style="height: 1.175em;"><span class="mjx-mtd" style="padding: 0px 0.5em 0px 0px; text-align: left; width: 0.5em;"><span class="mjx-mrow" style="margin-top: -0.2em;"><span class="mjx-mn"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.333em;">1</span></span><span class="mjx-strut"></span></span></span><span class="mjx-mtd" style="padding: 0px 0px 0px 0.5em; text-align: left; width: 11.189em;"><span class="mjx-mrow" style="margin-top: -0.2em;"><span class="mjx-mtext"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.421em; padding-bottom: 0.333em;">if&nbsp;</span></span><span class="mjx-msubsup"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.241em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.266em;">A</span></span></span></span><span class="mjx-mo MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.09em; padding-bottom: 0.311em;">=</span></span><span class="mjx-mn MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.355em;">0</span></span><span class="mjx-mtext"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.399em; padding-bottom: 0.355em;">&nbsp;and&nbsp;</span></span><span class="mjx-msubsup"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em;">B</span></span></span></span><span class="mjx-mo MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.09em; padding-bottom: 0.311em;">=</span></span><span class="mjx-mn MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.333em;">1</span></span><span class="mjx-mtext"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">&nbsp;(HT)</span></span><span class="mjx-strut"></span></span></span></span><span class="mjx-mtr" style="height: 1.275em;"><span class="mjx-mtd" style="padding: 0.1em 0.5em 0px 0px; text-align: left;"><span class="mjx-mrow" style="margin-top: -0.2em;"><span class="mjx-mn"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.333em;">1</span></span><span class="mjx-strut"></span></span></span><span class="mjx-mtd" style="padding: 0.1em 0px 0px 0.5em; text-align: left;"><span class="mjx-mrow" style="margin-top: -0.2em;"><span class="mjx-mtext"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.421em; padding-bottom: 0.333em;">if&nbsp;</span></span><span class="mjx-msubsup"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.241em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.266em;">A</span></span></span></span><span class="mjx-mo MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.09em; padding-bottom: 0.311em;">=</span></span><span class="mjx-mn MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.355em;">0</span></span><span class="mjx-mtext"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.399em; padding-bottom: 0.355em;">&nbsp;and&nbsp;</span></span><span class="mjx-msubsup"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em;">B</span></span></span></span><span class="mjx-mo MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.09em; padding-bottom: 0.311em;">=</span></span><span class="mjx-mn MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.355em;">0</span></span><span class="mjx-mtext"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">&nbsp;(TT)</span></span><span class="mjx-strut"></span></span></span></span><span class="mjx-mtr" style="height: 1.1em;"><span class="mjx-mtd" style="padding: 0.1em 0.5em 0px 0px; text-align: left;"><span class="mjx-mrow" style="margin-top: -0.2em;"><span class="mjx-mn"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.355em;">0</span></span><span class="mjx-strut"></span></span></span><span class="mjx-mtd" style="padding: 0.1em 0px 0px 0.5em; text-align: left;"><span class="mjx-mrow" style="margin-top: -0.2em;"><span class="mjx-mtext"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.399em; padding-bottom: 0.355em;">otherwise</span></span><span class="mjx-strut"></span></span></span></span></span></span><span class="mjx-mo" style="width: 0.12em;"></span></span></span></span></span></span></center>
+
+<p>At this point we have all we need to turn this into code. But before we do that, let's quickly check that what we're doing here is actually practical. We have two functions we're DP-ing over, which has input space <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="n \in {2,\ldots,100}, s_A \in {0,\ldots,99}, s_B \in {0,\ldots,50}"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">n</span></span><span class="mjx-mo MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.244em; padding-bottom: 0.377em;">∈</span></span><span class="mjx-texatom MJXc-space3"><span class="mjx-mrow"><span class="mjx-mn"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.333em;">2</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-mo MJXc-space1"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.333em;">…</span></span><span class="mjx-mo MJXc-space1"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-mn MJXc-space1"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.355em;">100</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-msubsup MJXc-space1"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.241em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.266em;">A</span></span></span></span><span class="mjx-mo MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.244em; padding-bottom: 0.377em;">∈</span></span><span class="mjx-texatom MJXc-space3"><span class="mjx-mrow"><span class="mjx-mn"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.355em;">0</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-mo MJXc-space1"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.333em;">…</span></span><span class="mjx-mo MJXc-space1"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-mn MJXc-space1"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.355em;">99</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-msubsup MJXc-space1"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em;">B</span></span></span></span><span class="mjx-mo MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.244em; padding-bottom: 0.377em;">∈</span></span><span class="mjx-texatom MJXc-space3"><span class="mjx-mrow"><span class="mjx-mn"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.355em;">0</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-mo MJXc-space1"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.333em;">…</span></span><span class="mjx-mo MJXc-space1"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-mn MJXc-space1"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.355em;">50</span></span></span></span></span></span></span></span>, and so fully computing <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="Q"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.465em;">Q</span></span></span></span></span></span> will require at most <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="98 \times 100 \times 51 = 499800"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mn"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.355em;">98</span></span><span class="mjx-mo MJXc-space2"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.2em; padding-bottom: 0.333em;">×</span></span><span class="mjx-mn MJXc-space2"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.355em;">100</span></span><span class="mjx-mo MJXc-space2"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.2em; padding-bottom: 0.333em;">×</span></span><span class="mjx-mn MJXc-space2"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.355em;">51</span></span><span class="mjx-mo MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.09em; padding-bottom: 0.311em;">=</span></span><span class="mjx-mn MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.399em; padding-bottom: 0.355em;">499800</span></span></span></span></span></span> function calls. Once we have <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="Q"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.465em;">Q</span></span></span></span></span></span>, the summation to calculate <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="P(s_A > s_B)"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em; padding-right: 0.109em;">P</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">(</span></span><span class="mjx-msubsup"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.241em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.266em;">A</span></span></span></span><span class="mjx-mo MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.244em; padding-bottom: 0.377em;">&gt;</span></span><span class="mjx-msubsup MJXc-space3"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em;">B</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">)</span></span></span></span></span></span> and <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="P(s_B > s_A)"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em; padding-right: 0.109em;">P</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">(</span></span><span class="mjx-msubsup"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em;">B</span></span></span></span><span class="mjx-mo MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.244em; padding-bottom: 0.377em;">&gt;</span></span><span class="mjx-msubsup MJXc-space3"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.241em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.266em;">A</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">)</span></span></span></span></span></span> will require <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="99 \times 98 + 50 \times 49 = 12152"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mn"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.355em;">99</span></span><span class="mjx-mo MJXc-space2"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.2em; padding-bottom: 0.333em;">×</span></span><span class="mjx-mn MJXc-space2"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.355em;">98</span></span><span class="mjx-mo MJXc-space2"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.288em; padding-bottom: 0.421em;">+</span></span><span class="mjx-mn MJXc-space2"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.355em;">50</span></span><span class="mjx-mo MJXc-space2"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.2em; padding-bottom: 0.333em;">×</span></span><span class="mjx-mn MJXc-space2"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.399em; padding-bottom: 0.355em;">49</span></span><span class="mjx-mo MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.09em; padding-bottom: 0.311em;">=</span></span><span class="mjx-mn MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.355em;">12152</span></span></span></span></span></span> lookups to <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="Q"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.465em;">Q</span></span></span></span></span></span>. Both numbers are very reasonable, and vastly better than the brute-force search of <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="2^{100}"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-msubsup"><span class="mjx-base"><span class="mjx-mn"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.333em;">2</span></span></span><span class="mjx-sup" style="font-size: 70.7%; vertical-align: 0.591em; padding-left: 0px; padding-right: 0.071em;"><span class="mjx-texatom" style=""><span class="mjx-mrow"><span class="mjx-mn"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.377em; padding-bottom: 0.355em;">100</span></span></span></span></span></span></span></span></span></span> sequences.</p>
+<pre><code class="language-javascript"><span class="hljs-keyword">function</span> <span class="hljs-title function_">memorize</span>(<span class="hljs-params">f</span>) {
+  <span class="hljs-keyword">let</span> cache = <span class="hljs-keyword">new</span> <span class="hljs-title class_">Map</span>();
+  <span class="hljs-keyword">return</span> <span class="hljs-keyword">function</span>(<span class="hljs-params">...args</span>) {
+    <span class="hljs-keyword">let</span> key = <span class="hljs-title class_">JSON</span>.<span class="hljs-title function_">stringify</span>(args);
+    <span class="hljs-keyword">if</span> (cache.<span class="hljs-title function_">has</span>(key)) {
+      <span class="hljs-keyword">return</span> cache.<span class="hljs-title function_">get</span>(key);
+    }
+    <span class="hljs-keyword">let</span> result = <span class="hljs-title function_">f</span>(...args);
+    cache.<span class="hljs-title function_">set</span>(key, result);
+    <span class="hljs-keyword">return</span> result;
+  };
+}
+
+<span class="hljs-comment">// BigInt used here because the number involved is on the order of 2^100</span>
+
+<span class="hljs-keyword">const</span> <span class="hljs-variable constant_">Q_H</span> = <span class="hljs-title function_">memorize</span>(<span class="hljs-function">(<span class="hljs-params">n, s_A, s_B</span>) =&gt;</span> {
+  <span class="hljs-keyword">if</span> (n &lt; <span class="hljs-number">2</span>) {
+    <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Error</span>(<span class="hljs-string">'n must be at least 2'</span>);
+  }
+  <span class="hljs-keyword">if</span> (n == <span class="hljs-number">2</span>) {
+    <span class="hljs-keyword">return</span> ((s_A == <span class="hljs-number">1</span> &amp;&amp; s_B == <span class="hljs-number">0</span>) || (s_A == <span class="hljs-number">0</span> &amp;&amp; s_B == <span class="hljs-number">0</span>)) ? <span class="hljs-number">1n</span> : <span class="hljs-number">0n</span>;
+  }
+  <span class="hljs-keyword">return</span> <span class="hljs-title function_">Q_H</span>(n - <span class="hljs-number">1</span>, s_A - <span class="hljs-number">1</span>, s_B) + <span class="hljs-title function_">Q_T</span>(n - <span class="hljs-number">1</span>, s_A, s_B);
+});
+
+<span class="hljs-keyword">const</span> <span class="hljs-variable constant_">Q_T</span> = <span class="hljs-title function_">memorize</span>(<span class="hljs-function">(<span class="hljs-params">n, s_A, s_B</span>) =&gt;</span> {
+  <span class="hljs-keyword">if</span> (n &lt; <span class="hljs-number">2</span>) {
+    <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Error</span>(<span class="hljs-string">'n must be at least 2'</span>);
+  }
+  <span class="hljs-keyword">if</span> (n == <span class="hljs-number">2</span>) {
+    <span class="hljs-keyword">return</span> ((s_A == <span class="hljs-number">0</span> &amp;&amp; s_B == <span class="hljs-number">1</span>) || (s_A == <span class="hljs-number">0</span> &amp;&amp; s_B == <span class="hljs-number">0</span>)) ? <span class="hljs-number">1n</span> : <span class="hljs-number">0n</span>;
+  }
+  <span class="hljs-keyword">return</span> <span class="hljs-title function_">Q_H</span>(n - <span class="hljs-number">1</span>, s_A, s_B - <span class="hljs-number">1</span>) + <span class="hljs-title function_">Q_T</span>(n - <span class="hljs-number">1</span>, s_A, s_B);
+});
+
+<span class="hljs-keyword">const</span> <span class="hljs-title function_">Q</span> = (<span class="hljs-params">n, s_A, s_B</span>) =&gt; <span class="hljs-title function_">Q_H</span>(n, s_A, s_B) + <span class="hljs-title function_">Q_T</span>(n, s_A, s_B);
+
+<span class="hljs-comment">// Some test cases</span>
+<span class="hljs-keyword">function</span> <span class="hljs-title function_">assert_eq</span>(<span class="hljs-params">a, b</span>) {
+  <span class="hljs-keyword">if</span> (a !== b) {
+    <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Error</span>(<span class="hljs-string">`Expected <span class="hljs-subst">${a}</span> to equal <span class="hljs-subst">${b}</span>`</span>);
+  }
+}
+
+<span class="hljs-title function_">assert_eq</span>(<span class="hljs-title function_">Q</span>(<span class="hljs-number">2</span>, <span class="hljs-number">1</span>, <span class="hljs-number">0</span>), <span class="hljs-number">1n</span>);
+<span class="hljs-title function_">assert_eq</span>(<span class="hljs-title function_">Q</span>(<span class="hljs-number">2</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>), <span class="hljs-number">1n</span>);
+
+<span class="hljs-comment">// HHH, HHT, HTH, HTT, THH, THT, TTH, TTT</span>
+<span class="hljs-comment">// A:2    1    0    0    1    0    0    0</span>
+<span class="hljs-comment">// B:0    1    1    1    0    1    0    0</span>
+
+<span class="hljs-title function_">assert_eq</span>(<span class="hljs-title function_">Q</span>(<span class="hljs-number">3</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>), <span class="hljs-number">2n</span>);
+<span class="hljs-title function_">assert_eq</span>(<span class="hljs-title function_">Q</span>(<span class="hljs-number">3</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>), <span class="hljs-number">3n</span>);
+<span class="hljs-title function_">assert_eq</span>(<span class="hljs-title function_">Q</span>(<span class="hljs-number">3</span>, <span class="hljs-number">1</span>, <span class="hljs-number">0</span>), <span class="hljs-number">1n</span>);
+<span class="hljs-title function_">assert_eq</span>(<span class="hljs-title function_">Q</span>(<span class="hljs-number">3</span>, <span class="hljs-number">1</span>, <span class="hljs-number">1</span>), <span class="hljs-number">1n</span>);
+<span class="hljs-title function_">assert_eq</span>(<span class="hljs-title function_">Q</span>(<span class="hljs-number">3</span>, <span class="hljs-number">2</span>, <span class="hljs-number">0</span>), <span class="hljs-number">1n</span>);
+<span class="hljs-title function_">assert_eq</span>(<span class="hljs-title function_">Q</span>(<span class="hljs-number">3</span>, <span class="hljs-number">2</span>, <span class="hljs-number">1</span>), <span class="hljs-number">0n</span>);
+
+<span class="hljs-keyword">function</span> <span class="hljs-title function_">sum</span>(<span class="hljs-params">bottom, top, f</span>) {
+  <span class="hljs-keyword">let</span> sum = <span class="hljs-number">0n</span>;
+  <span class="hljs-keyword">for</span> (<span class="hljs-keyword">let</span> i = bottom; i &lt;= top; i++) {
+    sum += <span class="hljs-title function_">f</span>(i);
+  }
+  <span class="hljs-keyword">return</span> sum;
+}
+
+<span class="hljs-keyword">function</span> <span class="hljs-title function_">div_by_2_100</span>(<span class="hljs-params">bigint</span>) {
+  <span class="hljs-keyword">const</span> <span class="hljs-variable constant_">PERCISION</span> = <span class="hljs-number">10000n</span>;
+  <span class="hljs-keyword">return</span> <span class="hljs-title class_">Number</span>((bigint * <span class="hljs-variable constant_">PERCISION</span>) / (<span class="hljs-number">2n</span> ** <span class="hljs-number">100n</span>)) / <span class="hljs-title class_">Number</span>(<span class="hljs-variable constant_">PERCISION</span>);
+}
+
+<span class="hljs-keyword">const</span> P_sA_gt_sB = <span class="hljs-title function_">div_by_2_100</span>(<span class="hljs-title function_">sum</span>(<span class="hljs-number">1</span>, <span class="hljs-number">99</span>, <span class="hljs-function"><span class="hljs-params">s_A</span> =&gt;</span> <span class="hljs-title function_">sum</span>(<span class="hljs-number">0</span>, s_A - <span class="hljs-number">1</span>, <span class="hljs-function"><span class="hljs-params">s_B</span> =&gt;</span> <span class="hljs-title function_">Q</span>(<span class="hljs-number">100</span>, s_A, s_B))));
+<span class="hljs-keyword">const</span> P_sB_gt_sA = <span class="hljs-title function_">div_by_2_100</span>(<span class="hljs-title function_">sum</span>(<span class="hljs-number">1</span>, <span class="hljs-number">50</span>, <span class="hljs-function"><span class="hljs-params">s_B</span> =&gt;</span> <span class="hljs-title function_">sum</span>(<span class="hljs-number">0</span>, s_B - <span class="hljs-number">1</span>, <span class="hljs-function"><span class="hljs-params">s_A</span> =&gt;</span> <span class="hljs-title function_">Q</span>(<span class="hljs-number">100</span>, s_A, s_B))));
+
+<span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(<span class="hljs-string">`Alice wins <span class="hljs-subst">${P_sA_gt_sB * <span class="hljs-number">100</span>}</span>% of the time`</span>);
+<span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(<span class="hljs-string">`Bob wins <span class="hljs-subst">${P_sB_gt_sA * <span class="hljs-number">100</span>}</span>% of the time`</span>);
+</code></pre>
+<pre class="output-for-code-above">Alice wins 45.76% of the time
+Bob wins 48.58% of the time
+</pre>
+
+<p>We can verify our solution by running the initial simulation again, but this time using much more iterations:</p>
+<pre><code class="language-javascript"><span class="hljs-keyword">const</span> seq_len = <span class="hljs-number">100</span>;
+<span class="hljs-keyword">const</span> n_runs = <span class="hljs-number">10000000</span>;
+
+<span class="hljs-keyword">let</span> a_wins = <span class="hljs-number">0</span>;
+<span class="hljs-keyword">let</span> b_wins = <span class="hljs-number">0</span>;
+
+<span class="hljs-keyword">function</span> <span class="hljs-title function_">run</span>(<span class="hljs-params"></span>) {
+  <span class="hljs-keyword">let</span> sequence = <span class="hljs-title class_">Array</span>.<span class="hljs-title function_">from</span>({ <span class="hljs-attr">length</span>: seq_len }, <span class="hljs-function">() =&gt;</span> <span class="hljs-title class_">Math</span>.<span class="hljs-title function_">random</span>() &gt; <span class="hljs-number">0.5</span> ? <span class="hljs-string">'H'</span> : <span class="hljs-string">'T'</span>);
+  <span class="hljs-keyword">let</span> a_score = sequence.<span class="hljs-title function_">filter</span>(<span class="hljs-function">(<span class="hljs-params">_, i</span>) =&gt;</span> i &lt; seq_len - <span class="hljs-number">1</span> &amp;&amp; sequence[i] == <span class="hljs-string">'H'</span> &amp;&amp; sequence[i + <span class="hljs-number">1</span>] == <span class="hljs-string">'H'</span>).<span class="hljs-property">length</span>;
+  <span class="hljs-keyword">let</span> b_score = sequence.<span class="hljs-title function_">filter</span>(<span class="hljs-function">(<span class="hljs-params">_, i</span>) =&gt;</span> i &lt; seq_len - <span class="hljs-number">1</span> &amp;&amp; sequence[i] == <span class="hljs-string">'H'</span> &amp;&amp; sequence[i + <span class="hljs-number">1</span>] == <span class="hljs-string">'T'</span>).<span class="hljs-property">length</span>;
+
+  <span class="hljs-keyword">if</span> (a_score &gt; b_score) {
+    a_wins++;
+  } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (b_score &gt; a_score) {
+    b_wins++;
+  }
+}
+
+<span class="hljs-keyword">for</span> (<span class="hljs-keyword">let</span> i = <span class="hljs-number">0</span>; i &lt; n_runs; i++) {
+  <span class="hljs-title function_">run</span>();
+  <span class="hljs-keyword">if</span> (i % <span class="hljs-number">200000</span> == <span class="hljs-number">0</span>) {
+    <span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(<span class="hljs-string">`Progress: <span class="hljs-subst">${i / n_runs * <span class="hljs-number">100</span>}</span>%`</span>);
+  }
+}
+<span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(<span class="hljs-string">`Alice wins: <span class="hljs-subst">${a_wins}</span>, Bob wins: <span class="hljs-subst">${b_wins}</span>`</span>);
+<span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(<span class="hljs-string">`Alice wins <span class="hljs-subst">${a_wins / n_runs * <span class="hljs-number">100</span>}</span>% of the time`</span>);
+<span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(<span class="hljs-string">`Bob wins <span class="hljs-subst">${b_wins / n_runs * <span class="hljs-number">100</span>}</span>% of the time`</span>);
+</code></pre>
+<pre class="output-for-code-above">Alice wins: 4579510, Bob wins: 4854191
+Alice wins 45.7951% of the time
+Bob wins 48.54191% of the time
+</pre>
+
+<p>I think that's pretty close.</p>
+<h2>Actual distribution visualisation</h2>
+<p>The <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="Q(n, s_A, s_B)"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.465em;">Q</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">(</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">n</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-msubsup MJXc-space1"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.241em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.266em;">A</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.176em; padding-bottom: 0.532em;">,</span></span><span class="mjx-msubsup MJXc-space1"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em;">B</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.465em; padding-bottom: 0.598em;">)</span></span></span></span></span></span> code above can be easily changed to give us a graph of the distribution by summing over one of <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="s_A"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-msubsup"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.241em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.487em; padding-bottom: 0.266em;">A</span></span></span></span></span></span></span></span> or <span class="tex"><span class="mjx-chtml"><span class="mjx-math" aria-label="s_B"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-msubsup"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.222em; padding-bottom: 0.288em;">s</span></span></span><span class="mjx-sub" style="font-size: 70.7%; vertical-align: -0.212em; padding-right: 0.071em;"><span class="mjx-mi" style=""><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.465em; padding-bottom: 0.266em;">B</span></span></span></span></span></span></span></span>, although now we're viewing them as separate distributions again.</p>
+<pre><code class="language-javascript"><span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(<span class="hljs-string">"score,a_prob,b_prob"</span>)
+<span class="hljs-keyword">for</span> (<span class="hljs-keyword">let</span> score = <span class="hljs-number">0</span>; score &lt;= <span class="hljs-number">99</span>; score += <span class="hljs-number">1</span>) {
+  <span class="hljs-keyword">let</span> a_val = <span class="hljs-title function_">div_by_2_100</span>(<span class="hljs-title function_">sum</span>(<span class="hljs-number">0</span>, <span class="hljs-number">99</span>, <span class="hljs-function"><span class="hljs-params">s_B</span> =&gt;</span> <span class="hljs-title function_">Q</span>(<span class="hljs-number">100</span>, score, s_B)));
+  <span class="hljs-keyword">let</span> b_val = <span class="hljs-title function_">div_by_2_100</span>(<span class="hljs-title function_">sum</span>(<span class="hljs-number">0</span>, <span class="hljs-number">99</span>, <span class="hljs-function"><span class="hljs-params">s_A</span> =&gt;</span> <span class="hljs-title function_">Q</span>(<span class="hljs-number">100</span>, s_A, score)));
+  <span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(<span class="hljs-string">`<span class="hljs-subst">${score}</span>,<span class="hljs-subst">${a_val}</span>,<span class="hljs-subst">${b_val}</span>`</span>);
+}
+</code></pre>
+<iframe src="https://www.desmos.com/calculator/lljzj1fvip?embed" height="300" style="border: 1px solid #ccc; width: 100%;" frameborder="0"></iframe>
+
+<p>We can also now answer our initial question of whether the expectation of the scores are equal:</p>
+<pre><code class="language-javascript"><span class="hljs-keyword">let</span> a_avg = <span class="hljs-number">0n</span>;
+<span class="hljs-keyword">let</span> b_avg = <span class="hljs-number">0n</span>;
+
+<span class="hljs-keyword">for</span> (<span class="hljs-keyword">let</span> score = <span class="hljs-number">0</span>; score &lt;= <span class="hljs-number">99</span>; score += <span class="hljs-number">1</span>) {
+  <span class="hljs-keyword">let</span> a_sum = <span class="hljs-title function_">sum</span>(<span class="hljs-number">0</span>, <span class="hljs-number">99</span>, <span class="hljs-function"><span class="hljs-params">s_B</span> =&gt;</span> <span class="hljs-title function_">Q</span>(<span class="hljs-number">100</span>, score, s_B));
+  <span class="hljs-keyword">let</span> b_sum = <span class="hljs-title function_">sum</span>(<span class="hljs-number">0</span>, <span class="hljs-number">99</span>, <span class="hljs-function"><span class="hljs-params">s_A</span> =&gt;</span> <span class="hljs-title function_">Q</span>(<span class="hljs-number">100</span>, s_A, score));
+  a_avg += <span class="hljs-title class_">BigInt</span>(score) * a_sum;
+  b_avg += <span class="hljs-title class_">BigInt</span>(score) * b_sum;
+}
+a_avg = <span class="hljs-title function_">div_by_2_100</span>(a_avg);
+b_avg = <span class="hljs-title function_">div_by_2_100</span>(b_avg);
+<span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(<span class="hljs-string">`Average score for Alice: <span class="hljs-subst">${a_avg}</span>, Bob: <span class="hljs-subst">${b_avg}</span>`</span>);
+</code></pre>
+<pre><code class="language-text">Average score for Alice: 24.75, Bob: 24.75
+</code></pre>
+<p>Turns out they are indeed equal.</p>
+<p><a href="https://github.com/micromaomao/blog/issues">Discuss on GitHub</a></p>
+    <p class="footer">
+      Published
+      <span class="time" title="Sun, 17 Mar 2024 21:41:10 GMT">on Sun Mar 17 2024</span>.<br>
+      Authored by <a href="https://maowtm.org">maowtm (Tingmao Wang)</a> &lt;m@maowtm.org&gt;.<br>
+      
+      Content <a href="https://github.com/micromaomao/blog/blob/draft/LICENSE.md">licensed under a Creative Commons Attribution-ShareAlike 4.0 International License</a>.<br>
+      
+      For permissions beyond the scope of this license, see <a href="../request_cc_extension.html">https://blog.maowtm.org/request_cc_extension.html</a>.<br>
+      
+      If you see something wrong please <a href="https://github.com/micromaomao/blog/issues">report on GitHub</a>.
+    </p><a class="home" href="../index.html">« home</a>
+    <script type="text/javascript" src="/layout.js"></script>
+  </body>
+</html>

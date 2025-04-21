@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style type="text/css">
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI Light"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/light/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/light/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/light/latest.ttf) format("truetype");
+  font-weight: 100;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI Semilight"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semilight/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semilight/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semilight/latest.ttf) format("truetype");
+  font-weight: 200;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/normal/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/normal/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/normal/latest.ttf) format("truetype");
+  font-weight: 400;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI Semibold"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semibold/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semibold/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semibold/latest.ttf) format("truetype");
+  font-weight: 600;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI Bold"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/bold/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/bold/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/bold/latest.ttf) format("truetype");
+  font-weight: 700;
+}
+body {
+  background-color: #f9f9fa;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 18px;
+  line-height: 28px;
+  padding: 2em;
+  max-width: 1200px;
+  margin: auto;
+  text-align: justify;
+}
+
+p {
+  margin: 1em 0;
+  hyphens: auto;
+}
+
+hr {
+  background-color: none;
+  border: none;
+  border-bottom: dashed 1px #aaa;
+  margin: 0;
+  padding: 0;
+}
+
+pre {
+  display: block;
+  font-family: monospace;
+  background-color: white;
+  padding: 0.5em 1em;
+  margin: 1em 0;
+  overflow-x: auto;
+}
+pre .comment-box {
+  white-space: nowrap;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 18px;
+  line-height: 28px;
+  padding: 5px 10px;
+  margin: 5px 0;
+  display: inline-block;
+  text-align: left;
+  width: auto;
+  border: solid 1px #444;
+}
+
+.tags {
+  font-size: 16px;
+}
+.tags a.tag {
+  background-color: #eee;
+  color: #666;
+  text-decoration: none;
+  transition: background-color 100ms;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  display: inline-block;
+  margin: 0.1em 0.1em;
+  padding: 0.1em 0.5em;
+  border-radius: 4px;
+}
+.tags a.tag:hover {
+  background-color: #d9d9d9;
+}
+.tags a.tag:active {
+  background-color: #e0e0e0;
+}
+
+body > a.blogtitle {
+  color: black;
+  text-align: center;
+  display: block;
+  text-decoration: none;
+  font-size: 120%;
+  font-style: italic;
+  margin: 0.5em;
+  padding: 1em;
+  border-bottom: 1px dashed #999;
+}
+body > a.blogtitle > img {
+  width: 500px;
+  max-width: 100%;
+}
+body > a.blogtitle > span.note {
+  font-size: 60%;
+  color: #999;
+}
+
+.draftmode-warn {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 10px;
+  line-height: 1.2;
+  background-color: #db7500;
+  color: #fff;
+  text-align: center;
+  font-weight: bold;
+  z-index: 99;
+}
+.draftmode-warn a {
+  color: #fff;
+  text-decoration: underline;
+}
+
+body.draft-mode {
+  margin-top: 60px;
+}
+
+ul.articles {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+ul.articles > li.article {
+  display: grid;
+  grid-template-columns: 100%;
+  list-style-type: none;
+  padding: 0;
+  margin: 1em 0;
+}
+@media (min-width: 1200px) {
+  ul.articles > li.article {
+    grid-template-columns: 40% 60%;
+    grid-template-rows: auto auto auto 1fr;
+    row-gap: 0.4em;
+    column-gap: 1em;
+  }
+}
+ul.articles > li.article img.cover {
+  max-width: 100%;
+  max-height: 300px;
+  display: block;
+  margin: 0 auto;
+}
+@media (min-width: 1200px) {
+  ul.articles > li.article img.cover {
+    grid-column: 1/2;
+    grid-row: 1/5;
+    align-self: center;
+    justify-self: center;
+  }
+}
+ul.articles > li.article a.title {
+  color: #088da5;
+  font-size: 120%;
+  text-decoration: none;
+  font-weight: bold;
+  display: block;
+  padding: 0;
+  margin: 0;
+}
+ul.articles > li.article .time {
+  color: #999;
+  font-size: 75%;
+}
+ul.articles > li.article .snippet {
+  margin: 0;
+  padding: 0;
+  color: #444;
+  font-size: 16px;
+}
+
+a.returntoindex {
+  color: #999;
+  text-decoration: none;
+}</style>
+    <title>Articles with tag performance - mw casual engineering</title>
+    <meta name="keywords" content="performance">
+  </head>
+  <body><a class="blogtitle" href="/"><img src="/title.svg" alt="mw casual engineering"></a><a class="returntoindex" href="../index.html">« see everything</a>
+    <h1>performance</h1>
+    <ul class="articles">
+      <li class="article clickable-article" data-href="../dpdk/en.html"><img class="cover" src="../dpdk/cover.png" alt="cover image"/><a class="title" href="../dpdk/en.html">Blazingly⚡ fast🚀 packet processing with DPDK</a>
+        <div class="tags"><a class="tag" href="networking.html">networking</a> <a class="tag" href="dpdk.html">DPDK</a> <a class="tag" href="performance.html">performance</a> <a class="tag" href="azure.html">Azure</a> <a class="tag" href="linux.html">Linux</a> <a class="tag" href="rust.html">Rust</a>
+        </div>
+        <div class="time">Fri Apr 07 2023</div>
+        <p class="snippet">Recently at work I have been learning about this fancy framework we are using in a product with high-performance networking requirement — the Data Plane Development Kit (DPDK). It is a set of user-space NIC drivers and related utility libraries (like fast buffer pools or queues) that enables an application to bypass the Linux kernel's networking stack, and directly send and receive packets from the hardware...</p>
+      </li>
+    </ul>
+    <script type="text/javascript" src="/layout.js"></script>
+  </body>
+</html>

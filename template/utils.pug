@@ -5,7 +5,10 @@ mixin list_articles(ordered_articles, in_tagdir)
       -if (index > 0)
         hr
       -let article_url = `${in_tagdir ? "../" : ""}${encodeURIComponent(article.codename)}/${l.id}.html`;
-      li.article.clickable-article(data-href=article_url)
+      -let classname = "";
+      -if (l.cover_image === null)
+        -classname = "no-cover";
+      li.article.clickable-article(data-href=article_url, class=classname)
         -if (l.cover_image !== null)
           img.cover(src=`${in_tagdir ? "../" : ""}${encodeURIComponent(article.codename)}/${l.cover_image}`, alt=(l.cover_alt || "cover image"))
         a.title(href=article_url)= l.title

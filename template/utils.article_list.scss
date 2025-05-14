@@ -9,11 +9,13 @@ ul.articles {
     display: grid;
     grid-template-columns: 100%;
 
-    @media (min-width: 1200px) {
-      grid-template-columns: 40% 60%;
-      grid-template-rows: auto auto auto 1fr;
-      row-gap: 0.4em;
-      column-gap: 1em;
+    &:not(.no-cover) {
+      @media (min-width: 1200px) {
+        grid-template-columns: 40% 60%;
+        grid-template-rows: auto auto auto 1fr;
+        row-gap: 0.4em;
+        column-gap: 1em;
+      }
     }
 
     img.cover {

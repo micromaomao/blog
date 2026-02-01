@@ -1,0 +1,26 @@
+[
+  {
+    "title": "Interactive demo of 3Blue1Brown's Hairy Ball Theorem video",
+    "url": "https://draft.blog.maowtm.org/3b1b-hairy-ball/en.html",
+    "date": "2026-01-31T20:24:10.000Z",
+    "tags": [
+      "math",
+      "interactive"
+    ],
+    "cover_image": null,
+    "snippet": "video: The Hairy Ball Theorem #canvas { width: 100%; height: 600px; padding: 0; } .slider-container { margin-top: 10px; display: flex; align-items: center; gap: 10px; } .slider-container label { font-family: sans-serif; flex-grow: 0; flex-shrink: 0; } .slider-container input[type=\"range\"] { flex-grow:..."
+  },
+  {
+    "title": "Hiding ‘Easter Eggs’ in your Hypervisor",
+    "url": "https://draft.blog.maowtm.org/hypervisor-easter-egg/en.html",
+    "date": "2025-01-26T12:48:17.000Z",
+    "tags": [
+      "systems programming",
+      "virtualization",
+      "cloud-hypervisor",
+      "Linux"
+    ],
+    "cover_image": null,
+    "snippet": "TODO ./configure --prefix=$HOME/qemu-build --sysconfdir=$HOME/qemu-build/etc --libexecdir=$HOME/qemu-build/usr/lib/qemu --localstatedir=$HOME/qemu-build/var --disable-bpf --disable-bsd-user --disable-capstone --disable-docs --disable-fdt --disable-gcrypt --disable-glusterfs --disable-gnutls --disable-gtk..."
+  }
+]

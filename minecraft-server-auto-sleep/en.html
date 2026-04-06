@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style type="text/css">
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI Light"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/light/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/light/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/light/latest.ttf) format("truetype");
+  font-weight: 100;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI Semilight"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semilight/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semilight/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semilight/latest.ttf) format("truetype");
+  font-weight: 200;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/normal/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/normal/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/normal/latest.ttf) format("truetype");
+  font-weight: 400;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI Semibold"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semibold/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semibold/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semibold/latest.ttf) format("truetype");
+  font-weight: 600;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI Bold"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/bold/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/bold/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/bold/latest.ttf) format("truetype");
+  font-weight: 700;
+}
+body {
+  background-color: #f9f9fa;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 18px;
+  line-height: 28px;
+  padding: 2em;
+  max-width: 1200px;
+  margin: auto;
+  text-align: justify;
+}
+
+p {
+  margin: 1em 0;
+  hyphens: auto;
+}
+
+hr {
+  background-color: none;
+  border: none;
+  border-bottom: dashed 1px #aaa;
+  margin: 0;
+  padding: 0;
+}
+
+pre, .diff-block {
+  display: block;
+  font-family: monospace;
+  background-color: white;
+  padding: 0.5em 1em;
+  margin: 1em 0;
+  overflow-x: auto;
+}
+pre .comment-box, .diff-block .comment-box {
+  white-space: nowrap;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 18px;
+  line-height: 28px;
+  padding: 5px 10px;
+  margin: 5px 0;
+  display: inline-block;
+  text-align: left;
+  width: auto;
+  border: solid 1px #444;
+}
+
+.tags {
+  font-size: 16px;
+}
+.tags a.tag {
+  background-color: #eee;
+  color: #666;
+  text-decoration: none;
+  transition: background-color 100ms;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  display: inline-block;
+  margin: 0.1em 0.1em;
+  padding: 0.1em 0.5em;
+  border-radius: 4px;
+}
+.tags a.tag:hover {
+  background-color: #d9d9d9;
+}
+.tags a.tag:active {
+  background-color: #e0e0e0;
+}
+
+body > a.blogtitle {
+  color: black;
+  text-align: center;
+  display: block;
+  text-decoration: none;
+  font-size: 120%;
+  font-style: italic;
+  margin: 0.5em;
+  padding: 1em;
+  border-bottom: 1px dashed #999;
+}
+body > a.blogtitle > img {
+  width: 500px;
+  max-width: 100%;
+}
+body > a.blogtitle > span.note {
+  font-size: 60%;
+  color: #999;
+}
+
+.draftmode-warn {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 10px;
+  line-height: 1.2;
+  background-color: #db7500;
+  color: #fff;
+  text-align: center;
+  font-weight: bold;
+  z-index: 99;
+}
+.draftmode-warn a {
+  color: #fff;
+  text-decoration: underline;
+}
+
+body.draft-mode {
+  margin-top: 60px;
+}
+
+body {
+  line-height: 1.6;
+}
+
+pre, .diff-block {
+  line-height: 1.3;
+}
+
+h1 {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 28px;
+  margin: 1.5em 0 0.5em 0;
+}
+h1::before {
+  content: "# ";
+  opacity: 0.5;
+  text-align: right;
+  display: inline-block;
+  width: 0px;
+  margin-left: -22px;
+  margin-right: 22px;
+}
+
+h2 {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 22px;
+  margin: 1.5em 0 0.5em 0;
+}
+h2::before {
+  content: "## ";
+  opacity: 0.5;
+  text-align: right;
+  display: inline-block;
+  width: 0px;
+  margin-left: -30px;
+  margin-right: 30px;
+}
+
+h3 {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 18px;
+  margin: 1.5em 0 0.5em 0;
+}
+h3::before {
+  content: "### ";
+  opacity: 0.5;
+  text-align: right;
+  display: inline-block;
+  width: 0px;
+  margin-left: -34px;
+  margin-right: 34px;
+}
+
+h4 {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 18px;
+  margin: 1em 0 0.5em 0;
+}
+
+p a, ul a, li a, h2 a, h3 a, h4 a, body > a.home, .comment-box a {
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  color: #088da5;
+  text-decoration: none;
+  transition: background-color 100ms;
+  background-color: rgba(8, 141, 165, 0);
+  padding: 0.25em 0.5em;
+  margin: -0.25em -0.5em;
+}
+p a:active, ul a:active, li a:active, h2 a:active, h3 a:active, h4 a:active, body > a.home:active, .comment-box a:active {
+  background-color: rgba(8, 141, 165, 0.1);
+}
+
+pre a, .diff-block a {
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  color: inherit;
+  text-decoration: dashed underline;
+}
+
+body > code, body :not(pre):not(.diff-block) > code {
+  display: inline-block;
+  background-color: white;
+  border-radius: 4px;
+  border: solid 1px #999;
+  padding-left: 0.3em;
+  padding-right: 0.3em;
+}
+
+img.coverimg {
+  min-width: 50%;
+  max-width: 100%;
+  margin: 0 auto;
+  display: block;
+}
+
+p > img {
+  max-width: 100%;
+}
+
+p.single-img-p > img {
+  display: block;
+  margin: 0 auto;
+}
+
+.tags {
+  margin-top: -0.7em;
+}
+
+.footer {
+  color: #999;
+  font-size: 14px;
+}
+
+p.warn, div.warn {
+  border-left: #ff4545 solid 2px;
+  background-color: rgba(255, 0, 0, 0.116);
+  padding: 0.2em 1em;
+  margin-top: -0.2em;
+  margin-bottom: -0.3em;
+}
+
+p.info, div.info {
+  border-left: #3a59c7 solid 2px;
+  background-color: #e7eaf7;
+  padding: 0.2em 1em;
+  margin-top: -0.2em;
+  margin-bottom: -0.3em;
+}
+
+sup.footnoteref {
+  user-select: none;
+}
+
+sup:target, .footnote-revref:target {
+  background-color: rgba(255, 255, 0, 0.2);
+}
+
+span.tex {
+  font-size: 22px;
+}
+
+noscript {
+  border: dashed 2px #000;
+  padding: 1rem 2rem;
+  margin: 1em 0;
+}
+
+blockquote {
+  border-left: 4px solid #ccc;
+  padding-left: 1em;
+  margin: 0;
+}
+
+.diff-block-container {
+  overflow-x: auto;
+  margin: 1em 0;
+}
+
+.diff-block {
+  white-space: inherit;
+  padding: 0.5em 0;
+  margin: 0;
+  overflow-x: visible;
+  width: max-content;
+  min-width: 100%;
+  tab-size: 4;
+}
+.diff-block .diff-line {
+  white-space: pre;
+  padding: 0 1em;
+}
+.diff-block .diff-header, .diff-block .diff-header-start {
+  color: #808080;
+}
+.diff-block .diff-header-start:not(:first-child) {
+  margin-top: 0.5em;
+  border-top: solid #78baf7 3px;
+  padding-top: 0.5em;
+}
+.diff-block .diff-hunk {
+  background-color: #ddf4ff;
+  margin-top: 0.2em;
+  padding-top: 0.25em;
+  padding-bottom: 0.25em;
+  margin-bottom: 0.2em;
+}
+.diff-block .diff-hunk .diff-hunk-lines {
+  color: #6639ba;
+  font-weight: bold;
+}
+.diff-block .diff-add {
+  background-color: #dafbe1;
+}
+.diff-block .diff-delete {
+  background-color: #ffebe9;
+}
+.diff-block .diff-symbol {
+  color: #808080;
+}
+
+.toc-container {
+  border: solid 2px #ccc;
+  background-color: #f5f5f5;
+  padding: 1em 2em;
+  margin: 1em 0;
+  width: fit-content;
+  text-align: left;
+}
+@media (max-width: 600px) {
+  .toc-container {
+    width: 100%;
+    padding: 1em;
+    margin-left: -1em;
+    margin-right: -1em;
+  }
+}
+.toc-container .title {
+  text-align: center;
+  font-weight: bold;
+}
+.toc-container .title > .dock-button-container {
+  margin-left: 0.5em;
+  font-size: 75%;
+}
+.toc-container .title > .dock-button-container > a {
+  cursor: pointer;
+  color: #088da5;
+}
+.toc-container ol {
+  margin: 0 1em;
+  padding: 0;
+}
+.toc-container ol > li > ol {
+  list-style-type: lower-alpha;
+}
+.toc-container ol > li > ol > li ol {
+  list-style-type: none;
+}
+.toc-container.docked {
+  position: fixed;
+  z-index: 100;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  margin: 0;
+  box-sizing: border-box;
+  width: min(90vw, 450px);
+  background-color: #ffffff;
+  box-shadow: #000000 0 0 8px;
+  border: hidden;
+  overflow-y: auto;
+  transition: left 0.3s;
+}
+.toc-container.docked.hidden {
+  left: -460px;
+}
+@media (max-width: 500px) {
+  .toc-container.docked.hidden {
+    left: -100vw;
+  }
+}
+.toc-container.docked .open-dock-button {
+  position: fixed;
+  text-align: center;
+  writing-mode: vertical-rl;
+  text-orientation: sideways;
+  top: calc(50% - 80px);
+  left: 0;
+  width: 22px;
+  line-height: 22px;
+  height: 160px;
+  font-size: 16px;
+  background-color: #f5f5f5;
+  cursor: pointer;
+  box-shadow: #000000 0 0 8px;
+  z-index: 101;
+}
+.toc-container.docked:not(.hidden) .open-dock-button {
+  display: none;
+}</style>
+    <title>A Minecraft Server on Google Cloud that puts itself to sleep - mw casual engineering</title>
+    <meta name="keywords" content="cloud,Minecraft,Google-Cloud,architecture,Java">
+    <meta property="og:url" content="https://blog.maowtm.org/minecraft-server-auto-sleep/en.html">
+    <meta property="og:title" content="A Minecraft Server on Google Cloud that puts itself to sleep">
+    <meta property="og:image" content="https://blog.maowtm.org/minecraft-server-auto-sleep/cover.png">
+    <meta property="og:type" content="article">
+    <link rel="stylesheet" href="https://unpkg.com/highlight.js@9.16.2/styles/idea.css">
+  </head>
+  <body><a class="blogtitle" href="/"><img src="/title.svg" alt="mw casual engineering"></a><img class="coverimg" src="cover.png" alt="cover image">
+    <h1>A Minecraft Server on Google Cloud that puts itself to sleep</h1>
+    <div class="tags"><a class="tag" href="../tagindex/cloud.html">cloud</a> <a class="tag" href="../tagindex/minecraft.html">Minecraft</a> <a class="tag" href="../tagindex/google-cloud.html">Google-Cloud</a> <a class="tag" href="../tagindex/architecture.html">architecture</a> <a class="tag" href="../tagindex/java.html">Java</a>
+    </div><p></p>
+<p>Cloud platforms hate this! You won't believe how much money you can save via this one weird trick — turning things off when you don't use them!</p>
+<hr>
+<p>Recently I have been running a Minecraft server to play with a few of my friends. While everything else about the server is fine, getting a £40 cloud bill at the end of the month for a server that barely hosts 5 players is not ideal. I could make it cheaper by using a shared-core VM with a smaller configuration, but the CPU usage when we are playing is already 100% 100% of the time. I can't have it cost me this much money though, so like any normal person, I went ahead and bought a Realms subscription for $8 per month and played on Microsoft's server instead. The end…</p>
+<p>Except of course that's not what happened. That would be no fun, plus I still want the ability to install my own plugins and stuff. The idea for this project came when I realized that most of the time, nobody is in the server, which means that keeping it running 24/7 is a huge waste of resources.</p>
+<p>A very easy solution to this problem is just to shut the server down and only boot it up when we want to play. While this means that we will have to wait for it to start up (which typically takes around a minute), this can be made quite effortless by making some sort of web page or Discord bot that powers on the server using the Google Cloud API, and shuts it down automatically when nobody is in the server, which can be detected with a special server plugin.</p>
+<p>While planning to implement this, I noticed one little interesting feature in Compute Engine:</p>
+<p class="single-img-p"><img src="suspend-menu.png" alt="A drop-down menu with options &quot;start/resume&quot;, &quot;stop&quot;, &quot;suspend&quot;, &quot;reset&quot; etc. The suspend option is highlighted."></p>
+<p>Suspend… Sounds like a perfect feature for this project! According to Google, when a VM is suspended, its memory is moved to persistent storage and the compute resource is released. Such a machine is like a powered-off machine and only incurs storage costs.</p>
+<p>After some testing, I discovered that suspending and resuming a VM is actually quite fast—it usually takes 10 seconds to suspend or resume my Minecraft VM, and the VM is ready to be connected to afterward. This is very exciting, as it means basically no wait time for the server to start back up at all. In fact—it's fast enough that, in theory, we don't even need an external interface. If we can make it so that as soon as someone tries to connect to the server within Minecraft, an API call is sent to Google Cloud to resume the VM, this could make the server look like it's always running!</p>
+<p>You might be wondering—this sounds impossible! If the server is sleeping, how could it listen to and accept new connections? And you would be right. We will need something external that will handle the connection for us and make the Google Cloud API calls. Luckily, I happen to know another interesting piece of Minecraft software — <a href="https://www.spigotmc.org/wiki/about-bungeecord/">BungeeCord</a>.</p>
+<p>BungeeCord is a lightweight Minecraft server proxy with plugin support that is commonly used by multi-server networks to enable seamless switching. While this is not exactly what I'm trying to do here, the fact that it is an extendable Minecraft proxy makes it very useful for this project. We can simply use it as a (very lightweight) frontend to our server that detects connection attempts and resumes/suspends our backing server automatically.</p>
+<p>While this does introduce the need for another server, BungeeCord actually does not have much resource footprint, so the smallest VM that Google provides is enough (which costs a bit over $10/mo). In my case, I'm also able to use this VM to run a couple of my other projects, further reducing the effective cost of this setup. Alternative cloud platforms may support autoscaled TCP services, which would make this even cheaper, but for this project, unfortunately, we do need something running 24/7.<sup class="footnoteref" id="revref-1"><a href="#ref-1">1</a></sup></p>
+<p>The following image summarizes this architecture:</p>
+<p class="single-img-p"><img src="mc.drawio.svg" alt="An architectural diagram of the setup."></p>
+<p>Note that there are a couple of intricacies regarding running BungeeCord, such as the need to run the backend server in offline mode and open to trusted connections only.</p>
+<p class="warn">
+In this setup, authentication is handled by BungeeCord instead of the backend server, and the backend server runs in offline mode. Therefore, you <b>must</b> ensure that the backend server is not inadvertently exposed to the internet (such as by listening on your private vnet only).
+</p>
+
+<p>Before we continue, I would also like to point out that suspend is not available for E2 VMs. This means that you will not be able to use the shared-core instances, which are significantly cheaper than standard instances (although with limited performance).</p>
+<hr>
+<p>With the architecture decided, the main thing left to implement is the actual BungeeCord plugin. The resulting code is available <a href="https://github.com/micromaomao/minecraft-autosuspend/tree/main/autosuspend-plugin">on GitHub</a>. The main idea is that players trying to join are pushed into a queue, then a long-running thread is notified, which will resume the server if necessary, and connect the player to the actual server. It also periodically checks if it has been a while since the last player left, and if that's the case, suspends the server if it is running.</p>
+<p>The two main problems I came across while implementing this are:</p>
+<ol>
+<li><p>BungeeCord's documentation on thread-related matters is lacking. <a href="https://www.spigotmc.org/wiki/common-development-pitfalls-bungeecord/#creating-new-threads">Its doc</a> says that "creating new threads" will be "disabled" in the future and should not be done, and suggests using its async scheduler instead. Yet it does not explain what the difference is between using <code>runAsync</code> and creating a thread, or whether my async task is allowed to not return indefinitely. I also relied on a <a href="https://www.spigotmc.org/threads/scheduling-runnable-in-main-thread.254168/#post-2527499">forum post</a> to tell me that BungeeCord is thread-safe. I could not find any mention of this in its official documentation.</p>
+</li>
+<li><p>There is no <em>supported</em> way to make a joining player wait before they are connected. When a player joins, BungeeCord automatically connects them to a backend server, and canceling this <code>ServerConnectEvent</code> results in the following being printed to the console after the event finishes:</p>
+<pre><code>java.lang.IllegalStateException: Cancelled ServerConnectEvent with no server or disconnect.
+</code></pre>
+<p> Parts of the documentation mention some sort of "embedded" server, which sounds exactly like what we need here—ideally, we can make the player simply wait in some sort of dummy void world. However, I can't find any more info about this, nor any API which allows me to make such a connection.</p>
+<p> As it turns out, if we just ignore the printed error message, canceling the <code>ServerConnectEvent</code> does work. The player will keep seeing the "Joining world" message until we perform further action (such as a connect or kick).</p>
+</li>
+</ol>
+<p>There is also the slight issue that a plugin-initiated <code>connect</code> still fires a <code>ServerConnectEvent</code> (which is quite reasonable), causing our event handling code to be executed again and thus canceling the event again or causing other bugs if we aren't careful. Fortunately there is a <code>getReason</code> method on the event which allows us to tell if the event is caused by a plugin or by BungeeCord. We can ignore the event if it is caused by a plugin.</p>
+<hr>
+<p>So, after all of this, how much money does it save? Honestly, not much, especially if you play Minecraft pretty much every day. This is also partly because of the need for an extra small VM which costs $12 per month. However, I do not consider this project a waste for the following reasons:</p>
+<ol>
+<li>I can move some other services I'm running in small VMs (code sandboxes, Discord bots, etc.) over to this server to better utilize it, saving me money elsewhere.</li>
+<li>This allows me to effortlessly keep the server running on a long-term basis, even if I take a break from Minecraft for a while, without too much cost. This means that my friends can always pop in randomly from time to time.</li>
+<li>While my cloud bill has not been reduced by much, previously I was using a shared-core E2 instance which sometimes produces significant lags. For this project (as explained earlier), I had to upgrade to an N2 instance with dedicated CPU cores. This means that, if nothing else, I get to enjoy smoother gameplay without spending more.</li>
+</ol>
+<h2>Footnote</h2><ul><li><div><span id="ref-1" class="footnote-revref"><a href="#revref-1">1</a></span>: 
+If you are wondering why not just run the main Minecraft service on some sort of TCP serverless functions if that is available… The long startup time makes the experience not great, and the long shutdown time usually does not go well with such platforms, potentially resulting in losing world data. BungeeCord is basically stateless so does not have this problem.</div></li></ul>
+    <p class="footer">
+      Published
+      <span class="time" title="Fri, 19 Aug 2022 00:53:16 GMT">on Fri Aug 19 2022</span>.<br>
+      Authored by <a href="https://maowtm.org">maowtm (Tingmao Wang)</a> &lt;m@maowtm.org&gt;.<br>
+      
+      Content <a href="https://github.com/micromaomao/blog/blob/draft/LICENSE.md">licensed under a Creative Commons Attribution-ShareAlike 4.0 International License</a>.<br>
+      
+      For permissions beyond the scope of this license, see <a href="../request_cc_extension.html">https://blog.maowtm.org/request_cc_extension.html</a>.<br>
+      
+      If you see something wrong please <a href="https://github.com/micromaomao/blog/issues">report on GitHub</a>.
+    </p><a class="home" href="../index.html">« home</a>
+    <script type="text/javascript" src="/layout.js"></script>
+  </body>
+</html>

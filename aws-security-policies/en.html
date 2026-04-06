@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style type="text/css">
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI Light"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/light/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/light/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/light/latest.ttf) format("truetype");
+  font-weight: 100;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI Semilight"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semilight/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semilight/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semilight/latest.ttf) format("truetype");
+  font-weight: 200;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/normal/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/normal/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/normal/latest.ttf) format("truetype");
+  font-weight: 400;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI Semibold"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semibold/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semibold/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/semibold/latest.ttf) format("truetype");
+  font-weight: 600;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: local("Segoe UI Bold"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/bold/latest.woff2) format("woff2"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/bold/latest.woff) format("woff"), url(https://c.s-microsoft.com/static/fonts/segoe-ui/west-european/bold/latest.ttf) format("truetype");
+  font-weight: 700;
+}
+body {
+  background-color: #f9f9fa;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 18px;
+  line-height: 28px;
+  padding: 2em;
+  max-width: 1200px;
+  margin: auto;
+  text-align: justify;
+}
+
+p {
+  margin: 1em 0;
+  hyphens: auto;
+}
+
+hr {
+  background-color: none;
+  border: none;
+  border-bottom: dashed 1px #aaa;
+  margin: 0;
+  padding: 0;
+}
+
+pre, .diff-block {
+  display: block;
+  font-family: monospace;
+  background-color: white;
+  padding: 0.5em 1em;
+  margin: 1em 0;
+  overflow-x: auto;
+}
+pre .comment-box, .diff-block .comment-box {
+  white-space: nowrap;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 18px;
+  line-height: 28px;
+  padding: 5px 10px;
+  margin: 5px 0;
+  display: inline-block;
+  text-align: left;
+  width: auto;
+  border: solid 1px #444;
+}
+
+.tags {
+  font-size: 16px;
+}
+.tags a.tag {
+  background-color: #eee;
+  color: #666;
+  text-decoration: none;
+  transition: background-color 100ms;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  display: inline-block;
+  margin: 0.1em 0.1em;
+  padding: 0.1em 0.5em;
+  border-radius: 4px;
+}
+.tags a.tag:hover {
+  background-color: #d9d9d9;
+}
+.tags a.tag:active {
+  background-color: #e0e0e0;
+}
+
+body > a.blogtitle {
+  color: black;
+  text-align: center;
+  display: block;
+  text-decoration: none;
+  font-size: 120%;
+  font-style: italic;
+  margin: 0.5em;
+  padding: 1em;
+  border-bottom: 1px dashed #999;
+}
+body > a.blogtitle > img {
+  width: 500px;
+  max-width: 100%;
+}
+body > a.blogtitle > span.note {
+  font-size: 60%;
+  color: #999;
+}
+
+.draftmode-warn {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 10px;
+  line-height: 1.2;
+  background-color: #db7500;
+  color: #fff;
+  text-align: center;
+  font-weight: bold;
+  z-index: 99;
+}
+.draftmode-warn a {
+  color: #fff;
+  text-decoration: underline;
+}
+
+body.draft-mode {
+  margin-top: 60px;
+}
+
+body {
+  line-height: 1.6;
+}
+
+pre, .diff-block {
+  line-height: 1.3;
+}
+
+h1 {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 28px;
+  margin: 1.5em 0 0.5em 0;
+}
+h1::before {
+  content: "# ";
+  opacity: 0.5;
+  text-align: right;
+  display: inline-block;
+  width: 0px;
+  margin-left: -22px;
+  margin-right: 22px;
+}
+
+h2 {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 22px;
+  margin: 1.5em 0 0.5em 0;
+}
+h2::before {
+  content: "## ";
+  opacity: 0.5;
+  text-align: right;
+  display: inline-block;
+  width: 0px;
+  margin-left: -30px;
+  margin-right: 30px;
+}
+
+h3 {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 18px;
+  margin: 1.5em 0 0.5em 0;
+}
+h3::before {
+  content: "### ";
+  opacity: 0.5;
+  text-align: right;
+  display: inline-block;
+  width: 0px;
+  margin-left: -34px;
+  margin-right: 34px;
+}
+
+h4 {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 18px;
+  margin: 1em 0 0.5em 0;
+}
+
+p a, ul a, li a, h2 a, h3 a, h4 a, body > a.home, .comment-box a {
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  color: #088da5;
+  text-decoration: none;
+  transition: background-color 100ms;
+  background-color: rgba(8, 141, 165, 0);
+  padding: 0.25em 0.5em;
+  margin: -0.25em -0.5em;
+}
+p a:active, ul a:active, li a:active, h2 a:active, h3 a:active, h4 a:active, body > a.home:active, .comment-box a:active {
+  background-color: rgba(8, 141, 165, 0.1);
+}
+
+pre a, .diff-block a {
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  color: inherit;
+  text-decoration: dashed underline;
+}
+
+body > code, body :not(pre):not(.diff-block) > code {
+  display: inline-block;
+  background-color: white;
+  border-radius: 4px;
+  border: solid 1px #999;
+  padding-left: 0.3em;
+  padding-right: 0.3em;
+}
+
+img.coverimg {
+  min-width: 50%;
+  max-width: 100%;
+  margin: 0 auto;
+  display: block;
+}
+
+p > img {
+  max-width: 100%;
+}
+
+p.single-img-p > img {
+  display: block;
+  margin: 0 auto;
+}
+
+.tags {
+  margin-top: -0.7em;
+}
+
+.footer {
+  color: #999;
+  font-size: 14px;
+}
+
+p.warn, div.warn {
+  border-left: #ff4545 solid 2px;
+  background-color: rgba(255, 0, 0, 0.116);
+  padding: 0.2em 1em;
+  margin-top: -0.2em;
+  margin-bottom: -0.3em;
+}
+
+p.info, div.info {
+  border-left: #3a59c7 solid 2px;
+  background-color: #e7eaf7;
+  padding: 0.2em 1em;
+  margin-top: -0.2em;
+  margin-bottom: -0.3em;
+}
+
+sup.footnoteref {
+  user-select: none;
+}
+
+sup:target, .footnote-revref:target {
+  background-color: rgba(255, 255, 0, 0.2);
+}
+
+span.tex {
+  font-size: 22px;
+}
+
+noscript {
+  border: dashed 2px #000;
+  padding: 1rem 2rem;
+  margin: 1em 0;
+}
+
+blockquote {
+  border-left: 4px solid #ccc;
+  padding-left: 1em;
+  margin: 0;
+}
+
+.diff-block-container {
+  overflow-x: auto;
+  margin: 1em 0;
+}
+
+.diff-block {
+  white-space: inherit;
+  padding: 0.5em 0;
+  margin: 0;
+  overflow-x: visible;
+  width: max-content;
+  min-width: 100%;
+  tab-size: 4;
+}
+.diff-block .diff-line {
+  white-space: pre;
+  padding: 0 1em;
+}
+.diff-block .diff-header, .diff-block .diff-header-start {
+  color: #808080;
+}
+.diff-block .diff-header-start:not(:first-child) {
+  margin-top: 0.5em;
+  border-top: solid #78baf7 3px;
+  padding-top: 0.5em;
+}
+.diff-block .diff-hunk {
+  background-color: #ddf4ff;
+  margin-top: 0.2em;
+  padding-top: 0.25em;
+  padding-bottom: 0.25em;
+  margin-bottom: 0.2em;
+}
+.diff-block .diff-hunk .diff-hunk-lines {
+  color: #6639ba;
+  font-weight: bold;
+}
+.diff-block .diff-add {
+  background-color: #dafbe1;
+}
+.diff-block .diff-delete {
+  background-color: #ffebe9;
+}
+.diff-block .diff-symbol {
+  color: #808080;
+}
+
+.toc-container {
+  border: solid 2px #ccc;
+  background-color: #f5f5f5;
+  padding: 1em 2em;
+  margin: 1em 0;
+  width: fit-content;
+  text-align: left;
+}
+@media (max-width: 600px) {
+  .toc-container {
+    width: 100%;
+    padding: 1em;
+    margin-left: -1em;
+    margin-right: -1em;
+  }
+}
+.toc-container .title {
+  text-align: center;
+  font-weight: bold;
+}
+.toc-container .title > .dock-button-container {
+  margin-left: 0.5em;
+  font-size: 75%;
+}
+.toc-container .title > .dock-button-container > a {
+  cursor: pointer;
+  color: #088da5;
+}
+.toc-container ol {
+  margin: 0 1em;
+  padding: 0;
+}
+.toc-container ol > li > ol {
+  list-style-type: lower-alpha;
+}
+.toc-container ol > li > ol > li ol {
+  list-style-type: none;
+}
+.toc-container.docked {
+  position: fixed;
+  z-index: 100;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  margin: 0;
+  box-sizing: border-box;
+  width: min(90vw, 450px);
+  background-color: #ffffff;
+  box-shadow: #000000 0 0 8px;
+  border: hidden;
+  overflow-y: auto;
+  transition: left 0.3s;
+}
+.toc-container.docked.hidden {
+  left: -460px;
+}
+@media (max-width: 500px) {
+  .toc-container.docked.hidden {
+    left: -100vw;
+  }
+}
+.toc-container.docked .open-dock-button {
+  position: fixed;
+  text-align: center;
+  writing-mode: vertical-rl;
+  text-orientation: sideways;
+  top: calc(50% - 80px);
+  left: 0;
+  width: 22px;
+  line-height: 22px;
+  height: 160px;
+  font-size: 16px;
+  background-color: #f5f5f5;
+  cursor: pointer;
+  box-shadow: #000000 0 0 8px;
+  z-index: 101;
+}
+.toc-container.docked:not(.hidden) .open-dock-button {
+  display: none;
+}</style>
+    <title>Understanding AWS security policies - mw casual engineering</title>
+    <meta name="keywords" content="cloud,AWS,security">
+    <meta property="og:url" content="https://blog.maowtm.org/aws-security-policies/en.html">
+    <meta property="og:title" content="Understanding AWS security policies">
+    <meta property="og:image" content="https://blog.maowtm.org/aws-security-policies/policy_editor_summary_screenshot.png">
+    <meta property="og:type" content="article">
+    <link rel="stylesheet" href="https://unpkg.com/highlight.js@9.16.2/styles/idea.css">
+  </head>
+  <body><a class="blogtitle" href="/"><img src="/title.svg" alt="mw casual engineering"></a><img class="coverimg" src="policy_editor_summary_screenshot.png" alt="cover image">
+    <h1>Understanding AWS security policies</h1>
+    <div class="tags"><a class="tag" href="../tagindex/cloud.html">cloud</a> <a class="tag" href="../tagindex/aws.html">AWS</a> <a class="tag" href="../tagindex/security.html">security</a>
+    </div><p></p>
+<p>Some days ago I was (again) trying to fiddle with AWS security policies trying to create a user with only the rights to upload to a specific S3 "folder"<sup class="footnoteref" id="revref-1"><a href="#ref-1">1</a></sup>. I have already attempted this earlier before but with no success, in part because there is just so little documentation about how AWS policies work and also in part because of my failure to realize that the tool I use to access S3 - <a href="https://rclone.org/">rclone</a> also requires some permissions other than <code>PutObject</code> — namely <code>ListBucket</code> and <code>GetObject</code>. In this article, I will go over how to understand and make use of AWS (specifically S3) security policies.</p>
+<h2>AWS permission model</h2>
+<p>In the AWS world, clients use an <em>access key</em> to call various AWS APIs, and access keys belong to <em>users</em>. You can create users (and generate an initial access key) on the <a href="https://console.aws.amazon.com/iam/home#/users">Users page</a> of the IAM console.</p>
+<p>A user's permission is controlled by the <em>policies</em> attached to them (or any of the groups that they belong to). There are a lot of pre-existing policies for simple cases, such as granting a user full control of a service, etc. For example, on the “add user” page, when you get to “Set permissions”, you can see a list of AWS pre-defined policies, and in it you can find <code>AmazonS3FullAccess</code> and <code>AmazonS3ReadOnlyAccess</code>, which is exactly what they sound like: allowing full read or read/write access to <strong>every</strong> bucket.</p>
+<p class="single-img-p"><img src="add_user_set_permissions_s3_policies.png" alt="A screenshot showing the policies displayed under the &quot;Set permissions&quot; tab, with a search filter of &quot;S3&quot;. The policies displayed are: AmazonDMSRedshiftS3Role, AmazonS3FullAccess, AmazonS3ReadOnlyAccess, and QuickSightAccessForS3StorageManagementAnalyticsReadOnly, all of which are of type AWS managed."></p>
+<h2>Creating policies</h2>
+<p>Usually, if you want something more fine-tuned, such as specifying which buckets are allowed to be accessed, you have to create your own policy. This can be done with the "Create policy" button here, or you can also go to the <a href="https://console.aws.amazon.com/iam/home#/policies">dedicated policies page</a> to manage all your policies. The visual policy editor is probably good enough that you don't need to write a JSON policy yourself.</p>
+<p class="single-img-p"><img src="policy_visual_editor_empty.png" alt="A screenshot of the initial state of the visual policy editor, with no permissions entered."></p>
+<p>In your policy, you can have one or more permissions (known as "statements" in the JSON), each one can either grant some access or be an <em>explicit deny</em>, which explicitly declares that some operations should not be allowed. AWS first evaluates all explicit deny statements, and if any matches, the operation is denied whether or not some other statements allow the action. You can use the "add additional permissions" button to add more permissions (statements) to your policy.</p>
+<p>Each permission targets a set of actions, which themselves correspond to various API calls. For example, if you choose "S3" as the "Service" and in "Actions" choose <code>GetObject</code>, this makes the permission allow (or deny) reading S3 files. If you choose the <code>GetObject</code> action, you need to then specify which files to allow/deny the user to read in the "Resources" section.</p>
+<p class="single-img-p"><img src="policy_visual_editor_permission_resources_tab.png" alt="A screenshot of the &quot;Resource&quot; section for a newly created permission statement with action &quot;GetObject&quot;. It reads: object: Specify object resource ARN for the GetObject action."></p>
+<p>ARN is, as far as I understand, a fancy name for “the absolute path of a thing”. You can use ARN to refer to various things (such as S3 buckets, S3 files (aka objects), etc.) in AWS, and in this case, we need to provide an ARN for an S3 object, which has the form:</p>
+<pre>arn:aws:s3:::<b><i>bucket_name</i></b>/<b><i>file_path</i></b>
+</pre>
+
+<p>So, for example, if you have a file named <code>data/data.txt</code> in the <code>myfiles</code> bucket, its ARN would be <code>arn:aws:s3:::myfiles/data/data.txt</code>.</p>
+<p>You can add multiple ARNs, and the permission is applied if any of them match. You can also use asterisks (<code>*</code>) in the ARN to denote "any string." Therefore, if you want to allow read access to everything under the <code>data</code> "folder" (and its subfolders), you would enter the ARN <code>arn:aws:s3:::myfiles/data/*</code>.</p>
+<p>All of your ARNs will apply to all of the actions that you specified in the same permission. So, if you have a permission that grants <code>PutObject</code> and <code>GetObject</code>, and with an ARN of <code>arn:aws:s3:::myfiles/data/data.txt</code>, users with this permission would be able to read, write to, and create the file named <code>data/data.txt</code>. To allow/deny different ARNs for different actions, you can create multiple permission statements.</p>
+<p>You can also add request conditions, which allow you to limit what the parameters for the API calls can be. For example, if you have a permission that grants <code>ListBucket</code>, having a request condition of <code>s3:prefix</code> StringLike <code>data/*</code> will limit the user to only being able to list the contents of the <code>data</code> "folder" (and its subfolders). You can see a list of request conditions (and resource types) for each action by clicking on the
+<svg style="vertical-align: center; transform: translateY(2px);" width="1em" height="1em" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg">
+    <path d="M1024 1376v-192q0-14-9-23t-23-9h-192q-14 0-23 9t-9 23v192q0 14 9 23t23 9h192q14 0 23-9t9-23zm256-672q0-88-55.5-163t-138.5-116-170-41q-243 0-371 213-15 24 8 42l132 100q7 6 19 6 16 0 25-12 53-68 86-92 34-24 86-24 48 0 85.5 26t37.5 59q0 38-20 61t-68 45q-63 28-115.5 86.5t-52.5 125.5v36q0 14 9 23t23 9h192q14 0 23-9t9-23q0-19 21.5-49.5t54.5-49.5q32-18 49-28.5t46-35 44.5-48 28-60.5 12.5-81zm384 192q0 209-103 385.5t-279.5 279.5-385.5 103-385.5-103-279.5-279.5-103-385.5 103-385.5 279.5-279.5 385.5-103 385.5 103 279.5 279.5 103 385.5z" style="fill: currentColor; stroke: none;"></path>
+</svg>
+icon next to the actions checkbox. Some other interesting conditions include <code>aws:CurrentTime</code> and <code>aws:SourceIp</code>.</p>
+<h2>Example policies for S3</h2>
+<p class="warn">You should always test out these policies before using them in production!</p>
+
+<p>You can import these policies by copying the JSON and pasting them into the JSON editor. After doing that, you may go back to the visual editor to change the statements.</p>
+<h3>Allow read/write to any objects that are not in the <code>denied</code> folder:</h3>
+<pre><code class="language-json"><span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"Version"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"2012-10-17"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"Statement"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+        <span class="hljs-punctuation">{</span>
+            <span class="hljs-attr">"Sid"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"AllowAll"</span><span class="hljs-punctuation">,</span>
+            <span class="hljs-attr">"Effect"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"Allow"</span><span class="hljs-punctuation">,</span>
+            <span class="hljs-attr">"Action"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+                <span class="hljs-string">"s3:PutObject"</span><span class="hljs-punctuation">,</span>
+                <span class="hljs-string">"s3:GetObject"</span><span class="hljs-punctuation">,</span>
+                <span class="hljs-string">"s3:DeleteObject"</span>
+            <span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+            <span class="hljs-attr">"Resource"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+                <span class="hljs-string">"arn:aws:s3:::secpolicy-test/*"</span>
+            <span class="hljs-punctuation">]</span>
+        <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-punctuation">{</span>
+            <span class="hljs-attr">"Sid"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"ExecptDenied"</span><span class="hljs-punctuation">,</span>
+            <span class="hljs-attr">"Effect"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"Deny"</span><span class="hljs-punctuation">,</span>
+            <span class="hljs-attr">"Action"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+                <span class="hljs-string">"s3:PutObject"</span><span class="hljs-punctuation">,</span>
+                <span class="hljs-string">"s3:GetObject"</span><span class="hljs-punctuation">,</span>
+                <span class="hljs-string">"s3:DeleteObject"</span>
+            <span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+            <span class="hljs-attr">"Resource"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"arn:aws:s3:::secpolicy-test/denied/*"</span>
+        <span class="hljs-punctuation">}</span>
+    <span class="hljs-punctuation">]</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<p>The first statement allows read, write and overwriting any files, but the second statement denies these operations for anything with a name starting <code>denied/</code>. Since there is no actual concept of "folders" in S3, you don't have to worry about the user being allowed to delete the <code>denied</code> folder. They can, however, create another regular file named <code>denied</code> and write/delete that file.</p>
+<p>For some clients (such as rclone), you also need to grant the user <code>s3:ListBucket</code> and <code>s3:ListAllMyBuckets</code> for them to successfully upload. Hence for those clients the policy should look like this:</p>
+<p class="info">
+    Update: In newer versions of rclone you need to pass <code>--s3-no-check-bucket</code> when uploading, otherwise it will attempt to call the bucket creation endpoint, and if that fails with a permission error rclone will fail.
+</p>
+
+<pre><code class="language-json"><span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"Version"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"2012-10-17"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"Statement"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+        <span class="hljs-punctuation">{</span>
+            <span class="hljs-attr">"Sid"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"AllowAll"</span><span class="hljs-punctuation">,</span>
+            <span class="hljs-attr">"Effect"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"Allow"</span><span class="hljs-punctuation">,</span>
+            <span class="hljs-attr">"Action"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+                <span class="hljs-string">"s3:ListBucket"</span><span class="hljs-punctuation">,</span>
+                <span class="hljs-string">"s3:PutObject"</span><span class="hljs-punctuation">,</span>
+                <span class="hljs-string">"s3:GetObject"</span><span class="hljs-punctuation">,</span>
+                <span class="hljs-string">"s3:DeleteObject"</span>
+            <span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+            <span class="hljs-attr">"Resource"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+                <span class="hljs-string">"arn:aws:s3:::secpolicy-test"</span><span class="hljs-punctuation">,</span>
+                <span class="hljs-string">"arn:aws:s3:::secpolicy-test/*"</span>
+            <span class="hljs-punctuation">]</span>
+        <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-punctuation">{</span>
+            <span class="hljs-attr">"Sid"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"AllowListAllMyBuckets"</span><span class="hljs-punctuation">,</span>
+            <span class="hljs-attr">"Effect"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"Allow"</span><span class="hljs-punctuation">,</span>
+            <span class="hljs-attr">"Action"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"s3:ListAllMyBuckets"</span><span class="hljs-punctuation">,</span>
+            <span class="hljs-attr">"Resource"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"*"</span>
+        <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-comment">// Other statements e.g. deny certain subdirectories</span>
+    <span class="hljs-punctuation">]</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<p>Note that there are two resources specified in the <code>AllowAll</code> statement: the bucket <code>secpolicy-test</code> and the S3 objects <code>*</code> in <code>secpolicy-test</code>. Since <code>{Put,Get,Delete}Object</code> only takes an object resource, they will ignore the first specified resource. Similarly, <code>ListBucket</code> only takes a bucket resource, so it will ignore the second resource specified.</p>
+<h3>Allow user all access to everything under the <code>user</code> folder:</h3>
+<pre><code class="language-json"><span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"Version"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"2012-10-17"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"Statement"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+        <span class="hljs-punctuation">{</span>
+            <span class="hljs-attr">"Sid"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"list"</span><span class="hljs-punctuation">,</span>
+            <span class="hljs-attr">"Effect"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"Allow"</span><span class="hljs-punctuation">,</span>
+            <span class="hljs-attr">"Action"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"s3:ListBucket"</span><span class="hljs-punctuation">,</span>
+            <span class="hljs-attr">"Resource"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"arn:aws:s3:::secpolicy-test"</span><span class="hljs-punctuation">,</span>
+            <span class="hljs-attr">"Condition"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+                <span class="hljs-attr">"ForAllValues:StringLike"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+                    <span class="hljs-attr">"s3:prefix"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"user/*"</span>
+                <span class="hljs-punctuation">}</span>
+            <span class="hljs-punctuation">}</span>
+        <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-punctuation">{</span>
+            <span class="hljs-attr">"Sid"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"objectOps"</span><span class="hljs-punctuation">,</span>
+            <span class="hljs-attr">"Effect"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"Allow"</span><span class="hljs-punctuation">,</span>
+            <span class="hljs-attr">"Action"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+                <span class="hljs-string">"s3:GetObject*"</span><span class="hljs-punctuation">,</span>
+                <span class="hljs-string">"s3:PutObject*"</span><span class="hljs-punctuation">,</span>
+                <span class="hljs-string">"s3:DeleteObject*"</span>
+            <span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+            <span class="hljs-attr">"Resource"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"arn:aws:s3:::secpolicy-test/user/*"</span>
+        <span class="hljs-punctuation">}</span>
+    <span class="hljs-punctuation">]</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<h3>rclone specific: Allow <code>rclone copy</code> into <code>/uploads</code></h3>
+<pre><code class="language-json"><span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"Version"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"2012-10-17"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"Statement"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+        <span class="hljs-punctuation">{</span>
+            <span class="hljs-attr">"Sid"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"stat"</span><span class="hljs-punctuation">,</span>
+            <span class="hljs-attr">"Effect"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"Allow"</span><span class="hljs-punctuation">,</span>
+            <span class="hljs-attr">"Action"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+                <span class="hljs-string">"s3:ListBucket"</span><span class="hljs-punctuation">,</span>
+                <span class="hljs-string">"s3:PutObject"</span><span class="hljs-punctuation">,</span>
+                <span class="hljs-string">"s3:GetObject"</span>
+            <span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+            <span class="hljs-attr">"Resource"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+                <span class="hljs-string">"arn:aws:s3:::secpolicy-test"</span><span class="hljs-punctuation">,</span>
+                <span class="hljs-string">"arn:aws:s3:::secpolicy-test/uploads/*"</span>
+            <span class="hljs-punctuation">]</span>
+        <span class="hljs-punctuation">}</span>
+    <span class="hljs-punctuation">]</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<p>Due to the use of the <code>HEAD</code> request to determine existence, rclone needs <code>{Put, Get}Object</code> and <code>ListBucket</code> for uploads. When debugging, you can use <code>-vv --dump headers</code> to see what requests rclone is making.</p>
+<h2>Footnote</h2><ul><li><div><span id="ref-1" class="footnote-revref"><a href="#revref-1">1</a></span>: S3 doesn't really have "folders" because it is really a key-value store. For conciseness, in this article I will use "folder <code>x</code>" to mean "any files with a name beginning in <code>x</code>/.</div></li></ul>
+    <p class="footer">
+      Published
+      <span class="time" title="Mon, 06 Jan 2020 14:18:04 GMT">on Mon Jan 06 2020</span>.<br>
+      Authored by <a href="https://maowtm.org">maowtm (Tingmao Wang)</a> &lt;m@maowtm.org&gt;.<br>
+      
+      Content <a href="https://github.com/micromaomao/blog/blob/draft/LICENSE.md">licensed under a Creative Commons Attribution-ShareAlike 4.0 International License</a>.<br>
+      
+      For permissions beyond the scope of this license, see <a href="../request_cc_extension.html">https://blog.maowtm.org/request_cc_extension.html</a>.<br>
+      
+      If you see something wrong please <a href="https://github.com/micromaomao/blog/issues">report on GitHub</a>.
+    </p><a class="home" href="../index.html">« home</a>
+    <script type="text/javascript" src="/layout.js"></script>
+  </body>
+</html>

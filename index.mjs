@@ -758,6 +758,7 @@ async function main() {
     let default_lang = article.default_language;
     feed_json.push({
       title: default_lang.title,
+      codename: article.codename,
       url: article.base_url + `/${default_lang.id}.html`,
       date: default_lang.time.toISOString(),
       tags: default_lang.tags,

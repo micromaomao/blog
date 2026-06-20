@@ -262,7 +262,15 @@ In the protocol, the data structure that the CT server signs and gives to the cl
 Note that CT logs are regularly retired, and so for readers in the future, the above demo might have been broken due to the log no longer existing. (It used to point to the pilot log here, but that has retired, so I updated it.)
 </p>
 
+<p class="info">
+<b>Update (2026):</b> Google's "argon2023" log mentioned above has long since been retired. Logs are now sharded by time (a separate "temporal shard" for each year or half-year), so the equivalent today would be a current shard like "argon2026h2". A more fundamental change is also under way: newer logs increasingly use the <a href="https://c2sp.org/static-ct-api">Static CT API</a> (so-called "tiled" or "static" logs) instead of the RFC 6962 HTTP endpoints, serving the tree as static files that can sit behind any CDN. The STH described here is called a "checkpoint" in that world, but the underlying Merkle-tree concepts are exactly the same.
+</p>
+
 In order for effective gossiping to happen, there also has to be a common protocol. Currently (as of July 2020) there is no official standard on this, but there are draft proposals that have been there for quite some time now. We won't go into too much detail here, but basically clients share STHs with each other, as we expected<footnote>&hellip;and in some cases, SCTs, as discussed below</footnote>.
+
+<p class="info">
+<b>Update (2026):</b> The IETF "trans" working group's gossip drafts never became a standard&mdash;they expired and the working group concluded without shipping a gossip protocol. In practice, browsers ended up not relying on client-to-client gossip at all. Instead, the dominant model is that the trusted log list itself is curated by the browser root programs (which monitor logs for misbehavior out-of-band), and Chrome additionally explored privacy-preserving SCT auditing where a small sample of clients check that SCTs they see are actually backed by inclusion proofs. So the elegant gossip idea described above remains mostly theoretical.
+</p>
 
 In a simple world, this article would end here. However, there are some practical factors we need to consider, which means that there is actually more to it.
 
@@ -284,7 +292,7 @@ Thus, an SCT is basically a very binding "promise" that the log will include the
 
 ![A screenshot of Firefox's embedded-SCTs section of the certificate viewer](embedded-scts.png)
 
-If you go to a random website today and inspect their certificate with Firefox<footnote>As of 11 Jul 2020, Chromium doesn't show the SCT list.</footnote>, chances are that you will see a section named "embedded SCTs". This is exactly what it sounds like&mdash;some SCTs from well-known logs that promise inclusion of this certificate&mdash;embedded within the certificate itself, along with the names of the logs.
+If you go to a random website today and inspect their certificate with Firefox<footnote>As of 11 Jul 2020, Chromium doesn't show the SCT list. <b>Update (2026):</b> Chromium-based browsers do show embedded SCTs now&mdash;you can find them under the certificate viewer's details tab.</footnote>, chances are that you will see a section named "embedded SCTs". This is exactly what it sounds like&mdash;some SCTs from well-known logs that promise inclusion of this certificate&mdash;embedded within the certificate itself, along with the names of the logs.
 
 If a web server presents certificates with embedded SCTs, the browser can verify the CT status of the certificate in whichever way it wants, without needing the web server to give it any additional info. This makes it possible for a website to conform with CT requirements without any special server configuration.
 
@@ -326,12 +334,24 @@ and similar for <tex>h_2</tex>.
 
 There is also one more issue: up until now we have implicitly assumed that the browser knows the public keys of all the CT logs. In reality, each browser will have a [hard-coded list of CT logs to trust](https://www.gstatic.com/ct/log_list/v2/log_list.json), and that list will link log IDs with public keys and the endpoint URL. Google also maintains a [larger list of all CT logs](https://www.gstatic.com/ct/log_list/v2/all_logs_list.json) that have ever been widely announced.
 
+<p class="info">
+<b>Update (2026):</b> The log list has since moved to <code>v3</code> (e.g. <a href="https://www.gstatic.com/ct/log_list/v3/log_list.json">https://www.gstatic.com/ct/log_list/v3/log_list.json</a> and the corresponding <code>all_logs_list.json</code>); the <code>v2</code> URLs above are no longer maintained. The <code>v3</code> schema also adds per-log fields needed for Static CT API ("tiled") logs. Apple maintains its own trusted log list for Safari as well.
+</p>
+
+## Current Adoption (updated 2026)
+
+Back in 2020 this section noted that, while Chrome and Firefox had some SCT-verification code, neither would actually complain if a certificate came with no SCT at all. That has changed substantially:
+
+- **Chrome** has enforced CT since 2018: every publicly-trusted certificate issued after 30 April 2018 must ship a sufficient set of SCTs from qualifying logs, or the connection is blocked. This is unconditional&mdash;it does not require any opt-in from the website.
+- **Safari / Apple** platforms have enforced their own CT policy since 2021 (iOS 14.6 / macOS 11.4), with their own trusted-log list and SCT requirements.
+- **Firefox** still does not enforce CT by default (the `security.pki.certificate_transparency.mode` pref defaults to "disabled"), although Mozilla has the machinery in place and has signalled intent to turn it on.
+
+Because Chrome and Safari enforce CT, in practice essentially every certificate from a public CA now carries embedded SCTs by default, and CT compliance is a baseline requirement of the CA/Browser Forum and the major root programs. The old [no-sct.badssl.com](https://no-sct.badssl.com/) test certificate is therefore rejected by enforcing browsers today.
+
+The [`Expect-CT` header](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Expect-CT) mentioned previously is now **deprecated and removed**: Chrome dropped support around version 107 (late 2022), and MDN lists it as non-standard/deprecated. It is obsolete precisely because CT enforcement is no longer opt-in&mdash;there is nothing for a site to "expect", since the browser enforces it for everyone.
+
+Finally, the log infrastructure itself is being modernised. The original RFC 6962 logs are being phased out in favour of the [Static CT API](https://c2sp.org/static-ct-api) ("tiled"/"static" logs), which serve the Merkle tree as static tiles that can be cached by any CDN, making logs dramatically cheaper to operate. Implementations such as [Sunlight](https://sunlight.dev/) and Google's TesseraCT are in production, with Let's Encrypt, Cloudflare and Google all running static logs; Let's Encrypt has even [announced an end-of-life plan for its RFC 6962 logs](https://letsencrypt.org/2025/08/14/rfc-6962-logs-eol.html). None of this changes the cryptographic core described in this article&mdash;it is the same Merkle tree, inclusion proofs and consistency proofs, just served and operated differently.
+
 ## My new Rust library
 
 Shameless plug, but before writing this article I actually made a Rust library handling core CT tasks named [ctclient](https://github.com/micromaomao/ctclient). There are example programs and many APIs you can play with, and the source code contains a fair amount of comments. There is a template for a simple CT monitor.
-
-I'm planning to make a complete CT monitoring solution in the near future, which would hook up this library with a web interface and some sort of notification.
-
-## Current adoption
-
-Firefox and Chrome have some support for SCT verification, but as of July 2020 they would not complain even if no SCT is supplied [(test)](https://no-sct.badssl.com/). Websites can use an [`Expect-CT` header](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Expect-CT) to tell browsers that their certificate will always come with a valid CT, and to report any violations to some URL. Thanks to Let's Encrypt and other CAs embedding SCTs into their certificates, the vast majority of websites would not be affected if browsers started enforcing SCT verification today.
